@@ -1,0 +1,30 @@
+{% extends "base.html" %} {% block title %}Home - Growatt API{% endblock %} {%
+block content %}
+<h1>Welcome to Growatt Devices Monitoring</h1>
+<p>Available Routes:</p>
+<ul>
+  <li><a href="/plants">GET /plants</a> - List all plants</li>
+  <li>
+    <a href="/plant/1/devices">GET /plant/&lt;plant_id&gt;/devices</a> - List
+    devices for a specific plant
+  </li>
+  <li>
+    <a href="/energy/daily?date=YYYY-MM-DD&plantId=1&mixSn=12345"
+      >GET /energy/daily</a
+    >
+    - Get daily energy statistics
+  </li>
+  <li>
+    <a href="/energy/monthly?date=YYYY-MM&plantId=1&mixSn=12345"
+      >GET /energy/monthly</a
+    >
+    - Get monthly energy statistics
+  </li>
+  <li>
+    <a href="/energy/yearly?year=YYYY&plantId=1&mixSn=12345"
+      >GET /energy/yearly</a
+    >
+    - Get yearly energy statistics
+  </li>
+</ul>
+{% endblock %}

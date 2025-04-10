@@ -1,0 +1,184 @@
+{% extends "base.html" %} {% block title %}Devices - Growatt API{% endblock %}
+{% block content %}
+<h1>Devices for Plant: {{ plant_name }}</h1>
+
+<!-- Loading spinner -->
+<div id="loading-spinner" class="spinner" style="display: none"></div>
+
+<!-- Export Button -->
+<button id="export-button" class="btn btn-primary" onclick="exportToExcel()">
+  Export to Excel
+</button>
+
+<table id="devices-table" border="1" data-sort-order="asc">
+  <thead>
+    <tr>
+      <th onclick="sortTable(0)">
+        Plant Name <span class="sort-icon">▲</span>
+      </th>
+      <th onclick="sortTable(1)">
+        Device Alias <span class="sort-icon">▲</span>
+      </th>
+      <th onclick="sortTable(2)">
+        Serial Number <span class="sort-icon">▲</span>
+      </th>
+      <th onclick="sortTable(3)">Status <span class="sort-icon">▲</span></th>
+      <th onclick="sortTable(4)">
+        Total Energy <span class="sort-icon">▲</span>
+      </th>
+      <th onclick="sortTable(5)">
+        Last Update Time <span class="sort-icon">▲</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Data will be dynamically inserted here -->
+  </tbody>
+</table>
+
+<script>
+  const plantId = "{{ plant_id }}"; // Pass the plant ID from the server-side
+  const cacheKey = `devices_${plantId}`;
+  const cacheExpiration = 15 * 60 * 1000; // Cache expiration time in milliseconds (e.g., 15 minutes)
+
+  function renderDevices(data) {
+    const devicesTableBody = document.querySelector("#devices-table tbody");
+    devicesTableBody.innerHTML = ""; // Clear existing rows
+    data.forEach((device) => {
+      const row = document.createElement("tr");
+
+      // Add a CSS class if the status is "Offline"
+      if (device.status === "Offline") {
+        row.classList.add("offline-row");
+      }
+
+      const plantNameCell = document.createElement("td");
+      const aliasCell = document.createElement("td");
+      const serialCell = document.createElement("td");
+      const statusCell = document.createElement("td");
+      const energyCell = document.createElement("td");
+      const updateTimeCell = document.createElement("td");
+
+      plantNameCell.textContent = device.plant_name;
+      aliasCell.textContent = device.alias;
+      serialCell.textContent = device.serial_number;
+      statusCell.textContent = device.status;
+      energyCell.textContent = device.total_energy;
+      updateTimeCell.textContent = device.last_update_time;
+
+      row.appendChild(plantNameCell);
+      row.appendChild(aliasCell);
+      row.appendChild(serialCell);
+      row.appendChild(statusCell);
+      row.appendChild(energyCell);
+      row.appendChild(updateTimeCell);
+
+      devicesTableBody.appendChild(row);
+    });
+  }
+
+  function fetchDevices() {
+    // Show the loading spinner
+    document.getElementById("loading-spinner").style.display = "block";
+
+    fetch(`/api/devices`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Cache the data with a timestamp
+        const cacheData = {
+          timestamp: Date.now(),
+          data: data,
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        renderDevices(data);
+      })
+      .catch((error) => console.error("Error fetching devices:", error))
+      .finally(() => {
+        // Hide the loading spinner
+        document.getElementById("loading-spinner").style.display = "none";
+      });
+  }
+
+  // Check cache
+  const cachedData = localStorage.getItem(cacheKey);
+  if (cachedData) {
+    const parsedCache = JSON.parse(cachedData);
+    const isCacheValid = Date.now() - parsedCache.timestamp < cacheExpiration;
+
+    if (isCacheValid) {
+      renderDevices(parsedCache.data);
+    } else {
+      fetchDevices(); // Cache expired, fetch new data
+    }
+  } else {
+    fetchDevices(); // No cache, fetch data
+  }
+
+  // Function to sort the table
+  function sortTable(columnIndex) {
+    const table = document.getElementById("devices-table");
+    const rows = Array.from(table.rows).slice(1); // Exclude the header row
+    const isAscending = table.getAttribute("data-sort-order") === "asc";
+    const direction = isAscending ? 1 : -1;
+
+    rows.sort((a, b) => {
+      const cellA = a.cells[columnIndex].textContent.trim();
+      const cellB = b.cells[columnIndex].textContent.trim();
+
+      // Handle numeric sorting
+      if (!isNaN(cellA) && !isNaN(cellB)) {
+        return direction * (parseFloat(cellA) - parseFloat(cellB));
+      }
+
+      // Handle string sorting
+      return direction * cellA.localeCompare(cellB);
+    });
+
+    // Append sorted rows back to the table
+    const tbody = table.querySelector("tbody");
+    rows.forEach((row) => tbody.appendChild(row));
+
+    // Toggle sort order
+    table.setAttribute("data-sort-order", isAscending ? "desc" : "asc");
+
+    // Update sort icons
+    const headers = table.querySelectorAll("th");
+    headers.forEach((header, index) => {
+      const icon = header.querySelector(".sort-icon");
+      if (icon) {
+        icon.textContent =
+          index === columnIndex ? (isAscending ? "▼" : "▲") : "▲";
+      }
+    });
+  }
+
+  // Function to export table data to Excel
+  function exportToExcel() {
+    const table = document.getElementById("devices-table");
+    const rows = Array.from(table.rows);
+    let csvContent = "\uFEFF"; // Add BOM for proper Unicode handling in Excel
+
+    rows.forEach((row) => {
+      const cells = Array.from(row.cells);
+      const rowContent = cells
+        .map((cell) => `"${cell.textContent.replace(/"/g, '""')}"`) // Escape double quotes
+        .join(",");
+      csvContent += rowContent + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `devices.csv`;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+</script>
+{% endblock %}

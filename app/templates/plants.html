@@ -1,0 +1,40 @@
+{% extends "base.html" %} {% block title %}Plants - Growatt API{% endblock %} {%
+block content %}
+<h1>Plants</h1>
+<table id="plants-table" border="1">
+  <thead>
+    <tr>
+      <th>Plant ID</th>
+      <th>Plant Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Data will be dynamically inserted here -->
+  </tbody>
+</table>
+<script>
+  fetch("/api/plants")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const plantsTableBody = document.querySelector("#plants-table tbody");
+      data.forEach((plant) => {
+        const row = document.createElement("tr");
+        const idCell = document.createElement("td");
+        const nameCell = document.createElement("td");
+
+        idCell.textContent = plant.id;
+        nameCell.textContent = plant.plantName;
+
+        row.appendChild(idCell); // Append ID cell first
+        row.appendChild(nameCell); // Append Name cell second
+        plantsTableBody.appendChild(row);
+      });
+    })
+    .catch((error) => console.error("Error fetching plants:", error));
+</script>
+{% endblock %}

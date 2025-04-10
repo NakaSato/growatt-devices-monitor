@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <title>{% block title %}Growatt API{% endblock %}</title>
+    <style>
+      nav {
+        background-color: #4caf50;
+        padding: 1rem;
+        text-align: center;
+      }
+      nav a {
+        color: white;
+        text-decoration: none;
+        margin: 0 1rem;
+        font-weight: bold;
+      }
+      nav a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/plants">Plants</a>
+        <a href="/devices">Status Devices</a>
+        <!-- <a href="/energy/daily">Daily Energy</a>
+        <a href="/energy/monthly">Monthly Energy</a>
+        <a href="/energy/yearly">Yearly Energy</a> -->
+      </nav>
+    </header>
+    <main class="container">{% block content %}{% endblock %}</main>
+    <footer
+      style="
+        background-color: #4caf50;
+        color: white;
+        text-align: center;
+        padding: 1rem;
+        margin-top: 2rem;
+      "
+    >
+      <p>&copy; 2023 Growatt API. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
