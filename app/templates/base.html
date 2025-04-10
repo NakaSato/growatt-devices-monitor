@@ -27,13 +27,49 @@
   </head>
   <body>
     <header>
-      <nav>
-        <a href="/">Home</a>
-        <a href="/plants">Plants</a>
-        <a href="/devices">Status Devices</a>
-        <!-- <a href="/energy/daily">Daily Energy</a>
-        <a href="/energy/monthly">Monthly Energy</a>
-        <a href="/energy/yearly">Yearly Energy</a> -->
+      <nav
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 1.5rem;
+          background-color: #4caf50;
+          padding: 1rem;
+          border-radius: 8px;
+        "
+      >
+        <a
+          href="/"
+          style="
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+          "
+          >Home</a
+        >
+        <a
+          href="/plants"
+          style="
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+          "
+          >Plants</a
+        >
+        <a
+          href="/devices"
+          style="
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+          "
+          >Status Devices</a
+        >
+        <!-- <a href="/energy/daily" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Daily Energy</a>
+      <a href="/energy/monthly" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Monthly Energy</a>
+      <a href="/energy/yearly" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Yearly Energy</a> -->
       </nav>
     </header>
     <main class="container">{% block content %}{% endblock %}</main>

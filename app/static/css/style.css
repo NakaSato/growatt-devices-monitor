@@ -182,7 +182,7 @@ table tbody tr:hover {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.btn-primary {
+.btn-excel {
   background-color: #4caf50; /* Green background */
   color: white; /* White text */
 }
@@ -199,4 +199,24 @@ table tbody tr:hover {
   background-color: #cccccc; /* Gray background when disabled */
   color: #666666; /* Gray text when disabled */
   cursor: not-allowed; /* Show not-allowed cursor */
+}
+
+.btn-primary {
+  background-color: #838383; /* Default blue background */
+  color: white; /* White text */
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #4caf50; /* Darker blue on hover */
+}
+
+.btn-primary:focus {
+  outline: none;
+  background-color: #4caf50; /* Green background for focused button */
+  color: white;
 }
