@@ -1,7 +1,7 @@
-# No unused imports
 import requests as re
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 class Growatt:
 
@@ -10,7 +10,6 @@ class Growatt:
         # Uncomment the following line to use the alternate URL
         # self.BASE_URL = "https://openapi.growatt.com"
         self.session = re.Session()
-        print("Session: ", re.Session)
 
     def _hash_password(self, password: str) -> str:
         """
@@ -101,7 +100,6 @@ class Growatt:
         else:
             print(f"Logout failed with status code: {res.status_code}")
             return False
-
 
     def get_plants(self):
         """

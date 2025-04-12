@@ -7,10 +7,10 @@ block content %}
     <div class="spinner border-2 border-t-2 rounded-full w-8 h-8"></div>
   </div>
 
-  <div
-    id="error-message"
-    class="hidden bg-red-50 text-red-600 px-3 py-2 mb-3"
-  ></div>
+  <div id="error-message" class="hidden bg-red-50 text-red-600 px-3 py-2 mb-3">
+    Invalid response received. Please ensure you are logged in by checking the
+    Get Access link in the navigation bar.
+  </div>
 
   <div class="overflow-x-auto rounded">
     <table id="plants-table" class="w-full">
@@ -31,6 +31,11 @@ block content %}
   const loadingElement = document.getElementById("loading");
   const errorElement = document.getElementById("error-message");
 
+  // Don't immediately show the error message, wait for fetch result
+  // Just show loading initially
+  loadingElement.classList.remove("hidden");
+  errorElement.classList.add("hidden");
+
   fetch("/api/plants")
     .then((response) => {
       if (!response.ok) {
@@ -38,13 +43,26 @@ block content %}
       }
       return response.json();
     })
-    .then((data) => {
+    .then((response) => {
+      // Hide loading and keep error hidden since fetch was successful
       loadingElement.classList.add("hidden");
+      errorElement.classList.add("hidden");
 
       const plantsTableBody = document.querySelector("#plants-table tbody");
 
-      if (data.length === 0) {
-        // Show message if no plants
+      // Check if data is in response.data (common API pattern)
+      const data = Array.isArray(response)
+        ? response
+        : response.data
+        ? response.data
+        : response.plants
+        ? response.plants
+        : [];
+
+      console.log("Plants data:", data); // For debugging
+
+      if (!Array.isArray(data) || data.length === 0) {
+        // Show message if no plants or data isn't an array
         const emptyRow = document.createElement("tr");
         const emptyCell = document.createElement("td");
         emptyCell.textContent = "No plants found";

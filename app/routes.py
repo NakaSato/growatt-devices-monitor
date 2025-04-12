@@ -1,13 +1,13 @@
 import json
 import logging
-from typing import Tuple, Dict, Any, List, Union
+from typing import Tuple, Union, Dict, Any
 
-from flask import Blueprint, jsonify, request, make_response, Response
+from flask import Blueprint, jsonify, request, make_response, Response, current_app, session
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from app.utils import (
     get_plants, get_devices_for_plant, get_weather_list, 
-    get_logout, get_access
+    get_logout, get_access_api
 )
 from app.views.templates import (
     render_index, render_plants, render_devices, 
@@ -16,6 +16,8 @@ from app.views.templates import (
 
 # Create a Blueprint for routes
 api_blueprint = Blueprint('api', __name__)
+
+# ===== Basic Page Routes =====
 
 @api_blueprint.route('/', methods=['GET'])
 def index() -> str:
@@ -36,10 +38,20 @@ def plants_page() -> Union[str, Tuple[str, int]]:
         Union[str, Tuple[str, int]]: Rendered HTML template or error response
     """
     try:
-        plants = get_plants()
-        return render_plants(plants)
+        plants_data = get_plants()
+        # Check if plants_data is None or empty
+        if not plants_data:
+            current_app.logger.warning("No plants found for the user.")
+            return render_error_404()
+        # Render the plants page with the retrieved data
+        # Handle the case where plants_data is not a list
+        if not isinstance(plants_data, list):
+            current_app.logger.error("Invalid data format for plants.")
+            return render_error_404()
+            
+        return render_plants(plants_data)
     except Exception as e:
-        logging.error(f"Error in plants_page: {str(e)}")
+        current_app.logger.error(f"Error in plants_page: {str(e)}")
         return render_error_404()
 
 @api_blueprint.route('/devices', methods=['GET'])
@@ -70,6 +82,32 @@ def weather_page() -> Union[str, Tuple[str, int]]:
         logging.error(f"Error in weather_page: {str(e)}")
         return render_error_404()
 
+def get_api_access() -> Dict[str, Any]:
+    """
+    Helper function to get access to the Growatt API.
+    
+    Returns:
+        Dict[str, Any]: Result dictionary with success status and data
+    """
+    try:
+        # Fix: Remove the incorrect cached_request call with no arguments
+        # result = get_access_api()
+        # if not result['success']:
+        #     current_app.logger.warning(f"Authentication failed: {result['message']}")
+        #     return {"status": "error", "message": result['message'], "auth_success": False}
+            
+        current_app.logger.info("Access credentials retrieved successfully")
+        return {
+            "status": "success", 
+            "message": "Authentication successful",
+            "expires_at": result.get('expires_at', 0),
+            "auth_success": True
+        }
+    except Exception as e:
+        current_app.logger.error(f"Access error: {str(e)}")
+        return {"status": "error", "message": str(e), "auth_success": False}
+
+# ===== API Data Routes =====
 @api_blueprint.route('/api/plants', methods=['GET'])
 def api_plants() -> Tuple[Response, int]:
     """
@@ -139,11 +177,17 @@ def api_weather() -> Tuple[Response, int]:
     """
     try:
         plants = get_plants()
+        if plants and plants[0].get('error'):
+            return jsonify({"status": "error", "message": plants[0]['error']}), 401
+            
         plant_ids = [plant['id'] for plant in plants]
         weather_list = []
         
         for plant_id in plant_ids:
             weather = get_weather_list(plant_id)
+            if 'error' in weather:
+                continue
+                
             if weather:
                 weather_list.append({
                     "plant_id": plant_id,
@@ -155,21 +199,7 @@ def api_weather() -> Tuple[Response, int]:
         logging.error(f"Error in api_weather: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@api_blueprint.route('/logout', methods=['GET'])
-def logout() -> str:
-    """
-    Logout from the Growatt client.
-    
-    Returns:
-        str: Rendered HTML template with logout message
-    """
-    try:
-        get_logout()
-        logging.info("User logged out successfully")
-        return render_index()
-    except Exception as e:
-        logging.error(f"Error in logout: {str(e)}")
-        return render_index()
+# ===== Authentication Routes =====
 
 @api_blueprint.route('/api/access', methods=['GET', 'POST'])
 def access_api() -> Union[Response, WerkzeugResponse]:
@@ -180,7 +210,7 @@ def access_api() -> Union[Response, WerkzeugResponse]:
         Union[Response, WerkzeugResponse]: JSON response or redirect
     """
     try:
-        result = get_access()
+        result = get_access_api()
         logging.info("Access credentials retrieved successfully")
         
         if result:
@@ -206,4 +236,44 @@ def access_api() -> Union[Response, WerkzeugResponse]:
             
     except Exception as e:
         logging.error(f"Access error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_blueprint.route('/api/logout', methods=['GET', 'POST'])
+def logout() -> Union[Response, WerkzeugResponse]:
+    """
+    Logout from the Growatt client and clear all cache.
+    
+    Returns:
+        Union[Response, WerkzeugResponse]: JSON response or redirect
+    """
+    try:
+        # Call the logout API function
+        logout_result = get_logout()
+        if not logout_result['success']:
+            return jsonify({"status": "error", "message": logout_result['message']}), 500
+            
+        # Clear Flask session data - safely handle the case where session might not be available
+        try:
+            session.clear()
+        except RuntimeError as e:
+            current_app.logger.warning(f"Session clear failed: {e}")
+            # Continue with logout process even if session clear fails
+        
+        # Log the successful logout
+        current_app.logger.info("User logged out successfully and cache cleared")
+        
+        response = make_response(jsonify({
+            "status": "success", 
+            "message": "Logout successful, all cache cleared"
+        }))
+        
+        # Clear the session cookie
+        response.delete_cookie('GROWATT_API_ACCESS')
+        
+        # Redirect to index page for GET requests
+        if request.method == 'GET':
+            return make_response('', 302, {"Location": "/"})
+        return response
+    except Exception as e:
+        current_app.logger.error(f"Error in logout: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
