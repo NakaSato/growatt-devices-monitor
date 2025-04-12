@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.DS_Store
+nginx/ssl/
+prometheus_data/
+grafana_data/

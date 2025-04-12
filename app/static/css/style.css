@@ -1,9 +1,4 @@
 /* Reset Styles */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
 
 * {
   margin: 0;
@@ -27,7 +22,7 @@ body {
 
 /* Container */
 .container {
-  max-width: 1200px;
+  max-width: 1450px;
   margin: 0 auto;
   padding: 0 1rem;
 }
@@ -40,7 +35,7 @@ header h1 {
 nav {
   display: flex;
   justify-content: center;
-  background: #005a9e;
+  background: #4caf50;
   padding: 0.5rem 0;
 }
 
@@ -57,7 +52,7 @@ nav a:hover {
 
 /* Buttons */
 button {
-  background: #0078d7;
+  background: #4caf50;
   color: #fff;
   border: none;
   padding: 0.5rem 1rem;
@@ -67,7 +62,7 @@ button {
 }
 
 button:hover {
-  background: #005a9e;
+  background: #3d8b40;
 }
 
 /* Cards */
@@ -92,7 +87,7 @@ button:hover {
 
 /* Footer */
 footer {
-  background: #333;
+  background: #4caf50;
   color: #fff;
   text-align: center;
   padding: 1rem 0;
@@ -187,22 +182,8 @@ table tbody tr:hover {
   color: white; /* White text */
 }
 
-.btn-primary:hover {
-  background-color: #45a049; /* Darker green on hover */
-}
-
-.btn-primary:active {
-  background-color: #3e8e41; /* Even darker green when clicked */
-}
-
-.btn-primary:disabled {
-  background-color: #cccccc; /* Gray background when disabled */
-  color: #666666; /* Gray text when disabled */
-  cursor: not-allowed; /* Show not-allowed cursor */
-}
-
 .btn-primary {
-  background-color: #838383; /* Default blue background */
+  background-color: #4caf50; /* Primary green background */
   color: white; /* White text */
   border: none;
   padding: 8px 12px;
@@ -212,11 +193,21 @@ table tbody tr:hover {
 }
 
 .btn-primary:hover {
-  background-color: #4caf50; /* Darker blue on hover */
+  background-color: #3d8b40; /* Darker green on hover */
 }
 
 .btn-primary:focus {
   outline: none;
-  background-color: #4caf50; /* Green background for focused button */
+  background-color: #3d8b40; /* Darker green background for focused button */
   color: white;
+}
+
+.btn-primary:active {
+  background-color: #3d8b40; /* Same darker green when clicked */
+}
+
+.btn-primary:disabled {
+  background-color: #a5d6a7; /* Lighter green when disabled */
+  color: #e8f5e9; /* Very light green text when disabled */
+  cursor: not-allowed; /* Show not-allowed cursor */
 }

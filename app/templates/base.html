@@ -3,86 +3,358 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Growatt API - Monitor your solar energy production and devices"
+    />
+    <meta
+      name="keywords"
+      content="Growatt, solar energy, monitoring, API, renewable energy"
+    />
+    <meta name="author" content="Growatt API" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="{{ request.url }}" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom CSS -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
-    <title>{% block title %}Growatt API{% endblock %}</title>
-    <style>
-      nav {
-        background-color: #4caf50;
-        padding: 1rem;
-        text-align: center;
-      }
-      nav a {
-        color: white;
-        text-decoration: none;
-        margin: 0 1rem;
-        font-weight: bold;
-      }
-      nav a:hover {
-        text-decoration: underline;
-      }
-    </style>
+
+    <title>
+      {% block title %}Growatt API - Solar Monitoring System{% endblock %}
+    </title>
+    <!-- Open Graph tags for social media sharing -->
+    <meta property="og:title" content="Growatt API - Solar Monitoring System" />
+    <meta
+      property="og:description"
+      content="Monitor and analyze your Growatt solar energy production and devices"
+    />
+    <meta property="og:url" content="{{ request.url }}" />
+    <meta property="og:type" content="website" />
+    <!-- Custom JavaScript block -->
+    {% block head_scripts %}{% endblock %}
   </head>
-  <body>
-    <header>
-      <nav
-        style="
-          display: flex;
-          justify-content: center;
-          gap: 1.5rem;
-          background-color: #4caf50;
-          padding: 1rem;
-          border-radius: 8px;
-        "
-      >
-        <a
-          href="/"
-          style="
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-          "
-          >Home</a
-        >
-        <a
-          href="/plants"
-          style="
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-          "
-          >Plants</a
-        >
-        <a
-          href="/devices"
-          style="
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-          "
-          >Status Devices</a
-        >
-        <!-- <a href="/energy/daily" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Daily Energy</a>
-      <a href="/energy/monthly" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Monthly Energy</a>
-      <a href="/energy/yearly" style="color: white; text-decoration: none; font-weight: bold; transition: color 0.3s;">Yearly Energy</a> -->
+  <body class="min-h-screen flex flex-col">
+    <header class="shadow-md mb-6">
+      <nav class="p-4">
+        <div class="container mx-auto flex justify-center gap-6">
+          <a href="/" class="text-white font-bold hover:underline">Home</a>
+          <a href="/plants" class="text-white font-bold hover:underline"
+            >Plants</a
+          >
+          <a href="/devices" class="text-white font-bold hover:underline"
+            >Status Devices</a
+          >
+          <a href="/weather" class="text-white font-bold hover:underline"
+            >Weather Status</a
+          >
+          <a
+            href="/api/access"
+            class="text-white font-bold hover:underline"
+            id="api-access-link"
+            >Get Access</a
+          >
+          <a href="/logout" class="text-white font-bold hover:underline"
+            >Logout</a
+          >
+        </div>
       </nav>
     </header>
-    <main class="container">{% block content %}{% endblock %}</main>
-    <footer
-      style="
-        background-color: #4caf50;
-        color: white;
-        text-align: center;
-        padding: 1rem;
-        margin-top: 2rem;
-      "
-    >
+
+    <main class="container mx-auto flex-grow px-4">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="text-white text-center p-4 mt-8">
       <p>&copy; 2023 Growatt API. All rights reserved.</p>
     </footer>
+
+    <!-- Toast container -->
+    <div
+      id="toast-container"
+      class="fixed top-4 right-4 z-50 flex flex-col gap-3"
+    ></div>
+
+    <!-- Vanilla Toast Tester (Only in development) -->
+    <div
+      id="toast-tester"
+      class="fixed bottom-5 right-5 z-50 bg-gray-100 p-3 rounded-lg shadow-md hidden"
+    >
+      <h4 class="text-lg font-semibold mt-0 mb-2">Toast Tester</h4>
+      <div class="flex flex-wrap gap-2">
+        <button
+          id="test-success"
+          class="bg-green-500 text-white px-3 py-1 rounded"
+        >
+          Success
+        </button>
+        <button id="test-error" class="bg-red-500 text-white px-3 py-1 rounded">
+          Error
+        </button>
+        <button id="test-info" class="bg-blue-500 text-white px-3 py-1 rounded">
+          Info
+        </button>
+        <button
+          id="test-loading"
+          class="bg-yellow-500 text-white px-3 py-1 rounded"
+        >
+          Loading
+        </button>
+        <button
+          id="test-warning"
+          class="bg-orange-500 text-white px-3 py-1 rounded"
+        >
+          Warning
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom JavaScript at end of body -->
+    {% block scripts %}{% endblock %}
+
+    <script>
+      // Toast system
+      const toastContainer = document.getElementById("toast-container");
+      let loadingToasts = {};
+
+      // Show toast function
+      function showToast(message, type = "info", duration = 3000) {
+        const toast = document.createElement("div");
+        toast.className =
+          "toast-item rounded-md px-4 py-3 shadow-lg font-medium text-white flex items-center transform translate-y-0 scale-100";
+
+        // Set toast styles based on type
+        switch (type) {
+          case "success":
+            toast.style.backgroundColor = "#10B981"; // Green-500
+            toast.innerHTML = `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>${message}`;
+            break;
+          case "error":
+            toast.style.backgroundColor = "#EF4444"; // Red-500
+            toast.innerHTML = `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>${message}`;
+            break;
+          case "warning":
+            toast.style.backgroundColor = "#F97316"; // Orange-500
+            toast.innerHTML = `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>${message}`;
+            break;
+          case "loading":
+            toast.style.backgroundColor = "#3B82F6"; // Blue-500
+            toast.innerHTML = `<div class="animate-spin mr-3 h-5 w-5 text-white"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>${message}`;
+            break;
+          default: // info
+            toast.style.backgroundColor = "#6366F1"; // Indigo-500
+            toast.innerHTML = `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>${message}`;
+        }
+
+        // Add close button to non-loading toasts
+        if (type !== "loading") {
+          const closeButton = document.createElement("button");
+          closeButton.className =
+            "ml-auto pl-3 text-white opacity-70 hover:opacity-100";
+          closeButton.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+          closeButton.onclick = () => {
+            dismissToastElement(toast);
+          };
+          toast.appendChild(closeButton);
+        }
+
+        // Add entrance animation
+        toast.style.animation = "toast-in 0.3s ease-out forwards";
+
+        toastContainer.appendChild(toast);
+
+        // For non-loading toasts, remove after duration
+        if (type !== "loading") {
+          setTimeout(() => {
+            dismissToastElement(toast);
+          }, duration);
+        }
+
+        return toast;
+      }
+
+      function dismissToastElement(toast) {
+        toast.style.animation = "toast-out 0.3s ease-in forwards";
+        setTimeout(() => {
+          if (toast.parentNode === toastContainer) {
+            toastContainer.removeChild(toast);
+          }
+        }, 300);
+      }
+
+      function showSuccessToast(message) {
+        return showToast(message, "success");
+      }
+
+      function showErrorToast(message) {
+        return showToast(message, "error");
+      }
+
+      function showInfoToast(message) {
+        return showToast(message, "info");
+      }
+
+      function showWarningToast(message) {
+        return showToast(message, "warning");
+      }
+
+      function showLoadingToast(message) {
+        const toast = showToast(message, "loading", Infinity);
+        const id = Date.now().toString();
+        loadingToasts[id] = toast;
+        return id;
+      }
+
+      function dismissToast(id) {
+        if (loadingToasts[id]) {
+          const toast = loadingToasts[id];
+          dismissToastElement(toast);
+          delete loadingToasts[id];
+        }
+      }
+
+      function testLoadingToast() {
+        const toastId = showLoadingToast("Loading...");
+        setTimeout(() => {
+          dismissToast(toastId);
+          showSuccessToast("Loading complete!");
+        }, 3000);
+      }
+
+      function handleToast(status, message) {
+        if (status === "success") {
+          showSuccessToast(message);
+        } else if (status === "error") {
+          showErrorToast(message);
+        } else if (status === "warning") {
+          showWarningToast(message);
+        } else {
+          showInfoToast(message);
+        }
+      }
+
+      // Function to handle API access
+      function requestApiAccess(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        const loadingToast = showLoadingToast("Authenticating...");
+
+        fetch("/api/access", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            dismissToast(loadingToast);
+
+            if (data.status === "success") {
+              showSuccessToast("Authentication successful");
+              // Redirect to plants page after successful authentication
+              setTimeout(() => {
+                window.location.href = "/plants";
+              }, 1000);
+            } else {
+              showErrorToast(data.message || "Failed to authenticate");
+            }
+          })
+          .catch((error) => {
+            dismissToast(loadingToast);
+            showErrorToast("Authentication error: " + error.message);
+            console.error("API access error:", error);
+          });
+      }
+
+      // Initialize the app when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set up API access link
+        const apiAccessLink = document.getElementById("api-access-link");
+        if (apiAccessLink) {
+          apiAccessLink.addEventListener("click", requestApiAccess);
+        }
+
+        // Check if we're in development mode
+        const isDevelopment =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+
+        // Show toast tester in development mode
+        if (isDevelopment) {
+          const toastTester = document.getElementById("toast-tester");
+          if (toastTester) {
+            toastTester.classList.remove("hidden");
+
+            // Set up test buttons
+            document
+              .getElementById("test-success")
+              .addEventListener("click", () =>
+                showSuccessToast("Success toast test")
+              );
+            document
+              .getElementById("test-error")
+              .addEventListener("click", () =>
+                showErrorToast("Error toast test")
+              );
+            document
+              .getElementById("test-info")
+              .addEventListener("click", () =>
+                showInfoToast("Info toast test")
+              );
+            document
+              .getElementById("test-loading")
+              .addEventListener("click", testLoadingToast);
+            document
+              .getElementById("test-warning")
+              .addEventListener("click", () =>
+                showWarningToast("Warning toast test")
+              );
+          }
+        }
+
+        // Check if we're on the API access page
+        if (window.location.pathname === "/api/access") {
+          requestApiAccess();
+        }
+      });
+
+      // Add CSS for the toast animations
+      const style = document.createElement("style");
+      style.textContent = `
+      #toast-container {
+        pointer-events: none;
+      }
+      .toast-item {
+        pointer-events: auto;
+        max-width: 350px;
+        min-width: 200px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        margin-bottom: 0.75rem;
+      }
+      
+      @keyframes toast-in {
+        0% { transform: translateY(-20px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      
+      @keyframes toast-out {
+        0% { transform: translateY(0) scale(1); opacity: 1; }
+        100% { transform: translateY(-20px) scale(0.95); opacity: 0; }
+      }
+      `;
+      document.head.appendChild(style);
+    </script>
   </body>
 </html>
