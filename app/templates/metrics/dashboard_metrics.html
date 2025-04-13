@@ -1,0 +1,825 @@
+<!-- filepath: /Users/chanthawat/Development/py-dev/growatt-api/app/templates/views/components/dashboard_metrics.html -->
+<!-- Dashboard metrics component -->
+<div class="metrics-container">
+  <div class="metrics-row">
+    <!-- Total Energy Yield Today Card -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3 class="card-title">Total Energy Yield Today</h3>
+      </div>
+      <div>
+        <p class="metric-value">45.23 kWh</p>
+        <p class="metric-comparison">+20.1% from yesterday</p>
+        <div class="metric-trend">
+          <span class="trend-icon">↑</span>
+          <span>+20.1%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Devices Card -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3 class="card-title">Total Devices</h3>
+        <span class="card-icon">🔌</span>
+      </div>
+      <div>
+        <p class="metric-value">2,350</p>
+        <p class="metric-comparison">
+          <span class="online-status">Online: 2,150</span> |
+          <span class="offline-status">Offline: 200</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Total Faults Card -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3 class="card-title">Total Faults</h3>
+        <span class="card-icon">⚠️</span>
+      </div>
+      <div>
+        <p class="metric-value">24</p>
+        <p class="metric-comparison">-19% from yesterday</p>
+        <div class="fault-breakdown">
+          <div class="fault-item">
+            <span class="fault-icon">🚫</span>
+            <span class="fault-category">Code Errors: <strong>15</strong></span>
+          </div>
+          <div class="fault-item">
+            <span class="fault-icon">⚙️</span>
+            <span class="fault-category"
+              >Device Faults: <strong>9</strong></span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Performance Card -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3 class="card-title">System Performance</h3>
+        <span class="card-icon">📈</span>
+      </div>
+      <div>
+        <p class="metric-value">98.6%</p>
+        <p class="metric-comparison">+1.4% from last week</p>
+        <div class="metric-trend">
+          <span class="trend-icon">↑</span>
+          <span>+1.4%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Energy Production Chart -->
+<div class="chart-container">
+  <div class="chart-card">
+    <div class="card-header">
+      <h3 class="card-title">Energy Yield Overview</h3>
+      <div class="chart-controls">
+        <div class="chart-period-info">
+          <span class="period-summary"
+            >Total this month: <strong>1,245.6 kWh</strong></span
+          >
+          <span class="period-comparison">+15.3% from last month</span>
+        </div>
+        <select class="chart-period-selector">
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month" selected>This Month</option>
+          <option value="year">This Year</option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="energyProductionChart"></canvas>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <span
+          class="legend-color"
+          style="background-color: rgba(16, 185, 129, 0.7)"
+        ></span>
+        <span class="legend-label">Current Period</span>
+      </div>
+      <div class="legend-item">
+        <span
+          class="legend-color"
+          style="background-color: rgba(209, 213, 219, 0.5)"
+        ></span>
+        <span class="legend-label">Previous Period</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Energy Prediction Chart -->
+<div class="chart-container prediction-chart-container">
+  <div class="chart-card">
+    <div class="card-header">
+      <h3 class="card-title">Energy Yield Prediction</h3>
+      <div class="chart-controls">
+        <div class="chart-period-info">
+          <span class="period-summary"
+            >Predicted next 7 days:
+            <strong id="prediction-total">Loading...</strong></span
+          >
+          <span class="period-comparison"
+            >Based on historical data analysis</span
+          >
+        </div>
+        <select class="prediction-period-selector">
+          <option value="7" selected>Next 7 Days</option>
+          <option value="14">Next 14 Days</option>
+          <option value="30">Next 30 Days</option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="energyPredictionChart"></canvas>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <span
+          class="legend-color"
+          style="background-color: rgba(79, 70, 229, 0.7)"
+        ></span>
+        <span class="legend-label">Predicted Energy</span>
+      </div>
+      <div class="legend-item">
+        <span
+          class="legend-color"
+          style="background-color: rgba(16, 185, 129, 0.7)"
+        ></span>
+        <span class="legend-label">Historical Energy</span>
+      </div>
+      <div class="legend-item">
+        <span
+          class="legend-color"
+          style="background-color: rgba(209, 213, 219, 0.5)"
+        ></span>
+        <span class="legend-label">Confidence Interval</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Optional: Add placeholder for additional ECharts visualizations -->
+<div class="chart-container additional-charts">
+  <div class="chart-card">
+    <div class="card-header">
+      <h3 class="card-title">Power Distribution</h3>
+    </div>
+    <div id="powerDistributionChart" style="height: 300px"></div>
+  </div>
+</div>
+
+<!-- Replace Chart.js with enhanced libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document
+      .getElementById("energyProductionChart")
+      .getContext("2d");
+
+    // Register the datalabels plugin
+    Chart.register(ChartDataLabels);
+
+    // Data with 15-minute intervals for more granular energy yield tracking
+    const chartData = {
+      labels: [
+        "00:00",
+        "00:15",
+        "00:30",
+        "00:45",
+        "01:00",
+        "01:15",
+        "01:30",
+        "01:45",
+        "02:00",
+        "02:15",
+        "02:30",
+        "02:45",
+        "03:00",
+        "03:15",
+        "03:30",
+        "03:45",
+        "04:00",
+        "04:15",
+        "04:30",
+        "04:45",
+        "05:00",
+        "05:15",
+        "05:30",
+        "05:45",
+        "06:00",
+        "06:15",
+        "06:30",
+        "06:45",
+        "07:00",
+        "07:15",
+        "07:30",
+        "07:45",
+        "08:00",
+        "08:15",
+        "08:30",
+        "08:45",
+        "09:00",
+        "09:15",
+        "09:30",
+        "09:45",
+        "10:00",
+        "10:15",
+        "10:30",
+        "10:45",
+        "11:00",
+        "11:15",
+        "11:30",
+        "11:45",
+      ],
+      datasets: [
+        {
+          label: "Current Day Energy Yield (kWh)",
+          data: [
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.2, 0.4, 0.7, 1.1, 1.5, 1.9, 2.4,
+            2.9, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.4, 6.8, 7.2, 7.6, 8.0, 8.2,
+            8.5, 8.7, 8.9, 9.1, 9.3, 9.4, 9.5, 9.6, 9.7,
+          ],
+          backgroundColor: "rgba(16, 185, 129, 0.2)",
+          borderColor: "rgba(16, 185, 129, 0.7)",
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 2,
+          pointBackgroundColor: "rgba(16, 185, 129, 0.7)",
+        },
+        {
+          label: "Previous Day Energy Yield (kWh)",
+          data: [
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.3, 0.6, 0.9, 1.3, 1.7, 2.1,
+            2.6, 3.2, 3.7, 4.2, 4.6, 5.1, 5.5, 5.9, 6.3, 6.7, 7.0, 7.3, 7.6,
+            7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 8.9, 9.0, 9.1,
+          ],
+          backgroundColor: "rgba(209, 213, 219, 0.2)",
+          borderColor: "rgba(209, 213, 219, 0.5)",
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 1,
+          pointBackgroundColor: "rgba(209, 213, 219, 0.5)",
+        },
+      ],
+    };
+
+    const config = {
+      type: "line",
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        plugins: {
+          datalabels: {
+            // Hide all datalabels
+            display: false,
+          },
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            titleColor: "#111827",
+            bodyColor: "#4b5563",
+            borderColor: "#e5e7eb",
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 6,
+            boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.05)",
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y + " kWh";
+                }
+                return label;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(243, 244, 246, 0.7)",
+              drawBorder: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6b7280",
+              font: {
+                size: 11,
+              },
+              display: true,
+            },
+            title: {
+              display: false, // Hide y-axis title
+              text: "Energy Yield (kWh)",
+              color: "#6b7280",
+              font: {
+                size: 12,
+                weight: "bold",
+              },
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6b7280",
+              font: {
+                size: 11,
+              },
+              maxRotation: 45,
+              minRotation: 45,
+              callback: function (value, index, values) {
+                return index % 8 === 0 ? this.getLabelForValue(value) : "";
+              },
+            },
+            title: {
+              display: false, // Hide x-axis title
+              text: "Time (24-hour format)",
+              color: "#6b7280",
+              font: {
+                size: 12,
+                weight: "bold",
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const energyChart = new Chart(ctx, config);
+
+    // Add chart period selector functionality
+    document
+      .querySelector(".chart-period-selector")
+      .addEventListener("change", function (e) {
+        const period = e.target.value;
+        let newLabels, newData1, newData2, summaryText;
+
+        switch (period) {
+          case "day":
+            newLabels = [
+              "00:00",
+              "00:15",
+              "00:30",
+              "00:45",
+              "01:00",
+              "01:15",
+              "01:30",
+              "01:45",
+              "02:00",
+              "02:15",
+              "02:30",
+              "02:45",
+              "03:00",
+              "03:15",
+              "03:30",
+              "03:45",
+              "04:00",
+              "04:15",
+              "04:30",
+              "04:45",
+              "05:00",
+              "05:15",
+              "05:30",
+              "05:45",
+              "06:00",
+              "06:15",
+              "06:30",
+              "06:45",
+              "07:00",
+              "07:15",
+              "07:30",
+              "07:45",
+              "08:00",
+              "08:15",
+              "08:30",
+              "08:45",
+              "09:00",
+              "09:15",
+              "09:30",
+              "09:45",
+              "10:00",
+              "10:15",
+              "10:30",
+              "10:45",
+              "11:00",
+              "11:15",
+              "11:30",
+              "11:45",
+              "12:00",
+              "12:15",
+              "12:30",
+              "12:45",
+              "13:00",
+              "13:15",
+              "13:30",
+              "13:45",
+              "14:00",
+              "14:15",
+              "14:30",
+              "14:45",
+              "15:00",
+              "15:15",
+              "15:30",
+              "15:45",
+              "16:00",
+              "16:15",
+              "16:30",
+              "16:45",
+              "17:00",
+              "17:15",
+              "17:30",
+              "17:45",
+              "18:00",
+              "18:15",
+              "18:30",
+              "18:45",
+              "19:00",
+              "19:15",
+              "19:30",
+              "19:45",
+              "20:00",
+              "20:15",
+              "20:30",
+              "20:45",
+              "21:00",
+              "21:15",
+              "21:30",
+              "21:45",
+              "22:00",
+              "22:15",
+              "22:30",
+              "22:45",
+              "23:00",
+              "23:15",
+              "23:30",
+              "23:45",
+            ];
+            newData1 = Array(96)
+              .fill(0)
+              .map((_, i) => {
+                if (i < 24 || i > 84) return 0;
+                const hour = Math.floor(i / 4);
+                const peakHour = 12;
+                const distFromPeak = Math.abs(hour - peakHour);
+                return Math.max(
+                  0,
+                  (9.7 - 0.5 * distFromPeak * distFromPeak) *
+                    (0.9 + Math.random() * 0.2)
+                ).toFixed(1);
+              });
+            newData2 = Array(96)
+              .fill(0)
+              .map((_, i) => {
+                if (i < 24 || i > 84) return 0;
+                const hour = Math.floor(i / 4);
+                const peakHour = 12;
+                const distFromPeak = Math.abs(hour - peakHour);
+                return Math.max(
+                  0,
+                  (9.1 - 0.5 * distFromPeak * distFromPeak) *
+                    (0.9 + Math.random() * 0.2)
+                ).toFixed(1);
+              });
+            summaryText = "Total today: <strong>45.23 kWh</strong>";
+            energyChart.options.scales.x.ticks.callback = function (
+              value,
+              index,
+              values
+            ) {
+              return index % 8 === 0 ? this.getLabelForValue(value) : "";
+            };
+            break;
+
+          case "week":
+            newLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            newData1 = [42.1, 45.3, 40.8, 43.5, 47.2, 38.6, 41.9];
+            newData2 = [38.2, 40.1, 37.5, 39.8, 42.3, 36.0, 37.5];
+            summaryText = "Total this week: <strong>299.4 kWh</strong>";
+            energyChart.options.scales.x.ticks.callback = null;
+            break;
+          case "month":
+            newLabels = ["1", "5", "10", "15", "20", "25", "30"];
+            newData1 = [42.5, 47.8, 52.3, 61.5, 58.2, 65.1, 70.4];
+            newData2 = [38.2, 41.5, 45.0, 52.6, 54.1, 57.3, 61.2];
+            summaryText = "Total this month: <strong>1,245.6 kWh</strong>";
+            energyChart.options.scales.x.ticks.callback = null;
+            break;
+          case "year":
+            newLabels = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            newData1 = [
+              980, 1120, 1350, 1500, 1620, 1750, 1830, 1780, 1690, 1550, 1230,
+              1050,
+            ];
+            newData2 = [
+              850, 950, 1150, 1320, 1440, 1580, 1670, 1610, 1540, 1410, 1120,
+              930,
+            ];
+            summaryText = "Total this year: <strong>15,450 kWh</strong>";
+            energyChart.options.scales.x.ticks.callback = null;
+            break;
+        }
+
+        energyChart.data.labels = newLabels;
+        energyChart.data.datasets[0].data = newData1;
+        energyChart.data.datasets[1].data = newData2;
+        energyChart.update();
+
+        document.querySelector(".period-summary").innerHTML = summaryText;
+      });
+
+    // Example of using ECharts for a secondary visualization
+    if (document.getElementById("powerDistributionChart")) {
+      const powerChart = echarts.init(
+        document.getElementById("powerDistributionChart")
+      );
+      const powerOption = {
+        tooltip: {
+          trigger: "item",
+          formatter: "{a} <br/>{b}: {c} kWh ({d}%)",
+        },
+        legend: {
+          data: ["Self-consumption", "Grid Export", "Grid Import"],
+          bottom: 10,
+        },
+        series: [
+          {
+            name: "Power Distribution",
+            type: "pie",
+            radius: ["50%", "70%"],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: "#fff",
+              borderWidth: 2,
+            },
+            label: {
+              show: false,
+              position: "center",
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: "18",
+                fontWeight: "bold",
+              },
+            },
+            labelLine: {
+              show: false,
+            },
+            data: [
+              { value: 32.5, name: "Self-consumption" },
+              { value: 12.8, name: "Grid Export" },
+              { value: 4.7, name: "Grid Import" },
+            ],
+          },
+        ],
+      };
+      powerChart.setOption(powerOption);
+
+      window.addEventListener("resize", function () {
+        powerChart.resize();
+      });
+    }
+
+    // Set up the prediction chart
+    const predictionCtx = document
+      .getElementById("energyPredictionChart")
+      .getContext("2d");
+
+    // Initialize prediction chart with placeholder data
+    const predictionChartData = {
+      labels: ["Loading..."],
+      datasets: [
+        {
+          label: "Predicted Energy Yield (kWh)",
+          data: [0],
+          backgroundColor: "rgba(79, 70, 229, 0.2)",
+          borderColor: "rgba(79, 70, 229, 0.7)",
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: "rgba(79, 70, 229, 0.7)",
+        },
+        {
+          label: "Historical Energy Yield (kWh)",
+          data: [0],
+          backgroundColor: "rgba(16, 185, 129, 0.2)",
+          borderColor: "rgba(16, 185, 129, 0.7)",
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 2,
+          pointBackgroundColor: "rgba(16, 185, 129, 0.7)",
+        },
+        {
+          label: "Upper Confidence Interval",
+          data: [0],
+          backgroundColor: "transparent",
+          borderColor: "rgba(209, 213, 219, 0.5)",
+          borderWidth: 1,
+          borderDash: [5, 5],
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+        },
+        {
+          label: "Lower Confidence Interval",
+          data: [0],
+          backgroundColor: "rgba(209, 213, 219, 0.2)",
+          borderColor: "rgba(209, 213, 219, 0.5)",
+          borderWidth: 1,
+          borderDash: [5, 5],
+          tension: 0.4,
+          fill: "-1", // Fill to the previous dataset (Upper Confidence)
+          pointRadius: 0,
+        },
+      ],
+    };
+
+    const predictionConfig = {
+      type: "line",
+      data: predictionChartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        plugins: {
+          datalabels: {
+            display: false,
+          },
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            titleColor: "#111827",
+            bodyColor: "#4b5563",
+            borderColor: "#e5e7eb",
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 6,
+            boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.05)",
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y + " kWh";
+                }
+                return label;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(243, 244, 246, 0.7)",
+              drawBorder: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6b7280",
+              font: {
+                size: 11,
+              },
+              display: true,
+            },
+            title: {
+              display: false,
+              text: "Energy Yield (kWh)",
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6b7280",
+              font: {
+                size: 11,
+              },
+            },
+            title: {
+              display: false,
+              text: "Date",
+            },
+          },
+        },
+      },
+    };
+
+    const predictionChart = new Chart(predictionCtx, predictionConfig);
+
+    // Function to fetch prediction data
+    function fetchPredictionData(days = 7) {
+      fetch(
+        `/api/energy/prediction?days=${days}&plantId={{ plant_id }}&mixSn={{ mix_sn }}`
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          updatePredictionChart(predictionChart, data);
+
+          // Update total prediction text
+          const totalPredicted = data.predictions
+            .reduce((sum, val) => sum + val, 0)
+            .toFixed(1);
+          document.getElementById(
+            "prediction-total"
+          ).textContent = `${totalPredicted} kWh`;
+        })
+        .catch((error) => {
+          console.error("Error fetching prediction data:", error);
+          // Show error message on chart
+          predictionChart.data.labels = ["Error loading prediction data"];
+          predictionChart.data.datasets.forEach((dataset) => {
+            dataset.data = [0];
+          });
+          predictionChart.update();
+        });
+    }
+
+    // Function to update prediction chart with new data
+    function updatePredictionChart(chart, data) {
+      chart.data.labels = data.dates;
+      chart.data.datasets[0].data = data.predictions;
+      chart.data.datasets[1].data = data.historical;
+      chart.data.datasets[2].data = data.upper_bound;
+      chart.data.datasets[3].data = data.lower_bound;
+      chart.update();
+    }
+
+    // Initialize with 7-day prediction data
+    fetchPredictionData(7);
+
+    // Add prediction period selector functionality
+    document
+      .querySelector(".prediction-period-selector")
+      .addEventListener("change", function (e) {
+        const days = parseInt(e.target.value);
+        fetchPredictionData(days);
+      });
+  });
+</script>

@@ -15,13 +15,25 @@
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="{{ request.url }}" />
 
+    <!-- Google Fonts - Noto Sans Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 
     <!-- Custom CSS -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard.css') }}"
     />
 
     <title>
@@ -52,6 +64,7 @@
           <a href="/weather" class="text-white font-bold hover:underline"
             >Weather Status</a
           >
+          {% if not authenticated %}
           <a
             href="/api/access"
             id="api-access-link"
@@ -59,6 +72,7 @@
           >
             Get Access
           </a>
+          {% endif %}
           <a
             href="javascript:void(0);"
             onclick="clearCacheAndLogout()"

@@ -44,6 +44,13 @@ block content %}
       return response.json();
     })
     .then((response) => {
+      // Check if response contains an error
+      if (response.length === 1 && response[0].error) {
+        // Handle API error response
+        const errorData = response[0];
+        throw new Error(errorData.ui_message || errorData.error);
+      }
+
       // Hide loading and keep error hidden since fetch was successful
       loadingElement.classList.add("hidden");
       errorElement.classList.add("hidden");
