@@ -1,169 +1,436 @@
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime, timedelta
+import time
+import json
 
-# Remove Flask imports that are causing problems
-# from flask import current_app, Flask
+# Fix the imports from app.core.growatt - use Growatt class instead of GrowattAPI
+from app.core.growatt import Growatt
+from app.config import Config  # Import the Config class
 
-from app.core.growatt import (
-    get_plants, get_devices_for_plant, get_weather_list,
-    api
-)
 from app.database import DatabaseConnector
 
+# Configure logging
 logger = logging.getLogger(__name__)
 
 class GrowattDataCollector:
     """Collects data from Growatt API and stores it in the database"""
     
-    def __init__(self):
-        """Initialize the data collector with database connector"""
+    def __init__(self, username=None, password=None, data_dir=None, save_to_file=False):
+        """
+        Initialize the data collector with database connector
+        
+        Args:
+            username: Optional username to override Config
+            password: Optional password to override Config
+            data_dir: Optional directory to save data files
+            save_to_file: Whether to save data to files
+        """
         self.db = DatabaseConnector()
         self.authenticated = False
+        self.retry_count = 3
+        self.retry_delay = 2  # seconds
+        # Initialize the API client
+        self.api = Growatt()
+        
+        # Store credentials
+        self.username = username or Config.GROWATT_USERNAME
+        self.password = password or Config.GROWATT_PASSWORD
+        
+        # JSON data collection
+        self.collect_json = False
+        self.json_data = []
+        
+        # File saving options
+        self.data_dir = data_dir
+        self.save_to_file = save_to_file
     
-    def authenticate(self) -> bool:
-        """Authenticate with the Growatt API"""
+    def enable_json_collection(self):
+        """Enable collection of raw JSON data"""
+        self.collect_json = True
+        self.json_data = []
+    
+    def _add_json_data(self, data_type: str, data: Any, plant_id: str = None, 
+                       device_sn: str = None, source: str = None):
+        """
+        Add JSON data to the collection if enabled
+        
+        Args:
+            data_type: Type of data (plants, devices, energy, weather)
+            data: Data to store (will be converted to JSON)
+            plant_id: Optional plant ID
+            device_sn: Optional device serial number
+            source: Optional source identifier
+        """
+        if not self.collect_json:
+            return
+            
         try:
-            # Modify the get_access_api to not require Flask context
-            from app.core.growatt import api, GROWATT_USERNAME, GROWATT_PASSWORD
-            
-            # Directly use the API login method instead of get_access_api
-            login_result = api.login(GROWATT_USERNAME, GROWATT_PASSWORD)
-            
-            if not login_result:
-                logger.error("Authentication failed: Invalid credentials or API error")
-                return False
-                
-            self.authenticated = True
-            logger.info("Successfully authenticated with Growatt API")
-            return True
+            # Handle data serialization with unicode characters
+            content = json.dumps(data, ensure_ascii=False)
+            self.json_data.append({
+                'type': data_type,
+                'content': content,
+                'plant_id': plant_id,
+                'device_sn': device_sn,
+                'source': source,
+                'timestamp': datetime.now().isoformat()
+            })
         except Exception as e:
-            logger.error(f"Authentication error: {str(e)}")
+            logger.error(f"Error adding JSON data: {str(e)}")
+    
+    def authenticate(self):
+        """
+        Authenticate with the Growatt API
+        
+        Returns:
+            bool: True if authentication was successful, False otherwise
+        """
+        # Validate credentials before attempting authentication
+        if not self.username or not self.password:
+            logger.error("Authentication failed: Missing credentials. Please check your configuration.")
             return False
+            
+        logger.debug(f"Attempting authentication with username: {self.username}")
+        
+        for attempt in range(self.retry_count):
+            try:
+                # Use the API instance with explicitly checked credentials
+                login_result = self.api.login(username=self.username, 
+                                              password=self.password)
+                
+                if not login_result:
+                    logger.error("Authentication failed: Invalid credentials or API error")
+                    if attempt < self.retry_count - 1:
+                        logger.info(f"Retrying authentication (attempt {attempt + 2}/{self.retry_count})")
+                        time.sleep(self.retry_delay)
+                    continue
+                    
+                self.authenticated = True
+                logger.info("Successfully authenticated with Growatt API")
+                return True
+            except Exception as e:
+                logger.error(f"Authentication error (attempt {attempt + 1}/{self.retry_count}): {str(e)}")
+                logger.debug(f"Authentication error details: ", exc_info=True)
+                if attempt < self.retry_count - 1:
+                    logger.info(f"Retrying authentication in {self.retry_delay} seconds")
+                    time.sleep(self.retry_delay)
+        
+        logger.error(f"Authentication failed after {self.retry_count} attempts")
+        return False
     
     def _safe_api_call(self, func, *args, **kwargs):
-        """Safely call API functions that might require Flask app context"""
-        try:
-            # Try direct call first, since we're not requiring Flask context
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error in API call: {str(e)}")
-            raise
+        """
+        Safely call API functions with retry logic
+        
+        Args:
+            func: Function to call
+            *args: Arguments to pass to the function
+            **kwargs: Keyword arguments to pass to the function
+            
+        Returns:
+            The result of the function call
+            
+        Raises:
+            Exception: If all retry attempts fail
+        """
+        func_name = getattr(func, '__name__', str(func))
+        logger.debug(f"Calling API function: {func_name} with args: {args} and kwargs: {kwargs}")
+        
+        for attempt in range(self.retry_count):
+            try:
+                result = func(*args, **kwargs)
+                
+                # Debug log the response (truncated if too large)
+                result_str = str(result)
+                if len(result_str) > 1000:
+                    result_str = result_str[:1000] + "... [truncated]"
+                logger.debug(f"API response for {func_name}: {result_str}")
+                
+                # Store JSON data if collection is enabled
+                if self.collect_json:
+                    # Extract metadata from function and args to determine data type
+                    data_type = 'unknown'
+                    plant_id = None
+                    device_sn = None
+                    
+                    if 'plant' in func_name.lower():
+                        data_type = 'plants'
+                    elif 'device' in func_name.lower():
+                        data_type = 'devices'
+                        if len(args) > 0:
+                            plant_id = args[0]
+                    elif 'energy' in func_name.lower():
+                        data_type = 'energy'
+                        if kwargs.get('plant_id'):
+                            plant_id = kwargs.get('plant_id')
+                        if kwargs.get('device_sn'):
+                            device_sn = kwargs.get('device_sn')
+                    elif 'weather' in func_name.lower():
+                        data_type = 'weather'
+                        if len(args) > 0:
+                            plant_id = args[0]
+                    
+                    self._add_json_data(
+                        data_type=data_type,
+                        data=result,
+                        plant_id=plant_id,
+                        device_sn=device_sn,
+                        source=func_name
+                    )
+                
+                # Check for common API error patterns
+                if isinstance(result, dict):
+                    if result.get('error') or result.get('result') == False or result.get('success') == False:
+                        error_msg = result.get('msg', 'Unknown API error')
+                        logger.error(f"API error in response: {error_msg}")
+                        
+                        # Check if session expired
+                        if 'session' in error_msg.lower() or 'login' in error_msg.lower() or 'auth' in error_msg.lower():
+                            logger.info("Session may have expired, attempting to re-authenticate")
+                            if self.authenticate():
+                                logger.info("Re-authentication successful, retrying API call")
+                                continue
+                
+                return result
+            except Exception as e:
+                logger.error(f"API call error (attempt {attempt + 1}/{self.retry_count}): {str(e)}")
+                logger.debug("Exception details:", exc_info=True)
+                
+                if attempt < self.retry_count - 1:
+                    logger.info(f"Retrying API call in {self.retry_delay} seconds")
+                    time.sleep(self.retry_delay)
+                    
+                    # If this is the second attempt, try re-authenticating
+                    if attempt == 1:
+                        logger.info("Attempting to re-authenticate before retry")
+                        if self.authenticate():
+                            logger.info("Re-authentication successful")
+        
+        logger.critical(f"Failed to call {func_name} after {self.retry_count} attempts")
+        return None  # Return None instead of raising to allow partial data collection
     
-    def collect_and_store_all_data(self) -> Dict[str, Any]:
-        """Collect and store all data from Growatt API"""
+    def collect_and_store_all_data(self, days_back: int = 7, include_weather: bool = True) -> Dict[str, Any]:
+        """
+        Collect and store all data from Growatt API
+        
+        Args:
+            days_back: Number of days of historical data to collect
+            include_weather: Whether to collect weather data
+            
+        Returns:
+            dict: Collection results with success status and statistics
+        """
+        # Check if credentials exist before attempting authentication
+        if not self.username or not self.password:
+            logger.error("Authentication failed: Missing credentials")
+            return {"success": False, "message": "Authentication failed: Missing credentials"}
+            
         if not self.authenticated and not self.authenticate():
-            return {"success": False, "message": "Authentication failed"}
+            logger.error("Authentication failed: Invalid credentials or API error")
+            return {"success": False, "message": "Authentication failed: Invalid credentials or API error"}
             
         results = {
             "plants": 0,
             "devices": 0,
             "energy_stats": 0,
             "weather": 0,
-            "errors": []
+            "errors": [],
+            "skipped_plants": [],
+            "skipped_devices": []
         }
         
+        # Reset JSON data collection
+        if self.collect_json:
+            self.json_data = []
+        
         try:
-            # Collect and store plant data using safe API call
-            plants = self._safe_api_call(get_plants)
-            if not plants or not isinstance(plants, list):
-                return {"success": False, "message": "Failed to retrieve plants"}
+            # Use the api instance to get plants
+            logger.info("Fetching plant list from API")
+            plants = self._safe_api_call(self.api.get_plants)
+            
+            # Save raw plant data for debugging if needed
+            try:
+                with open('debug_plants_data.json', 'w') as f:
+                    json.dump(plants, f, indent=2)
+                logger.debug("Saved raw plants data to debug_plants_data.json")
+            except Exception as e:
+                logger.debug(f"Could not save debug data: {e}")
+            
+            if not plants:
+                logger.error("No plants data returned from API")
+                return {"success": False, "message": "No plants data returned from API"}
                 
+            if not isinstance(plants, list):
+                logger.error(f"Unexpected plants data format: {type(plants)}")
+                return {"success": False, "message": f"Unexpected plants data format: {type(plants)}"}
+            
+            if len(plants) == 0:
+                logger.warning("Plants list is empty")
+            
+            logger.info(f"Successfully retrieved {len(plants)} plants")
+            
             plant_store_result = self.db.save_plant_data(plants)
             if plant_store_result:
                 results["plants"] = len(plants)
             
             # For each plant, collect and store devices, energy data, and weather
-            for plant in plants:
+            for plant_index, plant in enumerate(plants):
                 plant_id = plant.get('id')
+                plant_name = plant.get('name', 'Unknown')
                 if not plant_id:
+                    logger.warning(f"Skipping plant with no ID: {plant}")
+                    results["skipped_plants"].append(f"Missing ID: {plant_name}")
                     continue
                 
-                # Collect and store device data with safe API call
-                devices = self._safe_api_call(get_devices_for_plant, plant_id)
-                if isinstance(devices, list):
-                    device_data = devices
-                elif isinstance(devices, dict) and 'datas' in devices:
-                    device_data = devices.get('datas', [])
-                else:
-                    device_data = []
+                logger.info(f"Processing plant {plant_index+1}/{len(plants)}: {plant_name} (ID: {plant_id})")
                 
-                # Transform device data to match database schema
-                transformed_devices = []
-                for device in device_data:
-                    transformed_devices.append({
-                        "serial_number": device.get('sn'),
-                        "plant_id": plant_id,
-                        "alias": device.get('alias', ''),
-                        "type": device.get('deviceTypeName', ''),
-                        "status": device.get('status', '')
-                    })
-                if transformed_devices:
-                    device_store_result = self.db.save_device_data(transformed_devices)
-                    if device_store_result:
-                        results["devices"] += len(transformed_devices)
-                
-                # Collect energy data for each device
-                for device in device_data:
-                    sn = device.get('sn')
-                    if not sn:
-                        continue
+                try:
+                    # Use the api instance to get devices
+                    logger.info(f"Fetching devices for plant {plant_id}")
+                    devices = self._safe_api_call(self.api.get_device_list, plant_id)
                     
-                    # Get daily energy data for the past 7 days
-                    self._collect_device_energy_data(plant_id, sn, results)
-                
-                # Collect and store weather data
-                weather = self._safe_api_call(get_weather_list, plant_id)
-                if weather and not weather.get('error'):
-                    today = datetime.now().strftime('%Y-%m-%d')
+                    # Save raw device data for debugging if needed
+                    try:
+                        with open(f'debug_devices_plant_{plant_id}.json', 'w') as f:
+                            json.dump(devices, f, indent=2)
+                    except Exception as e:
+                        logger.debug(f"Could not save debug device data: {e}")
                     
-                    # Extract weather info, format varies based on API response structure
-                    temp = None
-                    condition = None
+                    if isinstance(devices, list):
+                        device_data = devices
+                    elif isinstance(devices, dict) and 'datas' in devices:
+                        device_data = devices.get('datas', [])
+                    else:
+                        device_data = []
                     
-                    if isinstance(weather, dict):
-                        temp = weather.get('temperature')
-                        condition = weather.get('weather')
-                    # Collect and store weather data
-                    if isinstance(weather, dict):
-                        if temp is not None or condition is not None:
-                            result = self.db.save_weather_data(
-                                plant_id=plant_id,
-                                date=today,
-                                temperature=temp,
-                                condition=condition
-                            )
-                            if result:
-                                results["weather"] += 1
+                    # Transform device data to match database schema
+                    transformed_devices = []
+                    for device in device_data:
+                        transformed_devices.append({
+                            "serial_number": device.get('sn'),
+                            "plant_id": plant_id,
+                            "alias": device.get('alias', ''),
+                            "type": device.get('deviceTypeName', ''),
+                            "status": device.get('status', '')
+                        })
+                    
+                    if transformed_devices:
+                        device_store_result = self.db.save_device_data(transformed_devices)
+                        if device_store_result:
+                            results["devices"] += len(transformed_devices)
+                    
+                    # Collect energy data for each device - continue even if some devices fail
+                    for device_index, device in enumerate(device_data):
+                        sn = device.get('sn')
+                        device_alias = device.get('alias', 'Unknown')
+                        if not sn:
+                            logger.warning(f"Skipping device with no serial number: {device}")
+                            results["skipped_devices"].append(f"Missing SN: {device_alias} in plant {plant_name}")
+                            continue
+                        
+                        try:
+                            logger.info(f"Collecting energy data for device {device_index+1}/{len(device_data)}: {device_alias} (SN: {sn})")
+                            # Get energy data for the specified number of days
+                            self._collect_device_energy_data(plant_id, sn, results, days_back)
+                        except Exception as device_err:
+                            error_msg = f"Error processing device {sn} ({device_alias}): {str(device_err)}"
+                            logger.error(error_msg)
+                            results["errors"].append(error_msg)
+                            # Continue with next device
+                    
+                    # Collect and store weather data if requested - don't let failure stop the process
+                    if include_weather:
+                        try:
+                            logger.info(f"Collecting weather data for plant {plant_id}")
+                            self._collect_weather_data(plant_id, results)
+                        except Exception as weather_err:
+                            error_msg = f"Weather data error for plant {plant_id} ({plant_name}): {str(weather_err)}"
+                            logger.error(error_msg)
+                            results["errors"].append(error_msg)
+                    
+                except Exception as plant_err:
+                    error_msg = f"Error processing plant {plant_id} ({plant_name}): {str(plant_err)}"
+                    logger.error(error_msg)
+                    results["errors"].append(error_msg)
+                    # Continue with next plant
+            
+            # Add JSON data to results if collection is enabled
+            if self.collect_json:
+                results["json_data"] = self.json_data
+                logger.info(f"Collected {len(self.json_data)} JSON data items")
+            
+            # Data collection is a success if we got any data, even with some errors
+            success = results["plants"] > 0 or results["devices"] > 0 or results["energy_stats"] > 0
+            message = "Data collection completed successfully"
+            if results["errors"]:
+                message = "Data collection completed with some errors"
                 
-                return {"success": True, "results": results}
+            return {
+                "success": success, 
+                "results": results,
+                "message": message,
+                "json_data": self.json_data if self.collect_json else None
+            }
         except Exception as e:
-            logger.error(f"Error collecting data: {str(e)}")
+            logger.error(f"Error collecting data: {str(e)}", exc_info=True)
             results["errors"].append(str(e))
-            return {"success": False, "message": str(e), "partial_results": results}
+            
+            # Add JSON data to results even on failure if collection is enabled
+            if self.collect_json:
+                results["json_data"] = self.json_data
+            
+            # Return partial results even on failure
+            return {
+                "success": False, 
+                "message": str(e), 
+                "results": results,
+                "has_partial_data": results["plants"] > 0 or results["devices"] > 0 or results["energy_stats"] > 0,
+                "json_data": self.json_data if self.collect_json else None
+            }
     
-    def _collect_device_energy_data(self, plant_id: str, device_sn: str, results: Dict[str, Any]) -> None:
-        """Collect energy data for a specific device"""
+    def _collect_device_energy_data(self, plant_id: str, device_sn: str, 
+                                    results: Dict[str, Any], days_back: int = 7) -> None:
+        """
+        Collect energy data for a specific device
+        
+        Args:
+            plant_id: Plant ID
+            device_sn: Device serial number
+            results: Results dictionary to update
+            days_back: Number of days of historical data to collect
+        """
         try:
-            # Get data for the last 7 days
+            # Get data for the specified number of days
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=7)
+            start_date = end_date - timedelta(days=days_back)
             
             # Format dates for API
             start_date_str = start_date.strftime('%Y-%m-%d')
             end_date_str = end_date.strftime('%Y-%m-%d')
             
-            # Call Growatt API to get energy data
-            energy_data = self._safe_api_call(api.get_energy_stats,
+            logger.debug(f"Fetching energy data for device {device_sn} from {start_date_str} to {end_date_str}")
+            
+            # Call Growatt API to get energy data - use self.api instance
+            energy_data = self._safe_api_call(self.api.get_energy_stats,
                                               plant_id=plant_id,
                                               device_sn=device_sn,
                                               start_date=start_date_str,
                                               end_date=end_date_str)
+            
+            # Save raw energy data for debugging
+            try:
+                with open(f'debug_energy_device_{device_sn}.json', 'w') as f:
+                    json.dump(energy_data, f, indent=2)
+            except Exception as e:
+                logger.debug(f"Could not save debug energy data: {e}")
+            
             if not energy_data:
                 logger.warning(f"No energy data returned for device {device_sn}")
                 return
                 
             # Process energy data
+            batch_data = []
             if isinstance(energy_data, dict) and 'data' in energy_data:
                 data_points = energy_data.get('data', [])
                 
@@ -173,15 +440,103 @@ class GrowattDataCollector:
                     peak_power = data_point.get('peak_power')
                     
                     if date and energy is not None:
-                        result = self.db.save_energy_data(
-                            plant_id=plant_id,
-                            mix_sn=device_sn,
-                            date=date,
-                            daily_energy=float(energy),
-                            peak_power=peak_power
-                        )
-                        if result:
-                            results["energy_stats"] += 1
+                        batch_data.append({
+                            'plant_id': plant_id,
+                            'mix_sn': device_sn,
+                            'date': date,
+                            'daily_energy': float(energy),
+                            'peak_power': peak_power
+                        })
+            
+            # Save batch data for better performance
+            if batch_data:
+                saved_count = self.db.save_energy_data_batch(batch_data)
+                results["energy_stats"] += saved_count
+                logger.info(f"Saved {saved_count} energy records for device {device_sn}")
+            else:
+                logger.warning(f"No valid energy data points found for device {device_sn}")
+                
         except Exception as e:
             logger.error(f"Error collecting energy data for device {device_sn}: {str(e)}")
             results["errors"].append(f"Device {device_sn}: {str(e)}")
+            # Continue processing - don't re-raise the exception
+    
+    def _collect_weather_data(self, plant_id: str, results: Dict[str, Any]) -> None:
+        """
+        Collect weather data for a plant
+        
+        Args:
+            plant_id: Plant ID
+            results: Results dictionary to update
+        """
+        try:
+            # Use the api instance for weather data
+            weather = self._safe_api_call(self.api.get_weather, plant_id)
+            if not weather or weather.get('error'):
+                logger.warning(f"No weather data available for plant {plant_id}")
+                return
+                
+            today = datetime.now().strftime('%Y-%m-%d')
+            
+            # Extract weather info, format varies based on API response structure
+            temp = None
+            condition = None
+            
+            if isinstance(weather, dict):
+                temp = weather.get('temperature')
+                condition = weather.get('weather')
+                
+                if temp is not None or condition is not None:
+                    result = self.db.save_weather_data(
+                        plant_id=plant_id,
+                        date=today,
+                        temperature=temp,
+                        condition=condition
+                    )
+                    if result:
+                        results["weather"] += 1
+        except Exception as e:
+            logger.error(f"Error collecting weather data for plant {plant_id}: {str(e)}")
+            results["errors"].append(f"Weather for plant {plant_id}: {str(e)}")
+
+    def _collect_plants_data(self, results: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Collect plants data from Growatt API
+        
+        Args:
+            results: Results dictionary to update
+            
+        Returns:
+            List of plant data dictionaries
+        """
+        logger.info("Fetching plant list from API")
+        plants = self._safe_api_call(self.api.get_plants)
+        
+        # Save raw plant data for debugging if needed
+        try:
+            with open('debug_plants_data.json', 'w') as f:
+                json.dump(plants, f, indent=2)
+            logger.debug("Saved raw plants data to debug_plants_data.json")
+        except Exception as e:
+            logger.debug(f"Could not save debug data: {e}")
+        
+        if not plants:
+            logger.error("No plants data returned from API")
+            results["errors"].append("No plants data returned from API")
+            return []
+            
+        if not isinstance(plants, list):
+            logger.error(f"Unexpected plants data format: {type(plants)}")
+            results["errors"].append(f"Unexpected plants data format: {type(plants)}")
+            return []
+        
+        if len(plants) == 0:
+            logger.warning("Plants list is empty")
+        
+        logger.info(f"Successfully retrieved {len(plants)} plants")
+        
+        plant_store_result = self.db.save_plant_data(plants)
+        if plant_store_result:
+            results["plants"] = len(plants)
+            
+        return plants
