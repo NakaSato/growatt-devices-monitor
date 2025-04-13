@@ -1,10 +1,8 @@
 import os
-import json
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional, Union
 from app.core.growatt import Growatt
 from flask import current_app
 import time
-import logging
 
 
 # Login credentials from environment variables (with fallbacks for development)
