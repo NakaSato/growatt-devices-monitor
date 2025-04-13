@@ -4,6 +4,7 @@ Routes for manual data collection and database management
 
 import logging
 import subprocess
+import sys
 from flask import Blueprint, jsonify, request, current_app
 from typing import Tuple, Dict, Any
 
@@ -21,9 +22,6 @@ def collect_data() -> Tuple[Dict[str, Any], int]:
         Tuple[Dict[str, Any], int]: JSON response with collection results and status code
     """
     try:
-        # Get parameters from request
-        params = request.get_json() or {}
-        
         # Initialize collector and run collection
         collector = GrowattDataCollector()
         result = collector.collect_and_store_all_data()

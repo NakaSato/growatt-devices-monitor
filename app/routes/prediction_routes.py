@@ -13,7 +13,7 @@ prediction_routes = Blueprint('prediction', __name__, url_prefix='/api/predictio
 db_connector = DatabaseConnector()
 energy_predictor = EnergyPredictor(db_connector=db_connector)
 
-@prediction_routes.route('/', methods=['GET'])
+@prediction_routes.route('/a', methods=['GET'])
 def get_predictions() -> Tuple[Dict[str, Any], int]:
     """
     Get energy production predictions for a plant
@@ -192,4 +192,174 @@ def store_api_data() -> Tuple[Dict[str, Any], int]:
         
     except Exception as e:
         current_app.logger.error(f"Error storing API data: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@prediction_routes.route('/latest', methods=['GET'])
+def get_latest_predictions() -> Tuple[Dict[str, Any], int]:
+    """
+    Get the latest energy production predictions for a plant from the database
+    
+    Query parameters:
+        plant_id: The ID of the plant
+        device_sn: (Optional) The serial number of the device
+        limit: (Optional) Maximum number of predictions to return (default: 7)
+    
+    Returns:
+        Tuple[Dict[str, Any], int]: JSON response with prediction data and status code
+    """
+    try:
+        # Get parameters from request
+        plant_id = request.args.get('plant_id')
+        mix_sn = request.args.get('device_sn')
+        limit = int(request.args.get('limit', 7))
+        
+        if not plant_id:
+            return jsonify({"status": "error", "message": "Plant ID is required"}), 400
+        
+        # Build query based on parameters
+        query = """
+            SELECT prediction_date, energy_predicted, lower_bound, upper_bound
+            FROM predictions
+            WHERE plant_id = ?
+        """
+        params = [plant_id]
+        
+        if mix_sn:
+            query += " AND mix_sn = ?"
+            params.append(mix_sn)
+        
+        query += " ORDER BY prediction_date ASC LIMIT ?"
+        params.append(limit)
+        
+        # Execute the query
+        predictions = db_connector.query(query, tuple(params))
+        
+        if not predictions:
+            # Generate new predictions if none exist
+            prediction_data = energy_predictor.predict_energy(plant_id, mix_sn, limit)
+            return jsonify(prediction_data), 200
+        
+        # Format the result
+        result = {
+            "plant_id": plant_id,
+            "device_sn": mix_sn,
+            "dates": [],
+            "predictions": [],
+            "lower_bound": [],
+            "upper_bound": []
+        }
+        
+        for pred in predictions:
+            result["dates"].append(pred["prediction_date"])
+            result["predictions"].append(pred["energy_predicted"])
+            result["lower_bound"].append(pred["lower_bound"])
+            result["upper_bound"].append(pred["upper_bound"])
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting latest predictions: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@prediction_routes.route('/compare', methods=['GET'])
+def compare_prediction_actual() -> Tuple[Dict[str, Any], int]:
+    """
+    Compare predicted energy production with actual production
+    
+    Query parameters:
+        plant_id: The ID of the plant
+        device_sn: (Optional) The serial number of the device
+        days: (Optional) Number of days to look back (default: 7)
+    
+    Returns:
+        Tuple[Dict[str, Any], int]: JSON response with comparison data and status code
+    """
+    try:
+        # Get parameters from request
+        plant_id = request.args.get('plant_id')
+        mix_sn = request.args.get('device_sn')
+        days = int(request.args.get('days', 7))
+        
+        if not plant_id:
+            return jsonify({"status": "error", "message": "Plant ID is required"}), 400
+        
+        # Get dates for the period
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days)
+        
+        # Query actual energy data
+        actual_query = """
+            SELECT date, daily_energy 
+            FROM energy_stats 
+            WHERE plant_id = ? AND date >= ? AND date <= ?
+        """
+        params = [plant_id, start_date.isoformat(), end_date.isoformat()]
+        
+        if mix_sn:
+            actual_query += " AND mix_sn = ?"
+            params.append(mix_sn)
+            
+        actual_query += " ORDER BY date ASC"
+        actual_data = db_connector.query(actual_query, tuple(params))
+        
+        # Query prediction data for the same period
+        pred_query = """
+            SELECT prediction_date, energy_predicted 
+            FROM predictions 
+            WHERE plant_id = ? AND prediction_date >= ? AND prediction_date <= ?
+        """
+        pred_params = [plant_id, start_date.isoformat(), end_date.isoformat()]
+        
+        if mix_sn:
+            pred_query += " AND mix_sn = ?"
+            pred_params.append(mix_sn)
+            
+        pred_query += " ORDER BY prediction_date ASC"
+        pred_data = db_connector.query(pred_query, tuple(pred_params))
+        
+        # Prepare result data
+        result = {
+            "plant_id": plant_id,
+            "device_sn": mix_sn,
+            "dates": [],
+            "actual": [],
+            "predicted": [],
+            "accuracy": []
+        }
+        
+        # Create a dictionary of predictions by date for easy lookup
+        predictions_by_date = {p["prediction_date"]: p["energy_predicted"] for p in pred_data}
+        
+        # Combine actual and predicted data
+        for record in actual_data:
+            date = record["date"]
+            actual = record["daily_energy"]
+            predicted = predictions_by_date.get(date, None)
+            
+            result["dates"].append(date)
+            result["actual"].append(actual)
+            
+            if predicted is not None:
+                result["predicted"].append(predicted)
+                # Calculate accuracy: 1 - abs((actual - predicted) / actual) if actual > 0
+                if actual > 0:
+                    accuracy = 1 - min(1, abs((actual - predicted) / actual))
+                    result["accuracy"].append(round(accuracy, 2))
+                else:
+                    result["accuracy"].append(None)
+            else:
+                result["predicted"].append(None)
+                result["accuracy"].append(None)
+        
+        # Calculate overall accuracy
+        valid_accuracies = [acc for acc in result["accuracy"] if acc is not None]
+        if valid_accuracies:
+            result["overall_accuracy"] = round(sum(valid_accuracies) / len(valid_accuracies), 2)
+        else:
+            result["overall_accuracy"] = None
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error comparing predictions: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
