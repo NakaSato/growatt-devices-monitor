@@ -48,6 +48,185 @@ A Python application for collecting, analyzing, and visualizing data from Growat
    python data_sync.py --init
    ```
 
+## Growatt API Data Sync
+
+A tool to sync data from Growatt solar inverter API to a local SQLite database.
+
+### Prerequisites
+
+- Python 3.6 or higher
+- Required Python packages:
+  - requests
+  - sqlite3 (usually included with Python)
+
+You can install the required packages using:
+
+```bash
+pip install requests
+```
+
+### First-time Setup
+
+Before using the sync tool, you need to initialize the data storage and configuration:
+
+```bash
+python3 data_sync.py --init
+```
+
+This will:
+
+- Create the necessary directory structure
+- Generate a configuration file (`growatt_sync_config.json`)
+- Set up the SQLite database
+
+After initialization, you need to edit the config file to add your Growatt API credentials:
+
+```bash
+nano growatt_sync_config.json
+```
+
+Update the `api_settings` section with your username and password:
+
+```json
+"api_settings": {
+  "url": "https://server.growatt.com",
+  "username": "your_username",
+  "password": "your_password",
+  "max_retries": 3,
+  "retry_delay": 5
+}
+```
+
+### Regular Data Sync
+
+To sync data from the Growatt API to your local database:
+
+```bash
+python3 data_sync.py
+```
+
+This will:
+
+- Log in to the Growatt API using your credentials
+- Fetch plant, device, energy, and weather data
+- Store the data in the SQLite database
+- Create a backup of the database before making changes
+
+### Database Setup Only
+
+If you need to reset or recreate just the database:
+
+```bash
+python3 data_sync.py --setup-db
+```
+
+This will create the required tables in the SQLite database without changing other files.
+
+### Advanced Options
+
+#### Verbose Logging
+
+For more detailed logging information:
+
+```bash
+python3 data_sync.py --verbose
+```
+
+#### Custom Data Directory
+
+To specify a custom directory for data storage during initialization:
+
+```bash
+python3 data_sync.py --init --dir /path/to/custom/directory
+```
+
+### Using the Wrapper Script
+
+For automated use (e.g., in cron jobs), the `run_sync.sh` script provides additional features:
+
+```bash
+./run_sync.sh
+```
+
+Make the script executable first:
+
+```bash
+chmod +x run_sync.sh
+```
+
+The wrapper script includes:
+
+- Lock file to prevent multiple simultaneous runs
+- Log rotation
+- Environment detection
+- Error handling and reporting
+
+### Configuration
+
+The `growatt_sync_config.json` file contains several settings you can adjust:
+
+- `sync_settings.days_history`: Number of days of historical data to retrieve (default: 7)
+- `sync_settings.*_sync_interval_hours`: How often different data types should be synced
+- `api_settings.max_retries`: Number of retries for failed API calls
+- `api_settings.retry_delay`: Delay between retry attempts in seconds
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. Check your API credentials in the config file
+2. Run with verbose logging: `python3 data_sync.py --verbose`
+3. Check if the Growatt API is available
+4. Ensure you have proper file permissions in the data directory
+
+## Data Collection and Database Operations
+
+### Collecting Data
+
+To collect data from Growatt API and store it in the database:
+
+```bash
+# Basic data collection
+python data_sync.py
+
+# Collect with detailed logs
+python data_sync.py --verbose
+
+# Collect specific data types
+python data_sync.py --collect daily
+python data_sync.py --collect monthly
+python data_sync.py --collect all
+```
+
+### Database Management
+
+```bash
+# Initialize or reset the database
+python data_sync.py --init
+
+# Export collected data to CSV
+python data_sync.py --export path/to/export/folder
+
+# Verify database integrity
+python data_sync.py --verify
+```
+
+### Automating Data Collection
+
+For regular data collection, set up a cron job:
+
+```bash
+# Configure hourly data collection
+python setup_cron.py --interval hourly
+```
+
+Or manually add to your crontab:
+
+```bash
+# Run every hour
+0 * * * * /path/to/growatt-api/run_sync.sh
+```
+
 ## Usage
 
 ### Running the Web Interface
