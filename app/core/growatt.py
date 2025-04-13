@@ -1,7 +1,6 @@
 import requests as re
 import hashlib
-from datetime import datetime, timedelta
-import time
+from datetime import datetime
 
 class Growatt:
 

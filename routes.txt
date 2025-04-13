@@ -13,9 +13,14 @@ from app.views.templates import (
     render_index, render_plants, render_devices, 
     render_weather, render_error_404
 )
+# Import the prediction routes
+from app.routes.prediction_routes import prediction_routes
 
 # Create a Blueprint for routes
 api_blueprint = Blueprint('api', __name__)
+
+# Register the prediction routes blueprint
+api_blueprint.register_blueprint(prediction_routes)
 
 # ===== Basic Page Routes =====
 
@@ -118,10 +123,20 @@ def api_plants() -> Tuple[Response, int]:
     """
     try:
         plants = get_plants()
+        # Add authentication status to the response
+        if isinstance(plants, list):
+            for plant in plants:
+                plant['authenticated'] = True
         return jsonify(json.loads(json.dumps(plants, ensure_ascii=False))), 200
     except Exception as e:
-        logging.error(f"Error in api_plants: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        error_message = f"Error in api_plants: {str(e)}"
+        current_app.logger.error(error_message)
+        return jsonify([{
+            "error": str(e), 
+            "code": "API_ERROR", 
+            "ui_message": "An error occurred while fetching plant data",
+            "authenticated": False
+        }]), 500
 
 @api_blueprint.route('/api/devices/', methods=['GET'])
 def api_get_devices() -> Tuple[Response, int]:

@@ -5,6 +5,7 @@ import os
 from config import Config
 
 def create_app():
+    """Create and configure the Flask application"""
     cache_config = {
         'DEBUG': Config.DEBUG,
         'CACHE_TYPE': 'simple',
@@ -14,9 +15,13 @@ def create_app():
     
     app = Flask(__name__)
     
-    # Load configuration
+    # Configure the app
     app.config.from_object(Config)
     app.config.from_mapping(cache_config)
+    app.config.from_mapping(
+        SECRET_KEY='dev',  # Change this to a random string in production
+        DATABASE_PATH='app/data/growatt_data.db',
+    )
     
     # Ensure secret key is set
     if not app.config.get('SECRET_KEY'):
@@ -30,7 +35,13 @@ def create_app():
     cache = Cache(app)
     
     # Import and register routes
-    from app.routes import api_blueprint
-    app.register_blueprint(api_blueprint)
+    try:
+        from app.routes import api_blueprint
+        app.register_blueprint(api_blueprint)
+    except ImportError:
+        pass  # Skip registration if not available
 
     return app
+
+# Create the application instance that can be imported
+app = create_app()
