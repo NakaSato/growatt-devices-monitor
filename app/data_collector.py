@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 # Remove Flask imports that are causing problems
 # from flask import current_app, Flask
 
-from app.utils import (
+from app.core.growatt import (
     get_plants, get_devices_for_plant, get_weather_list,
     api
 )
@@ -25,7 +25,7 @@ class GrowattDataCollector:
         """Authenticate with the Growatt API"""
         try:
             # Modify the get_access_api to not require Flask context
-            from app.utils import api, GROWATT_USERNAME, GROWATT_PASSWORD
+            from app.core.growatt import api, GROWATT_USERNAME, GROWATT_PASSWORD
             
             # Directly use the API login method instead of get_access_api
             login_result = api.login(GROWATT_USERNAME, GROWATT_PASSWORD)
