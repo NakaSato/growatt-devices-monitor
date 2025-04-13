@@ -110,227 +110,194 @@ endblock %} {% block content %}
             if (isCacheValid) {
               this.weatherData = parsedCache.data;
               this.initializeChart();
-            } else {
-              this.fetchWeatherData(); // Cache expired, fetch new data
+              return;
             }
-          } else {
-            this.fetchWeatherData(); // No cache, fetch data
           }
+
+          this.fetchWeatherData(); // Cache expired or no cache, fetch new data
         },
+
         fetchWeatherData() {
           this.isLoading = true;
 
           fetch(`/api/weather?plantId=${plantId}`)
             .then((response) => {
               if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! Status: ${response.status}`);
               }
               return response.json();
             })
             .then((data) => {
-              // Cache the data with a timestamp
+              this.weatherData = Array.isArray(data) ? data : [];
+
+              // Cache the data with timestamp
               const cacheData = {
                 timestamp: Date.now(),
-                data: data,
+                data: this.weatherData,
               };
               localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-              this.weatherData = data;
+
               this.initializeChart();
             })
-            .catch((error) =>
-              console.error("Error fetching weather data:", error)
-            )
+            .catch((error) => {
+              console.error("Error fetching weather data:", error);
+              alert(`Failed to load weather data: ${error.message}`);
+            })
             .finally(() => {
               this.isLoading = false;
             });
         },
+
         initializeChart() {
+          if (!this.weatherData.length) return;
+
           try {
+            const chartData = this.processChartData();
+            const ctx = this.$refs.weatherChart.getContext("2d");
+
+            // Destroy previous chart instance if it exists
             if (this.weatherChart) {
               this.weatherChart.destroy();
             }
 
-            // Process weather data using our utility function
-            let chartData;
-
-            if (window.EnergyCharts) {
-              // Use our utility function to process the data
-              const processed = window.EnergyCharts.processWeatherData(
-                this.weatherData,
-                this.chartMetric,
-                this.chartPeriod
-              );
-
-              chartData = {
-                labels: processed.labels,
-                datasets: [
-                  window.EnergyCharts.createDataset(
-                    this.getChartTitle(),
-                    processed.values,
-                    this.chartMetric === "temperature"
-                      ? "tertiary"
-                      : "secondary",
-                    {
-                      tension: 0.3,
-                      pointRadius: 3,
-                      pointHoverRadius: 5,
-                      unit:
-                        this.chartMetric === "temperature"
-                          ? "°C"
-                          : this.chartMetric === "humidity"
-                          ? "%"
-                          : "",
-                    }
-                  ),
-                ],
-              };
-            } else {
-              // Fallback to manual processing
-              chartData = this.prepareChartData();
-
-              // Try to load the energy charts util dynamically
-              const script = document.createElement("script");
-              script.src = "/static/js/energy_chart.js";
-              document.head.appendChild(script);
-              script.onload = () => {
-                this.updateChart();
-              };
-            }
-
-            const ctx = this.$refs.weatherChart.getContext("2d");
-
-            // Use Chart.js from the global scope
             this.weatherChart = new Chart(ctx, {
               type: "line",
-              data: chartData,
+              data: {
+                labels: chartData.labels,
+                datasets: [
+                  {
+                    label: this.getMetricLabel(),
+                    data: chartData.values,
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointRadius: 3,
+                  },
+                ],
+              },
               options: {
                 responsive: true,
-                maintainAspectRatio: false,
                 plugins: {
+                  title: {
+                    display: true,
+                    text: `Weather ${this.getMetricLabel()} - ${this.getChartPeriodLabel()}`,
+                  },
                   tooltip: {
-                    mode: "index",
-                    intersect: false,
                     callbacks: {
-                      label: function (context) {
+                      label: (context) => {
                         let label = context.dataset.label || "";
                         if (label) {
                           label += ": ";
                         }
                         if (context.parsed.y !== null) {
-                          label += context.parsed.y;
-                          if (context.dataset.unit) {
-                            label += context.dataset.unit;
-                          }
+                          label += this.getMetricValueWithUnit(
+                            context.parsed.y
+                          );
                         }
                         return label;
                       },
                     },
                   },
-                  legend: {
-                    position: "top",
-                    labels: {
-                      usePointStyle: true,
-                      padding: 20,
-                    },
-                  },
-                  title: {
-                    display: true,
-                    text: this.getChartTitle(),
-                  },
                 },
                 scales: {
                   y: {
-                    beginAtZero: this.chartMetric === "humidity",
+                    beginAtZero: this.chartMetric === "weather",
                     title: {
                       display: true,
-                      text: this.getAxisTitle(),
-                    },
-                  },
-                  x: {
-                    title: {
-                      display: true,
-                      text: "Time",
+                      text: this.getMetricLabel(),
                     },
                   },
                 },
               },
             });
           } catch (error) {
-            console.error("Error initializing weather chart:", error);
+            console.error("Error initializing chart:", error);
           }
         },
-        prepareChartData() {
+
+        updateChart() {
+          this.initializeChart();
+        },
+
+        processChartData() {
+          // Extract and process data for chart based on selected metric and period
+          let data = this.weatherData;
           let labels = [];
-          let data = [];
-          let backgroundColor = "rgba(75, 192, 192, 0.2)";
-          let borderColor = "rgba(75, 192, 192, 1)";
-          let unit = "";
+          let values = [];
 
-          if (this.chartMetric === "temperature") {
-            backgroundColor = "rgba(255, 99, 132, 0.2)";
-            borderColor = "rgba(255, 99, 132, 1)";
-            unit = "°C";
-          } else if (this.chartMetric === "humidity") {
-            backgroundColor = "rgba(54, 162, 235, 0.2)";
-            borderColor = "rgba(54, 162, 235, 1)";
-            unit = "%";
-          }
+          // Implement the data processing logic based on chartMetric and chartPeriod
+          // This is a simplified example
+          data.forEach((item) => {
+            let value = null;
 
-          this.weatherData.forEach((item) => {
-            const value = parseFloat(
-              String(item[this.chartMetric]).replace(/[^\d.-]/g, "")
-            );
-            if (!isNaN(value)) {
-              labels.push(item.last_update_time);
-              data.push(value);
+            switch (this.chartMetric) {
+              case "temperature":
+                value = this.extractNumericValue(item.temperature);
+                break;
+              case "humidity":
+                value = this.extractNumericValue(item.humidity);
+                break;
+              case "weather":
+                // Map weather conditions to numeric values for visualization
+                value = this.weatherConditionToValue(item.weather);
+                break;
+            }
+
+            if (value !== null) {
+              labels.push(new Date(item.last_update_time).toLocaleTimeString());
+              values.push(value);
             }
           });
 
-          return {
-            labels: labels,
-            datasets: [
-              {
-                label: this.getChartTitle(),
-                data: data,
-                backgroundColor: backgroundColor,
-                borderColor: borderColor,
-                borderWidth: 2,
-                tension: 0.3,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                unit: unit,
-              },
-            ],
+          return { labels, values };
+        },
+
+        extractNumericValue(str) {
+          if (!str) return null;
+          const matches = str.toString().match(/[-+]?\d*\.?\d+/);
+          return matches ? parseFloat(matches[0]) : null;
+        },
+
+        weatherConditionToValue(condition) {
+          if (!condition) return 5; // Default/unknown
+
+          const conditions = {
+            Clear: 10,
+            Sunny: 9,
+            "Partly Cloudy": 7,
+            Cloudy: 5,
+            Overcast: 4,
+            Rainy: 3,
+            Rain: 3,
+            Stormy: 1,
+            Snow: 2,
           };
-        },
-        getChartTitle() {
-          let title = "";
-          switch (this.chartMetric) {
-            case "temperature":
-              title = "Temperature Trends";
-              break;
-            case "humidity":
-              title = "Humidity Levels";
-              break;
-            case "weather":
-              title = "Weather Conditions";
-              break;
+
+          // Try to match condition to known values
+          for (const [key, value] of Object.entries(conditions)) {
+            if (condition.toLowerCase().includes(key.toLowerCase())) {
+              return value;
+            }
           }
-          return title + " - " + this.getPeriodText();
+
+          return 5; // Default value
         },
-        getAxisTitle() {
+
+        getMetricLabel() {
           switch (this.chartMetric) {
             case "temperature":
-              return "Temperature (°C)";
+              return "Temperature";
             case "humidity":
-              return "Humidity (%)";
+              return "Humidity";
             case "weather":
-              return "Condition";
+              return "Weather Conditions";
             default:
-              return "";
+              return this.chartMetric;
           }
         },
-        getPeriodText() {
+
+        getChartPeriodLabel() {
           switch (this.chartPeriod) {
             case "day":
               return "Today";
@@ -339,142 +306,139 @@ endblock %} {% block content %}
             case "month":
               return "This Month";
             default:
-              return "";
+              return this.chartPeriod;
           }
         },
-        updateChart() {
-          this.initializeChart();
+
+        getMetricValueWithUnit(value) {
+          switch (this.chartMetric) {
+            case "temperature":
+              return `${value}°C`;
+            case "humidity":
+              return `${value}%`;
+            case "weather":
+              return `${value} (${this.valueToWeatherCondition(value)})`;
+            default:
+              return value;
+          }
         },
+
+        valueToWeatherCondition(value) {
+          if (value >= 9) return "Sunny/Clear";
+          if (value >= 7) return "Partly Cloudy";
+          if (value >= 5) return "Cloudy";
+          if (value >= 3) return "Rainy";
+          if (value >= 2) return "Snow";
+          return "Stormy";
+        },
+
         sortTable(columnIndex) {
           if (this.currentSortColumn === columnIndex) {
+            // Toggle sort order if clicking on the same column
             this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
           } else {
-            this.currentSortColumn = columnIndex;
+            // Default to ascending order for a new column
             this.sortOrder = "asc";
+            this.currentSortColumn = columnIndex;
           }
 
-          const direction = this.sortOrder === "asc" ? 1 : -1;
-
+          // Sort the weather data array
           this.weatherData.sort((a, b) => {
-            const valueA = Object.values(a)[columnIndex];
-            const valueB = Object.values(b)[columnIndex];
+            const keys = [
+              "plant_name",
+              "location",
+              "temperature",
+              "weather",
+              "humidity",
+              "last_update_time",
+            ];
+            const key = keys[columnIndex];
 
-            if (!isNaN(valueA) && !isNaN(valueB)) {
-              return direction * (parseFloat(valueA) - parseFloat(valueB));
+            let valueA = a[key] || "";
+            let valueB = b[key] || "";
+
+            // Handle numeric sorting for temperature and humidity
+            if (columnIndex === 2 || columnIndex === 4) {
+              valueA = this.extractNumericValue(valueA) || 0;
+              valueB = this.extractNumericValue(valueB) || 0;
             }
 
-            return direction * String(valueA).localeCompare(String(valueB));
+            // Handle date sorting for last update time
+            if (columnIndex === 5) {
+              valueA = new Date(valueA).getTime();
+              valueB = new Date(valueB).getTime();
+            }
+
+            // Apply sort direction
+            return this.sortOrder === "asc"
+              ? valueA > valueB
+                ? 1
+                : -1
+              : valueA < valueB
+              ? 1
+              : -1;
           });
         },
+
         getSortIcon(columnIndex) {
-          if (this.currentSortColumn !== columnIndex) {
-            return "▲";
-          }
+          if (this.currentSortColumn !== columnIndex) return "▲";
           return this.sortOrder === "asc" ? "▲" : "▼";
         },
+
         exportToExcel() {
-          const headers = [
-            "Plant Name",
-            "Location",
-            "Temperature",
-            "Weather",
-            "Humidity",
-            "Last Update Time",
-          ];
-          let csvContent = "\uFEFF";
+          if (!this.weatherData.length) {
+            alert("No data to export!");
+            return;
+          }
 
-          csvContent += headers.map((header) => `"${header}"`).join(",") + "\n";
+          try {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
 
-          this.weatherData.forEach((item) => {
-            const row = [
-              item.plant_name,
-              item.location,
-              item.temperature,
-              item.weather,
-              item.humidity,
-              item.last_update_time,
-            ]
-              .map((cell) => `"${cell?.toString().replace(/"/g, '""')}"`)
-              .join(",");
+            // Add headers
+            csvContent +=
+              "Plant Name,Location,Temperature,Weather,Humidity,Last Update Time\n";
 
-            csvContent += row + "\n";
-          });
+            // Add data rows
+            this.weatherData.forEach((item) => {
+              const row = [
+                item.plant_name || "",
+                item.location || "",
+                item.temperature || "",
+                item.weather || "",
+                item.humidity || "",
+                item.last_update_time || "",
+              ]
+                .map((cell) => `"${cell}"`)
+                .join(",");
 
-          const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-          });
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = `weather_${plantId}.csv`;
-          link.style.display = "none";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+              csvContent += row + "\n";
+            });
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute(
+              "download",
+              `weather_data_${plantId}_${new Date()
+                .toISOString()
+                .slice(0, 10)}.csv`
+            );
+            document.body.appendChild(link);
+
+            // Trigger download and clean up
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            console.error("Error exporting to Excel:", error);
+            alert("Failed to export data. See console for details.");
+          }
         },
-      },
-      beforeUnmount() {
-        if (this.weatherChart) {
-          this.weatherChart.destroy();
-        }
       },
     };
 
-    // Create the Vue app after the DOM is fully loaded
     const app = Vue.createApp(WeatherApp).mount("#weather-app");
   });
 </script>
-
-<style>
-  .weather-chart-container {
-    margin: 20px 0;
-    padding: 15px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    height: 400px;
-  }
-
-  .chart-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-  }
-
-  .chart-controls select {
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    background-color: white;
-  }
-
-  /* Add missing styles for v-cloak */
-  [v-cloak] {
-    display: none;
-  }
-
-  /* Add missing style for the spinner */
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left-color: #09f;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Add style for offline rows */
-  .offline-row {
-    background-color: rgba(248, 113, 113, 0.2);
-  }
-</style>
-{% endblock %} {% block head_scripts %}
-<!-- Make sure Vue.js is loaded first -->
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 {% endblock %}

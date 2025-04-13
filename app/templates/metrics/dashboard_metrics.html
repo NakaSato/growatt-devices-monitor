@@ -357,11 +357,8 @@
             callbacks: {
               label: function (context) {
                 let label = context.dataset.label || "";
-                if (label) {
-                  label += ": ";
-                }
                 if (context.parsed.y !== null) {
-                  label += context.parsed.y.toFixed(2) + " kWh";
+                  label += `: ${context.parsed.y.toFixed(2)} kWh`;
                 }
                 return label;
               },
@@ -575,9 +572,13 @@
       return null;
     }
 
-    const chart = echarts.init(
-      document.getElementById("powerDistributionChart")
-    );
+    const chartElement = document.getElementById("powerDistributionChart");
+    if (!chartElement) {
+      console.error("Power distribution chart element not found");
+      return null;
+    }
+
+    const chart = echarts.init(chartElement);
 
     // Generate data with our utility if available
     let chartData;
@@ -652,17 +653,21 @@
     chart.on("click", function (params) {
       if (params.componentType === "series") {
         const name = params.name;
-        const el = document.getElementById("power-distribution-chart")
-          ._x_dataStack[0];
+        const el = document.getElementById("power-distribution-chart");
 
-        if (el && el.selectedSegment === name) {
-          el.selectedSegment = null;
+        if (!el || !el._x_dataStack || !el._x_dataStack[0]) {
+          console.warn("Power distribution chart Alpine data not found");
+          return;
+        }
+
+        if (el._x_dataStack[0].selectedSegment === name) {
+          el._x_dataStack[0].selectedSegment = null;
           chart.dispatchAction({
             type: "downplay",
             seriesIndex: 0,
           });
-        } else if (el) {
-          el.selectedSegment = name;
+        } else {
+          el._x_dataStack[0].selectedSegment = name;
           chart.dispatchAction({
             type: "highlight",
             dataIndex: params.dataIndex,
@@ -691,76 +696,136 @@
     }
 
     function initAllCharts() {
-      // Register Chart.js plugins
-      Chart.register(ChartDataLabels);
+      try {
+        // Register Chart.js plugins
+        if (
+          typeof Chart !== "undefined" &&
+          typeof ChartDataLabels !== "undefined"
+        ) {
+          Chart.register(ChartDataLabels);
+        } else {
+          console.warn("Chart.js or ChartDataLabels not available");
+        }
 
-      // Energy Production Chart initialization
-      const energyProductionChart = initEnergyProductionChart();
+        // Make sure chart elements exist before initialization
+        const energyProductionChartElement = document.getElementById(
+          "energy-production-chart"
+        );
+        const energyPredictionChartElement = document.getElementById(
+          "energy-prediction-chart"
+        );
+        const powerDistributionChartElement = document.getElementById(
+          "power-distribution-chart"
+        );
 
-      // Listen for period change events
-      document
-        .getElementById("energy-production-chart")
-        .addEventListener("period-change", function (e) {
-          handlePeriodChange(energyProductionChart, e.detail);
-        });
+        let energyProductionChart = null;
+        let predictionChart = null;
+        let powerDistributionChart = null;
 
-      // Listen for filter events
-      document
-        .getElementById("energy-production-chart")
-        .addEventListener("remove-filter", function (e) {
-          removeFilter(energyProductionChart, e.detail);
-        });
+        // Energy Production Chart initialization
+        if (
+          energyProductionChartElement &&
+          document.getElementById("energyProductionChart")
+        ) {
+          energyProductionChart = initEnergyProductionChart();
 
-      document
-        .getElementById("energy-production-chart")
-        .addEventListener("clear-filters", function () {
-          clearAllFilters(energyProductionChart);
-        });
-
-      // Energy Prediction Chart initialization
-      const predictionChart = initPredictionChart();
-
-      // Listen for fetch data events
-      document
-        .getElementById("energy-prediction-chart")
-        .addEventListener("fetch-data", function (e) {
-          fetchPredictionData(predictionChart, e.detail);
-
-          // Update Alpine.js state
-          const predictionEl = document.getElementById(
-            "energy-prediction-chart"
+          // Listen for period change events
+          energyProductionChartElement.addEventListener(
+            "period-change",
+            function (e) {
+              if (energyProductionChart) {
+                handlePeriodChange(energyProductionChart, e.detail);
+              }
+            }
           );
+
+          // Listen for filter events
+          energyProductionChartElement.addEventListener(
+            "remove-filter",
+            function (e) {
+              if (energyProductionChart) {
+                removeFilter(energyProductionChart, e.detail);
+              }
+            }
+          );
+
+          energyProductionChartElement.addEventListener(
+            "clear-filters",
+            function () {
+              if (energyProductionChart) {
+                clearAllFilters(energyProductionChart);
+              }
+            }
+          );
+        }
+
+        // Energy Prediction Chart initialization
+        if (
+          energyPredictionChartElement &&
+          document.getElementById("energyPredictionChart")
+        ) {
+          predictionChart = initPredictionChart();
+
+          // Listen for fetch data events
+          energyPredictionChartElement.addEventListener(
+            "fetch-data",
+            function (e) {
+              if (predictionChart) {
+                fetchPredictionData(predictionChart, e.detail);
+              }
+
+              // Update Alpine.js state
+              if (
+                energyPredictionChartElement._x_dataStack &&
+                energyPredictionChartElement._x_dataStack[0]
+              ) {
+                energyPredictionChartElement._x_dataStack[0].isLoading = true;
+              }
+            }
+          );
+        }
+
+        // Power Distribution Chart initialization
+        if (
+          powerDistributionChartElement &&
+          document.getElementById("powerDistributionChart")
+        ) {
+          powerDistributionChart = initPowerDistributionChart();
+
+          // Listen for deselect segment events
+          powerDistributionChartElement.addEventListener(
+            "deselect-segment",
+            function () {
+              if (powerDistributionChart) {
+                deselectSegment(powerDistributionChart);
+              }
+            }
+          );
+        }
+
+        // Handle resize events for all charts
+        window.addEventListener("resize", function () {
           if (
-            predictionEl &&
-            predictionEl._x_dataStack &&
-            predictionEl._x_dataStack[0]
+            energyProductionChart &&
+            typeof energyProductionChart.resize === "function"
           ) {
-            predictionEl._x_dataStack[0].isLoading = true;
+            energyProductionChart.resize();
+          }
+
+          if (predictionChart && typeof predictionChart.resize === "function") {
+            predictionChart.resize();
+          }
+
+          if (
+            powerDistributionChart &&
+            typeof powerDistributionChart.resize === "function"
+          ) {
+            powerDistributionChart.resize();
           }
         });
-
-      // Power Distribution Chart initialization
-      const powerDistributionChart = initPowerDistributionChart();
-
-      // Listen for deselect segment events
-      document
-        .getElementById("power-distribution-chart")
-        .addEventListener("deselect-segment", function () {
-          deselectSegment(powerDistributionChart);
-        });
-
-      // Handle resize events for all charts
-      window.addEventListener("resize", function () {
-        if (energyProductionChart)
-          energyProductionChart.resize && energyProductionChart.resize();
-        if (predictionChart) predictionChart.resize && predictionChart.resize();
-        if (
-          powerDistributionChart &&
-          typeof powerDistributionChart.resize === "function"
-        ) {
-          powerDistributionChart.resize();
-        }
-      });
+      } catch (error) {
+        console.error("Error initializing charts:", error);
+      }
     }
   });
 
@@ -770,6 +835,14 @@
 
     // Get the Alpine data context
     const productionEl = document.getElementById("energy-production-chart");
+    if (
+      !productionEl ||
+      !productionEl._x_dataStack ||
+      !productionEl._x_dataStack[0]
+    ) {
+      console.warn("Production chart Alpine data not found");
+      return;
+    }
 
     // Update the chart with new period data
     if (window.EnergyDataUtils && chart) {
@@ -812,23 +885,17 @@
       chart.update();
 
       // Update Alpine.js data
-      if (
-        productionEl &&
-        productionEl._x_dataStack &&
-        productionEl._x_dataStack[0]
-      ) {
-        const totalProduction = data.totals.production;
-        productionEl._x_dataStack[0].summaryText = `Total ${period}: <strong>${totalProduction} kWh</strong>`;
+      const totalProduction = data.totals.production;
+      productionEl._x_dataStack[0].summaryText = `Total ${period}: <strong>${totalProduction} kWh</strong>`;
 
-        const prevTotal = prevData.totals.production;
-        const diffPercent = (
-          ((totalProduction - prevTotal) / prevTotal) *
-          100
-        ).toFixed(1);
-        productionEl._x_dataStack[0].periodComparison = `${
-          diffPercent > 0 ? "+" : ""
-        }${diffPercent}% from previous ${period}`;
-      }
+      const prevTotal = prevData.totals.production;
+      const diffPercent = (
+        ((totalProduction - prevTotal) / prevTotal) *
+        100
+      ).toFixed(1);
+      productionEl._x_dataStack[0].periodComparison = `${
+        diffPercent > 0 ? "+" : ""
+      }${diffPercent}% from previous ${period}`;
     }
   }
 
@@ -893,6 +960,14 @@
 
     // Get the Alpine data context
     const predictionEl = document.getElementById("energy-prediction-chart");
+    if (
+      !predictionEl ||
+      !predictionEl._x_dataStack ||
+      !predictionEl._x_dataStack[0]
+    ) {
+      console.warn("Prediction chart Alpine data not found");
+      return;
+    }
 
     // Simulate API fetch with our utility
     if (window.EnergyDataUtils && chart) {
@@ -954,17 +1029,11 @@
       chart.update();
 
       // Update Alpine.js data
-      if (
-        predictionEl &&
-        predictionEl._x_dataStack &&
-        predictionEl._x_dataStack[0]
-      ) {
-        const total = predictionData
-          .reduce((sum, val) => sum + val, 0)
-          .toFixed(2);
-        predictionEl._x_dataStack[0].totalPrediction = total;
-        predictionEl._x_dataStack[0].isLoading = false;
-      }
+      const total = predictionData
+        .reduce((sum, val) => sum + val, 0)
+        .toFixed(2);
+      predictionEl._x_dataStack[0].totalPrediction = total;
+      predictionEl._x_dataStack[0].isLoading = false;
     }
   }
 
