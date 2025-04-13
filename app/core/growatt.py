@@ -333,25 +333,25 @@ class Growatt:
             Example:
 
         {
-            "result": 1,
-            "obj": {
-            "etouser": "5.2",
-            "charts": {
-            "pex": [LIST],
-            "pacToGrid": [LIST],
-            "pcharge": [LIST],
-            "ppv": [LIST],
-            "sysOut": [LIST],
-            "pself": [LIST],
-            "elocalLoad": [LIST],
-            "pdischarge": [LIST],
-            "pacToUser": [LIST]
+            "result": 1,
+            "obj": {
+            "etouser": "5.2",
+            "charts": {
+            "pex": [LIST],
+            "pacToGrid": [LIST],
+            "pcharge": [LIST],
+            "ppv": [LIST],
+            "sysOut": [LIST],
+            "pself": [LIST],
+            "elocalLoad": [LIST],
+            "pdischarge": [LIST],
+            "pacToUser": [LIST]
             },
-            "eCharge": "25.7",
-            "eAcCharge": "18.3",
-            "eChargeToday2": "7.4",
-            "elocalLoad": "12.6",
-            "eChargeToday1": "7.4"
+            "eCharge": "25.7",
+            "eAcCharge": "18.3",
+            "eChargeToday2": "7.4",
+            "elocalLoad": "12.6",
+            "eChargeToday1": "7.4"
             }
         }
         """
@@ -391,25 +391,25 @@ class Growatt:
             Example:
 
         {
-            "result": 1,
-            "obj": {
-            "etouser": "5.2",
-            "charts": {
-            "pex": [LIST],
-            "pacToGrid": [LIST],
-            "pcharge": [LIST],
-            "ppv": [LIST],
-            "sysOut": [LIST],
-            "pself": [LIST],
-            "elocalLoad": [LIST],
-            "pdischarge": [LIST],
-            "pacToUser": [LIST]
+            "result": 1,
+            "obj": {
+            "etouser": "5.2",
+            "charts": {
+            "pex": [LIST],
+            "pacToGrid": [LIST],
+            "pcharge": [LIST],
+            "ppv": [LIST],
+            "sysOut": [LIST],
+            "pself": [LIST],
+            "elocalLoad": [LIST],
+            "pdischarge": [LIST],
+            "pacToUser": [LIST]
             },
-            "eCharge": "25.7",
-            "eAcCharge": "18.3",
-            "eChargeToday2": "7.4",
-            "elocalLoad": "12.6",
-            "eChargeToday1": "7.4"
+            "eCharge": "25.7",
+            "eAcCharge": "18.3",
+            "eChargeToday2": "7.4",
+            "elocalLoad": "12.6",
+            "eChargeToday1": "7.4"
             }
         }
         """
@@ -450,25 +450,25 @@ class Growatt:
             Example:
 
         {
-            "result": 1,
-            "obj": {
-            "etouser": "5.2",
-            "charts": {
-            "pex": [LIST],
-            "pacToGrid": [LIST],
-            "pcharge": [LIST],
-            "ppv": [LIST],
-            "sysOut": [LIST],
-            "pself": [LIST],
-            "elocalLoad": [LIST],
-            "pdischarge": [LIST],
-            "pacToUser": [LIST]
+            "result": 1,
+            "obj": {
+            "etouser": "5.2",
+            "charts": {
+            "pex": [LIST],
+            "pacToGrid": [LIST],
+            "pcharge": [LIST],
+            "ppv": [LIST],
+            "sysOut": [LIST],
+            "pself": [LIST],
+            "elocalLoad": [LIST],
+            "pdischarge": [LIST],
+            "pacToUser": [LIST]
             },
-            "eCharge": "25.7",
-            "eAcCharge": "18.3",
-            "eChargeToday2": "7.4",
-            "elocalLoad": "12.6",
-            "eChargeToday1": "7.4"
+            "eCharge": "25.7",
+            "eAcCharge": "18.3",
+            "eChargeToday2": "7.4",
+            "elocalLoad": "12.6",
+            "eChargeToday1": "7.4"
             }
         }
         """
@@ -508,25 +508,25 @@ class Growatt:
             Example:
 
         {
-            "result": 1,
-            "obj": {
-            "etouser": "5.2",
-            "charts": {
-            "pex": [LIST],
-            "pacToGrid": [LIST],
-            "pcharge": [LIST],
-            "ppv": [LIST],
-            "sysOut": [LIST],
-            "pself": [LIST],
-            "elocalLoad": [LIST],
-            "pdischarge": [LIST],
-            "pacToUser": [LIST]
+            "result": 1,
+            "obj": {
+            "etouser": "5.2",
+            "charts": {
+            "pex": [LIST],
+            "pacToGrid": [LIST],
+            "pcharge": [LIST],
+            "ppv": [LIST],
+            "sysOut": [LIST],
+            "pself": [LIST],
+            "elocalLoad": [LIST],
+            "pdischarge": [LIST],
+            "pacToUser": [LIST]
             },
-            "eCharge": "25.7",
-            "eAcCharge": "18.3",
-            "eChargeToday2": "7.4",
-            "elocalLoad": "12.6",
-            "eChargeToday1": "7.4"
+            "eCharge": "25.7",
+            "eAcCharge": "18.3",
+            "eChargeToday2": "7.4",
+            "elocalLoad": "12.6",
+            "eChargeToday1": "7.4"
             }
         }
         """
@@ -560,10 +560,10 @@ class Growatt:
         Returns:
             Example:
             {
-                "result": 1,
-                "obj": {
-                    "date": "2024-08-06",
-                    "cdsTitle": [
+                "result": 1,
+                "obj": {
+                    "date": "2024-08-06",
+                    "cdsTitle": [
                     "2024-07-31",
                     "2024-08-01",
                     "2024-08-02",
@@ -572,13 +572,13 @@ class Growatt:
                     "2024-08-05",
                     "2024-08-06"
                     ],
-                    "batType": 1,
-                    "socChart": {
-                    "soc": [LIST]
+                    "batType": 1,
+                    "socChart": {
+                    "soc": [LIST]
                     },
-                    "cdsData": {
-                    "cd_charge": [LIST],
-                    "cd_disCharge": [LIST]
+                    "cdsData": {
+                    "cd_charge": [LIST],
+                    "cd_disCharge": [LIST]
                     }
                 }
             }
@@ -615,10 +615,10 @@ class Growatt:
         '''
 
         data = {
-	                "action":"mixSet",    # Parameter set Action
-	                "serialNum":mixSn,    # Parameter Serial Number of the inverter
-	                "type":"pf_sys_year",    # Parameter set Command Type
-	                "param1":datetime.now()    # Parameter 1
+                  "action":"mixSet",    # Parameter set Action
+                  "serialNum":mixSn,    # Parameter Serial Number of the inverter
+                  "type":"pf_sys_year",    # Parameter set Command Type
+                  "param1":datetime.now()    # Parameter 1
                 }
 
         res = self.session.post(f"{self.BASE_URL}/tcpSet.do", data=data)

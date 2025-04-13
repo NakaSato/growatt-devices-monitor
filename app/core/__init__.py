@@ -1,1 +1,1 @@
-# Growatt API core package
+# Empty init file to make the directory a proper Python package
