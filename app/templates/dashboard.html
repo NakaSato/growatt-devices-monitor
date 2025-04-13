@@ -1,0 +1,24 @@
+{% extends "base.html" %} {% block title %}Dashboard - Growatt API{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+  <h1 class="text-xl font-medium mb-4">Dashboard</h1>
+
+  <!-- Include the dashboard metrics component -->
+  {% include "metrics/dashboard_metrics.html" %}
+
+  <!-- Add energy management component if needed -->
+  <div class="mt-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-lg font-medium mb-4">Energy Management</h2>
+      <!-- Add your energy management content here -->
+      <p>View and analyze your energy production and consumption data.</p>
+      <a
+        href="/energy"
+        class="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition duration-300"
+      >
+        View Energy Details
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,4 +1,3 @@
-<!-- filepath: /Users/chanthawat/Development/py-dev/growatt-api/app/templates/views/components/dashboard_metrics.html -->
 <!-- Dashboard metrics component -->
 <div class="metrics-container">
   <div class="metrics-row">
@@ -75,21 +74,27 @@
 </div>
 
 <!-- Energy Production Chart -->
-<div class="chart-container">
+<div
+  class="chart-container"
+  id="energy-production-chart"
+  x-data="{ activePeriod: 'day', summaryText: 'Loading...', periodComparison: '', filters: [] }"
+>
   <div class="chart-card">
     <div class="card-header">
       <h3 class="card-title">Energy Yield Overview</h3>
       <div class="chart-controls">
         <div class="chart-period-info">
-          <span class="period-summary"
-            >Total this month: <strong>1,245.6 kWh</strong></span
-          >
-          <span class="period-comparison">+15.3% from last month</span>
+          <span class="period-summary" x-text="summaryText"></span>
+          <span class="period-comparison" x-text="periodComparison"></span>
         </div>
-        <select class="chart-period-selector">
+        <select
+          class="chart-period-selector"
+          x-model="activePeriod"
+          @change="$dispatch('period-change', activePeriod)"
+        >
           <option value="day">Today</option>
           <option value="week">This Week</option>
-          <option value="month" selected>This Month</option>
+          <option value="month">This Month</option>
           <option value="year">This Year</option>
         </select>
       </div>
@@ -117,22 +122,32 @@
 </div>
 
 <!-- Energy Prediction Chart -->
-<div class="chart-container prediction-chart-container">
+<div
+  class="chart-container prediction-chart-container"
+  id="energy-prediction-chart"
+  x-data="{ days: 7, totalPrediction: '0.00', isLoading: true }"
+>
   <div class="chart-card">
     <div class="card-header">
       <h3 class="card-title">Energy Yield Prediction</h3>
       <div class="chart-controls">
         <div class="chart-period-info">
-          <span class="period-summary"
-            >Predicted next 7 days:
-            <strong id="prediction-total">Loading...</strong></span
-          >
+          <span class="period-summary">
+            Predicted next <span x-text="days"></span> days:
+            <strong
+              x-text="isLoading ? 'Loading...' : `${totalPrediction} kWh`"
+            ></strong>
+          </span>
           <span class="period-comparison"
             >Based on historical data analysis</span
           >
         </div>
-        <select class="prediction-period-selector">
-          <option value="7" selected>Next 7 Days</option>
+        <select
+          class="prediction-period-selector"
+          x-model="days"
+          @change="$dispatch('fetch-data', days)"
+        >
+          <option value="7">Next 7 Days</option>
           <option value="14">Next 14 Days</option>
           <option value="30">Next 30 Days</option>
         </select>
@@ -167,551 +182,178 @@
   </div>
 </div>
 
-<!-- Optional: Add placeholder for additional ECharts visualizations -->
-<div class="chart-container additional-charts">
+<!-- Power Distribution Chart -->
+<div
+  class="chart-container additional-charts"
+  id="power-distribution-chart"
+  x-data="{ selectedSegment: null }"
+>
   <div class="chart-card">
     <div class="card-header">
       <h3 class="card-title">Power Distribution</h3>
+      <div class="chart-controls" x-show="selectedSegment">
+        <div class="selected-segment-info">
+          <span>Selected: <strong x-text="selectedSegment"></strong></span>
+          <button
+            class="btn-close"
+            @click="$dispatch('deselect-segment'); selectedSegment = null"
+          >
+            ×
+          </button>
+        </div>
+      </div>
     </div>
     <div id="powerDistributionChart" style="height: 300px"></div>
   </div>
 </div>
 
-<!-- Replace Chart.js with enhanced libraries -->
+<!-- Required libraries - Only loading what this specific component needs -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+  function initEnergyProductionChart() {
+    // Get the context
     const ctx = document
       .getElementById("energyProductionChart")
-      .getContext("2d");
+      ?.getContext("2d");
+    if (!ctx) return null;
 
-    // Register the datalabels plugin
-    Chart.register(ChartDataLabels);
+    // Generate realistic data using our utility if available
+    let labels = [];
+    let currentPeriodData = [];
+    let previousPeriodData = [];
 
-    // Data with 15-minute intervals for more granular energy yield tracking
-    const chartData = {
-      labels: [
-        "00:00",
-        "00:15",
-        "00:30",
-        "00:45",
-        "01:00",
-        "01:15",
-        "01:30",
-        "01:45",
-        "02:00",
-        "02:15",
-        "02:30",
-        "02:45",
-        "03:00",
-        "03:15",
-        "03:30",
-        "03:45",
-        "04:00",
-        "04:15",
-        "04:30",
-        "04:45",
-        "05:00",
-        "05:15",
-        "05:30",
-        "05:45",
-        "06:00",
-        "06:15",
-        "06:30",
-        "06:45",
-        "07:00",
-        "07:15",
-        "07:30",
-        "07:45",
-        "08:00",
-        "08:15",
-        "08:30",
-        "08:45",
-        "09:00",
-        "09:15",
-        "09:30",
-        "09:45",
-        "10:00",
-        "10:15",
-        "10:30",
-        "10:45",
-        "11:00",
-        "11:15",
-        "11:30",
-        "11:45",
-      ],
-      datasets: [
-        {
-          label: "Current Day Energy Yield (kWh)",
-          data: [
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.2, 0.4, 0.7, 1.1, 1.5, 1.9, 2.4,
-            2.9, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.4, 6.8, 7.2, 7.6, 8.0, 8.2,
-            8.5, 8.7, 8.9, 9.1, 9.3, 9.4, 9.5, 9.6, 9.7,
-          ],
-          backgroundColor: "rgba(16, 185, 129, 0.2)",
-          borderColor: "rgba(16, 185, 129, 0.7)",
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 2,
-          pointBackgroundColor: "rgba(16, 185, 129, 0.7)",
-        },
-        {
-          label: "Previous Day Energy Yield (kWh)",
-          data: [
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.3, 0.6, 0.9, 1.3, 1.7, 2.1,
-            2.6, 3.2, 3.7, 4.2, 4.6, 5.1, 5.5, 5.9, 6.3, 6.7, 7.0, 7.3, 7.6,
-            7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 8.9, 9.0, 9.1,
-          ],
-          backgroundColor: "rgba(209, 213, 219, 0.2)",
-          borderColor: "rgba(209, 213, 219, 0.5)",
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 1,
-          pointBackgroundColor: "rgba(209, 213, 219, 0.5)",
-        },
-      ],
-    };
+    // Use the period data from Alpine
+    const productionEl = document.getElementById("energy-production-chart");
+    const period = productionEl?._x_dataStack?.[0]?.activePeriod || "day";
 
-    const config = {
-      type: "line",
-      data: chartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
-        plugins: {
-          datalabels: {
-            // Hide all datalabels
-            display: false,
-          },
-          legend: {
-            display: false,
-          },
-          tooltip: {
-            mode: "index",
-            intersect: false,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            titleColor: "#111827",
-            bodyColor: "#4b5563",
-            borderColor: "#e5e7eb",
-            borderWidth: 1,
-            padding: 12,
-            cornerRadius: 6,
-            boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.05)",
-            callbacks: {
-              label: function (context) {
-                let label = context.dataset.label || "";
-                if (label) {
-                  label += ": ";
-                }
-                if (context.parsed.y !== null) {
-                  label += context.parsed.y + " kWh";
-                }
-                return label;
-              },
-            },
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: "rgba(243, 244, 246, 0.7)",
-              drawBorder: false,
-            },
-            ticks: {
-              padding: 10,
-              color: "#6b7280",
-              font: {
-                size: 11,
-              },
-              display: true,
-            },
-            title: {
-              display: false, // Hide y-axis title
-              text: "Energy Yield (kWh)",
-              color: "#6b7280",
-              font: {
-                size: 12,
-                weight: "bold",
-              },
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-            ticks: {
-              padding: 10,
-              color: "#6b7280",
-              font: {
-                size: 11,
-              },
-              maxRotation: 45,
-              minRotation: 45,
-              callback: function (value, index, values) {
-                return index % 8 === 0 ? this.getLabelForValue(value) : "";
-              },
-            },
-            title: {
-              display: false, // Hide x-axis title
-              text: "Time (24-hour format)",
-              color: "#6b7280",
-              font: {
-                size: 12,
-                weight: "bold",
-              },
-            },
-          },
-        },
-      },
-    };
+    // Generate data using our utility if available
+    if (window.EnergyDataUtils) {
+      const today = new Date();
+      const data = window.EnergyDataUtils.generateEnergyData(period, 10, today);
 
-    const energyChart = new Chart(ctx, config);
+      // Get current period data
+      labels = data.labels;
+      currentPeriodData = data.datasets.production;
 
-    // Add chart period selector functionality
-    document
-      .querySelector(".chart-period-selector")
-      .addEventListener("change", function (e) {
-        const period = e.target.value;
-        let newLabels, newData1, newData2, summaryText;
+      // Generate previous period data (slightly different)
+      let prevDate;
+      switch (period) {
+        case "day":
+          prevDate = new Date();
+          prevDate.setDate(prevDate.getDate() - 1);
+          break;
+        case "week":
+          prevDate = new Date();
+          prevDate.setDate(prevDate.getDate() - 7);
+          break;
+        case "month":
+          prevDate = new Date();
+          prevDate.setMonth(prevDate.getMonth() - 1);
+          break;
+        case "year":
+          prevDate = new Date();
+          prevDate.setFullYear(prevDate.getFullYear() - 1);
+          break;
+      }
 
-        switch (period) {
-          case "day":
-            newLabels = [
-              "00:00",
-              "00:15",
-              "00:30",
-              "00:45",
-              "01:00",
-              "01:15",
-              "01:30",
-              "01:45",
-              "02:00",
-              "02:15",
-              "02:30",
-              "02:45",
-              "03:00",
-              "03:15",
-              "03:30",
-              "03:45",
-              "04:00",
-              "04:15",
-              "04:30",
-              "04:45",
-              "05:00",
-              "05:15",
-              "05:30",
-              "05:45",
-              "06:00",
-              "06:15",
-              "06:30",
-              "06:45",
-              "07:00",
-              "07:15",
-              "07:30",
-              "07:45",
-              "08:00",
-              "08:15",
-              "08:30",
-              "08:45",
-              "09:00",
-              "09:15",
-              "09:30",
-              "09:45",
-              "10:00",
-              "10:15",
-              "10:30",
-              "10:45",
-              "11:00",
-              "11:15",
-              "11:30",
-              "11:45",
-              "12:00",
-              "12:15",
-              "12:30",
-              "12:45",
-              "13:00",
-              "13:15",
-              "13:30",
-              "13:45",
-              "14:00",
-              "14:15",
-              "14:30",
-              "14:45",
-              "15:00",
-              "15:15",
-              "15:30",
-              "15:45",
-              "16:00",
-              "16:15",
-              "16:30",
-              "16:45",
-              "17:00",
-              "17:15",
-              "17:30",
-              "17:45",
-              "18:00",
-              "18:15",
-              "18:30",
-              "18:45",
-              "19:00",
-              "19:15",
-              "19:30",
-              "19:45",
-              "20:00",
-              "20:15",
-              "20:30",
-              "20:45",
-              "21:00",
-              "21:15",
-              "21:30",
-              "21:45",
-              "22:00",
-              "22:15",
-              "22:30",
-              "22:45",
-              "23:00",
-              "23:15",
-              "23:30",
-              "23:45",
-            ];
-            newData1 = Array(96)
-              .fill(0)
-              .map((_, i) => {
-                if (i < 24 || i > 84) return 0;
-                const hour = Math.floor(i / 4);
-                const peakHour = 12;
-                const distFromPeak = Math.abs(hour - peakHour);
-                return Math.max(
-                  0,
-                  (9.7 - 0.5 * distFromPeak * distFromPeak) *
-                    (0.9 + Math.random() * 0.2)
-                ).toFixed(1);
-              });
-            newData2 = Array(96)
-              .fill(0)
-              .map((_, i) => {
-                if (i < 24 || i > 84) return 0;
-                const hour = Math.floor(i / 4);
-                const peakHour = 12;
-                const distFromPeak = Math.abs(hour - peakHour);
-                return Math.max(
-                  0,
-                  (9.1 - 0.5 * distFromPeak * distFromPeak) *
-                    (0.9 + Math.random() * 0.2)
-                ).toFixed(1);
-              });
-            summaryText = "Total today: <strong>45.23 kWh</strong>";
-            energyChart.options.scales.x.ticks.callback = function (
-              value,
-              index,
-              values
-            ) {
-              return index % 8 === 0 ? this.getLabelForValue(value) : "";
-            };
-            break;
-
-          case "week":
-            newLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-            newData1 = [42.1, 45.3, 40.8, 43.5, 47.2, 38.6, 41.9];
-            newData2 = [38.2, 40.1, 37.5, 39.8, 42.3, 36.0, 37.5];
-            summaryText = "Total this week: <strong>299.4 kWh</strong>";
-            energyChart.options.scales.x.ticks.callback = null;
-            break;
-          case "month":
-            newLabels = ["1", "5", "10", "15", "20", "25", "30"];
-            newData1 = [42.5, 47.8, 52.3, 61.5, 58.2, 65.1, 70.4];
-            newData2 = [38.2, 41.5, 45.0, 52.6, 54.1, 57.3, 61.2];
-            summaryText = "Total this month: <strong>1,245.6 kWh</strong>";
-            energyChart.options.scales.x.ticks.callback = null;
-            break;
-          case "year":
-            newLabels = [
-              "Jan",
-              "Feb",
-              "Mar",
-              "Apr",
-              "May",
-              "Jun",
-              "Jul",
-              "Aug",
-              "Sep",
-              "Oct",
-              "Nov",
-              "Dec",
-            ];
-            newData1 = [
-              980, 1120, 1350, 1500, 1620, 1750, 1830, 1780, 1690, 1550, 1230,
-              1050,
-            ];
-            newData2 = [
-              850, 950, 1150, 1320, 1440, 1580, 1670, 1610, 1540, 1410, 1120,
-              930,
-            ];
-            summaryText = "Total this year: <strong>15,450 kWh</strong>";
-            energyChart.options.scales.x.ticks.callback = null;
-            break;
-        }
-
-        energyChart.data.labels = newLabels;
-        energyChart.data.datasets[0].data = newData1;
-        energyChart.data.datasets[1].data = newData2;
-        energyChart.update();
-
-        document.querySelector(".period-summary").innerHTML = summaryText;
-      });
-
-    // Example of using ECharts for a secondary visualization
-    if (document.getElementById("powerDistributionChart")) {
-      const powerChart = echarts.init(
-        document.getElementById("powerDistributionChart")
+      const prevData = window.EnergyDataUtils.generateEnergyData(
+        period,
+        9.5,
+        prevDate
       );
-      const powerOption = {
-        tooltip: {
-          trigger: "item",
-          formatter: "{a} <br/>{b}: {c} kWh ({d}%)",
-        },
-        legend: {
-          data: ["Self-consumption", "Grid Export", "Grid Import"],
-          bottom: 10,
-        },
-        series: [
+      previousPeriodData = prevData.datasets.production;
+
+      // Update summary text
+      const totalProduction = data.totals.production;
+      if (productionEl?._x_dataStack?.[0]) {
+        productionEl._x_dataStack[0].summaryText = `Total ${period}: <strong>${totalProduction} kWh</strong>`;
+
+        const prevTotal = prevData.totals.production;
+        const diffPercent = (
+          ((totalProduction - prevTotal) / prevTotal) *
+          100
+        ).toFixed(1);
+        productionEl._x_dataStack[0].periodComparison = `${
+          diffPercent > 0 ? "+" : ""
+        }${diffPercent}% from previous ${period}`;
+      }
+    } else {
+      // Fallback if utility not available
+      switch (period) {
+        case "day":
+          labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+          break;
+        case "week":
+          labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+          break;
+        case "month":
+          labels = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
+          break;
+        case "year":
+          labels = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          break;
+      }
+
+      currentPeriodData = labels.map(() => Math.random() * 10 + 5);
+      previousPeriodData = labels.map(() => Math.random() * 8 + 5);
+    }
+
+    // Create the chart
+    return new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
           {
-            name: "Power Distribution",
-            type: "pie",
-            radius: ["50%", "70%"],
-            avoidLabelOverlap: false,
-            itemStyle: {
-              borderRadius: 10,
-              borderColor: "#fff",
-              borderWidth: 2,
-            },
-            label: {
-              show: false,
-              position: "center",
-            },
-            emphasis: {
-              label: {
-                show: true,
-                fontSize: "18",
-                fontWeight: "bold",
-              },
-            },
-            labelLine: {
-              show: false,
-            },
-            data: [
-              { value: 32.5, name: "Self-consumption" },
-              { value: 12.8, name: "Grid Export" },
-              { value: 4.7, name: "Grid Import" },
-            ],
+            label: "Current Period",
+            data: currentPeriodData,
+            backgroundColor: "rgba(16, 185, 129, 0.7)",
+            borderColor: "rgba(16, 185, 129, 1)",
+            borderWidth: 1,
+            borderRadius: 4,
+            barPercentage: 0.6,
+          },
+          {
+            label: "Previous Period",
+            data: previousPeriodData,
+            backgroundColor: "rgba(209, 213, 219, 0.5)",
+            borderColor: "rgba(209, 213, 219, 0.8)",
+            borderWidth: 1,
+            borderRadius: 4,
+            barPercentage: 0.6,
           },
         ],
-      };
-      powerChart.setOption(powerOption);
-
-      window.addEventListener("resize", function () {
-        powerChart.resize();
-      });
-    }
-
-    // Set up the prediction chart
-    const predictionCtx = document
-      .getElementById("energyPredictionChart")
-      .getContext("2d");
-
-    // Initialize prediction chart with placeholder data
-    const predictionChartData = {
-      labels: ["Loading..."],
-      datasets: [
-        {
-          label: "Predicted Energy Yield (kWh)",
-          data: [0],
-          backgroundColor: "rgba(79, 70, 229, 0.2)",
-          borderColor: "rgba(79, 70, 229, 0.7)",
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 3,
-          pointBackgroundColor: "rgba(79, 70, 229, 0.7)",
-        },
-        {
-          label: "Historical Energy Yield (kWh)",
-          data: [0],
-          backgroundColor: "rgba(16, 185, 129, 0.2)",
-          borderColor: "rgba(16, 185, 129, 0.7)",
-          borderWidth: 2,
-          tension: 0.4,
-          fill: false,
-          pointRadius: 2,
-          pointBackgroundColor: "rgba(16, 185, 129, 0.7)",
-        },
-        {
-          label: "Upper Confidence Interval",
-          data: [0],
-          backgroundColor: "transparent",
-          borderColor: "rgba(209, 213, 219, 0.5)",
-          borderWidth: 1,
-          borderDash: [5, 5],
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-        },
-        {
-          label: "Lower Confidence Interval",
-          data: [0],
-          backgroundColor: "rgba(209, 213, 219, 0.2)",
-          borderColor: "rgba(209, 213, 219, 0.5)",
-          borderWidth: 1,
-          borderDash: [5, 5],
-          tension: 0.4,
-          fill: "-1", // Fill to the previous dataset (Upper Confidence)
-          pointRadius: 0,
-        },
-      ],
-    };
-
-    const predictionConfig = {
-      type: "line",
-      data: predictionChartData,
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
         plugins: {
-          datalabels: {
-            display: false,
-          },
           legend: {
-            display: false,
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+            },
           },
           tooltip: {
             mode: "index",
             intersect: false,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            titleColor: "#111827",
-            bodyColor: "#4b5563",
-            borderColor: "#e5e7eb",
-            borderWidth: 1,
-            padding: 12,
-            cornerRadius: 6,
-            boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.05)",
             callbacks: {
               label: function (context) {
                 let label = context.dataset.label || "";
@@ -719,7 +361,7 @@
                   label += ": ";
                 }
                 if (context.parsed.y !== null) {
-                  label += context.parsed.y + " kWh";
+                  label += context.parsed.y.toFixed(2) + " kWh";
                 }
                 return label;
               },
@@ -729,97 +371,611 @@
         scales: {
           y: {
             beginAtZero: true,
+            title: {
+              display: true,
+              text: "Energy Production (kWh)",
+            },
             grid: {
               color: "rgba(243, 244, 246, 0.7)",
-              drawBorder: false,
-            },
-            ticks: {
-              padding: 10,
-              color: "#6b7280",
-              font: {
-                size: 11,
-              },
-              display: true,
-            },
-            title: {
-              display: false,
-              text: "Energy Yield (kWh)",
             },
           },
           x: {
             grid: {
               display: false,
             },
-            ticks: {
-              padding: 10,
-              color: "#6b7280",
-              font: {
-                size: 11,
+          },
+        },
+      },
+    });
+  }
+
+  function initPredictionChart() {
+    // Get the context
+    const ctx = document
+      .getElementById("energyPredictionChart")
+      ?.getContext("2d");
+    if (!ctx) return null;
+
+    // Use the period data from Alpine
+    const predictionEl = document.getElementById("energy-prediction-chart");
+    const days = predictionEl?._x_dataStack?.[0]?.days || 7;
+
+    // Generate prediction data
+    const labels = Array.from({ length: days }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    });
+
+    // Generate realistic data using seasonality
+    let predictionData = [];
+    let historicalData = [];
+    let confidenceLow = [];
+    let confidenceHigh = [];
+
+    // Use our utility if available
+    if (window.EnergyDataUtils) {
+      const today = new Date();
+      const month = today.getMonth();
+      const seasonalFactor = window.EnergyDataUtils.getSeasonalFactor(month);
+
+      // Generate daily predictions
+      predictionData = labels.map((_, index) => {
+        const dayFactor = 1 + Math.sin((index / days) * Math.PI) * 0.2;
+        const randomFactor = 0.9 + Math.random() * 0.2;
+        const weatherFactor = Math.random() > 0.7 ? 0.7 : 1;
+
+        return +(
+          seasonalFactor *
+          10 *
+          dayFactor *
+          randomFactor *
+          weatherFactor
+        ).toFixed(2);
+      });
+
+      // Generate historical data (slightly different)
+      historicalData = labels.map((_, index) => {
+        if (index < 2) {
+          const dayFactor = 1 + Math.sin((index / days) * Math.PI) * 0.2;
+          const randomFactor = 0.9 + Math.random() * 0.2;
+          return +(seasonalFactor * 10 * dayFactor * randomFactor).toFixed(2);
+        }
+        return null; // No historical data for future days
+      });
+
+      // Generate confidence intervals
+      confidenceLow = predictionData.map((val) => val * 0.8);
+      confidenceHigh = predictionData.map((val) => val * 1.2);
+
+      // Update summary in Alpine
+      if (predictionEl?._x_dataStack?.[0]) {
+        const total = predictionData
+          .reduce((sum, val) => sum + val, 0)
+          .toFixed(2);
+        predictionEl._x_dataStack[0].totalPrediction = total;
+        predictionEl._x_dataStack[0].isLoading = false;
+      }
+    } else {
+      // Fallback
+      predictionData = labels.map(() => Math.random() * 10 + 5);
+      historicalData = labels.map((_, i) =>
+        i < 2 ? Math.random() * 10 + 5 : null
+      );
+      confidenceLow = predictionData.map((val) => val * 0.8);
+      confidenceHigh = predictionData.map((val) => val * 1.2);
+    }
+
+    // Create the chart
+    return new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Predicted Energy",
+            data: predictionData,
+            borderColor: "rgba(79, 70, 229, 1)",
+            backgroundColor: "rgba(79, 70, 229, 0.1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: false,
+          },
+          {
+            label: "Historical Energy",
+            data: historicalData,
+            borderColor: "rgba(16, 185, 129, 1)",
+            backgroundColor: "rgba(16, 185, 129, 0.5)",
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0,
+            fill: false,
+          },
+          {
+            label: "Confidence Interval",
+            data: confidenceLow,
+            borderColor: "rgba(209, 213, 219, 0)",
+            backgroundColor: "rgba(209, 213, 219, 0.3)",
+            borderWidth: 0,
+            tension: 0.3,
+            fill: "+1", // Fill to the next dataset
+            pointRadius: 0,
+          },
+          {
+            label: "Confidence Interval",
+            data: confidenceHigh,
+            borderColor: "rgba(209, 213, 219, 0)",
+            backgroundColor: "rgba(209, 213, 219, 0.3)",
+            tension: 0.3,
+            fill: false,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              filter: function (item) {
+                // Hide confidence interval from legend
+                return !item.text.includes("Confidence");
+              },
+              usePointStyle: true,
+              padding: 20,
+            },
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            callbacks: {
+              label: function (context) {
+                // Only show tooltip for non-confidence interval datasets
+                if (context.dataset.label.includes("Confidence")) {
+                  return null;
+                }
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y.toFixed(2) + " kWh";
+                }
+                return label;
               },
             },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
             title: {
+              display: true,
+              text: "Energy (kWh)",
+            },
+          },
+          x: {
+            grid: {
               display: false,
-              text: "Date",
             },
           },
         },
       },
-    };
+    });
+  }
 
-    const predictionChart = new Chart(predictionCtx, predictionConfig);
-
-    // Function to fetch prediction data
-    function fetchPredictionData(days = 7) {
-      fetch(
-        `/api/energy/prediction?days=${days}&plantId={{ plant_id }}&mixSn={{ mix_sn }}`
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          updatePredictionChart(predictionChart, data);
-
-          // Update total prediction text
-          const totalPredicted = data.predictions
-            .reduce((sum, val) => sum + val, 0)
-            .toFixed(1);
-          document.getElementById(
-            "prediction-total"
-          ).textContent = `${totalPredicted} kWh`;
-        })
-        .catch((error) => {
-          console.error("Error fetching prediction data:", error);
-          // Show error message on chart
-          predictionChart.data.labels = ["Error loading prediction data"];
-          predictionChart.data.datasets.forEach((dataset) => {
-            dataset.data = [0];
-          });
-          predictionChart.update();
-        });
+  function initPowerDistributionChart() {
+    if (typeof echarts === "undefined") {
+      console.error("ECharts is not loaded");
+      return null;
     }
 
-    // Function to update prediction chart with new data
-    function updatePredictionChart(chart, data) {
-      chart.data.labels = data.dates;
-      chart.data.datasets[0].data = data.predictions;
-      chart.data.datasets[1].data = data.historical;
-      chart.data.datasets[2].data = data.upper_bound;
-      chart.data.datasets[3].data = data.lower_bound;
+    const chart = echarts.init(
+      document.getElementById("powerDistributionChart")
+    );
+
+    // Generate data with our utility if available
+    let chartData;
+    if (window.EnergyDataUtils) {
+      const data = window.EnergyDataUtils.generateEnergyData(
+        "day",
+        10,
+        new Date()
+      );
+      chartData = [
+        {
+          value: parseFloat(data.totals.selfConsumption),
+          name: "Self-consumption",
+        },
+        { value: parseFloat(data.totals.gridExport), name: "Grid Export" },
+        { value: parseFloat(data.totals.gridImport), name: "Grid Import" },
+      ];
+    } else {
+      chartData = [
+        { value: 32.5, name: "Self-consumption" },
+        { value: 12.8, name: "Grid Export" },
+        { value: 4.7, name: "Grid Import" },
+      ];
+    }
+
+    chart.setOption({
+      tooltip: {
+        trigger: "item",
+        formatter: "{a} <br/>{b}: {c} kWh ({d}%)",
+      },
+      legend: {
+        data: chartData.map((item) => item.name),
+        bottom: 10,
+        selectedMode: "single",
+      },
+      series: [
+        {
+          name: "Power Distribution",
+          type: "pie",
+          radius: ["50%", "70%"],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: "#fff",
+            borderWidth: 2,
+          },
+          label: {
+            show: false,
+            position: "center",
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: "18",
+              fontWeight: "bold",
+            },
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: "rgba(0, 0, 0, 0.5)",
+            },
+          },
+          labelLine: {
+            show: false,
+          },
+          data: chartData,
+        },
+      ],
+    });
+
+    // Add click handler
+    chart.on("click", function (params) {
+      if (params.componentType === "series") {
+        const name = params.name;
+        const el = document.getElementById("power-distribution-chart")
+          ._x_dataStack[0];
+
+        if (el && el.selectedSegment === name) {
+          el.selectedSegment = null;
+          chart.dispatchAction({
+            type: "downplay",
+            seriesIndex: 0,
+          });
+        } else if (el) {
+          el.selectedSegment = name;
+          chart.dispatchAction({
+            type: "highlight",
+            dataIndex: params.dataIndex,
+          });
+        }
+      }
+    });
+
+    return chart;
+  }
+
+  // Make sure the charts are initialized after DOM is ready and our utilities are loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize energy-chart.js script dynamically if not already loaded
+    if (!window.EnergyDataUtils) {
+      const script = document.createElement("script");
+      script.src = "/static/js/energy_chart.js";
+      script.onload = function () {
+        // Initialize all charts once utilities are loaded
+        initAllCharts();
+      };
+      document.head.appendChild(script);
+    } else {
+      // Initialize immediately if utilities already exist
+      initAllCharts();
+    }
+
+    function initAllCharts() {
+      // Register Chart.js plugins
+      Chart.register(ChartDataLabels);
+
+      // Energy Production Chart initialization
+      const energyProductionChart = initEnergyProductionChart();
+
+      // Listen for period change events
+      document
+        .getElementById("energy-production-chart")
+        .addEventListener("period-change", function (e) {
+          handlePeriodChange(energyProductionChart, e.detail);
+        });
+
+      // Listen for filter events
+      document
+        .getElementById("energy-production-chart")
+        .addEventListener("remove-filter", function (e) {
+          removeFilter(energyProductionChart, e.detail);
+        });
+
+      document
+        .getElementById("energy-production-chart")
+        .addEventListener("clear-filters", function () {
+          clearAllFilters(energyProductionChart);
+        });
+
+      // Energy Prediction Chart initialization
+      const predictionChart = initPredictionChart();
+
+      // Listen for fetch data events
+      document
+        .getElementById("energy-prediction-chart")
+        .addEventListener("fetch-data", function (e) {
+          fetchPredictionData(predictionChart, e.detail);
+
+          // Update Alpine.js state
+          const predictionEl = document.getElementById(
+            "energy-prediction-chart"
+          );
+          if (
+            predictionEl &&
+            predictionEl._x_dataStack &&
+            predictionEl._x_dataStack[0]
+          ) {
+            predictionEl._x_dataStack[0].isLoading = true;
+          }
+        });
+
+      // Power Distribution Chart initialization
+      const powerDistributionChart = initPowerDistributionChart();
+
+      // Listen for deselect segment events
+      document
+        .getElementById("power-distribution-chart")
+        .addEventListener("deselect-segment", function () {
+          deselectSegment(powerDistributionChart);
+        });
+
+      // Handle resize events for all charts
+      window.addEventListener("resize", function () {
+        if (energyProductionChart)
+          energyProductionChart.resize && energyProductionChart.resize();
+        if (predictionChart) predictionChart.resize && predictionChart.resize();
+        if (
+          powerDistributionChart &&
+          typeof powerDistributionChart.resize === "function"
+        ) {
+          powerDistributionChart.resize();
+        }
+      });
+    }
+  });
+
+  // Event handler functions
+  function handlePeriodChange(chart, period) {
+    console.log("Period change", period);
+
+    // Get the Alpine data context
+    const productionEl = document.getElementById("energy-production-chart");
+
+    // Update the chart with new period data
+    if (window.EnergyDataUtils && chart) {
+      const today = new Date();
+      const data = window.EnergyDataUtils.generateEnergyData(period, 10, today);
+
+      // Update chart datasets
+      chart.data.labels = data.labels;
+      chart.data.datasets[0].data = data.datasets.production;
+
+      // Generate previous period data
+      let prevDate;
+      switch (period) {
+        case "day":
+          prevDate = new Date();
+          prevDate.setDate(prevDate.getDate() - 1);
+          break;
+        case "week":
+          prevDate = new Date();
+          prevDate.setDate(prevDate.getDate() - 7);
+          break;
+        case "month":
+          prevDate = new Date();
+          prevDate.setMonth(prevDate.getMonth() - 1);
+          break;
+        case "year":
+          prevDate = new Date();
+          prevDate.setFullYear(prevDate.getFullYear() - 1);
+          break;
+      }
+
+      const prevData = window.EnergyDataUtils.generateEnergyData(
+        period,
+        9.5,
+        prevDate
+      );
+      chart.data.datasets[1].data = prevData.datasets.production;
+
+      // Update the chart
+      chart.update();
+
+      // Update Alpine.js data
+      if (
+        productionEl &&
+        productionEl._x_dataStack &&
+        productionEl._x_dataStack[0]
+      ) {
+        const totalProduction = data.totals.production;
+        productionEl._x_dataStack[0].summaryText = `Total ${period}: <strong>${totalProduction} kWh</strong>`;
+
+        const prevTotal = prevData.totals.production;
+        const diffPercent = (
+          ((totalProduction - prevTotal) / prevTotal) *
+          100
+        ).toFixed(1);
+        productionEl._x_dataStack[0].periodComparison = `${
+          diffPercent > 0 ? "+" : ""
+        }${diffPercent}% from previous ${period}`;
+      }
+    }
+  }
+
+  function removeFilter(chart, filterId) {
+    console.log("Remove filter", filterId);
+    // Get the Alpine data context
+    const productionEl = document.getElementById("energy-production-chart");
+
+    if (
+      productionEl &&
+      productionEl._x_dataStack &&
+      productionEl._x_dataStack[0]
+    ) {
+      // Update the filters array
+      const filters = productionEl._x_dataStack[0].filters;
+      const updatedFilters = filters.filter((filter) => filter.id !== filterId);
+      productionEl._x_dataStack[0].filters = updatedFilters;
+
+      // Update chart display based on active filters
+      applyFiltersToChart(chart, updatedFilters);
+    }
+  }
+
+  function clearAllFilters(chart) {
+    console.log("Clear all filters");
+    // Get the Alpine data context
+    const productionEl = document.getElementById("energy-production-chart");
+
+    if (
+      productionEl &&
+      productionEl._x_dataStack &&
+      productionEl._x_dataStack[0]
+    ) {
+      // Clear the filters array
+      productionEl._x_dataStack[0].filters = [];
+
+      // Restore the chart to its original state
+      if (chart) {
+        const period = productionEl._x_dataStack[0].activePeriod;
+        handlePeriodChange(chart, period);
+      }
+    }
+  }
+
+  function applyFiltersToChart(chart, filters) {
+    // This is a placeholder for filter application logic
+    // In a real implementation, you would modify chart data based on filter criteria
+    if (chart && filters.length > 0) {
+      // Example: Apply a simple scale factor based on filter count
+      const scaleFactor = 1 - filters.length * 0.1;
+
+      for (let i = 0; i < chart.data.datasets[0].data.length; i++) {
+        chart.data.datasets[0].data[i] *= scaleFactor;
+      }
+
       chart.update();
     }
+  }
 
-    // Initialize with 7-day prediction data
-    fetchPredictionData(7);
+  function fetchPredictionData(chart, days) {
+    console.log("Fetch prediction data for", days, "days");
 
-    // Add prediction period selector functionality
-    document
-      .querySelector(".prediction-period-selector")
-      .addEventListener("change", function (e) {
-        const days = parseInt(e.target.value);
-        fetchPredictionData(days);
+    // Get the Alpine data context
+    const predictionEl = document.getElementById("energy-prediction-chart");
+
+    // Simulate API fetch with our utility
+    if (window.EnergyDataUtils && chart) {
+      const today = new Date();
+
+      // Generate labels (dates)
+      const labels = Array.from({ length: days }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
       });
-  });
+
+      // Get seasonal factor for more realistic prediction
+      const month = today.getMonth();
+      const seasonalFactor = window.EnergyDataUtils.getSeasonalFactor(month);
+
+      // Generate prediction data
+      const predictionData = labels.map((_, index) => {
+        const dayFactor = 1 + Math.sin((index / days) * Math.PI) * 0.2;
+        const randomFactor = 0.9 + Math.random() * 0.2;
+        const weatherFactor = Math.random() > 0.7 ? 0.7 : 1;
+
+        return +(
+          seasonalFactor *
+          10 *
+          dayFactor *
+          randomFactor *
+          weatherFactor
+        ).toFixed(2);
+      });
+
+      // Generate historical data (only for past days)
+      const historicalData = labels.map((_, index) => {
+        if (index < 2) {
+          const dayFactor = 1 + Math.sin((index / days) * Math.PI) * 0.2;
+          const randomFactor = 0.9 + Math.random() * 0.2;
+          return +(seasonalFactor * 10 * dayFactor * randomFactor).toFixed(2);
+        }
+        return null; // No historical data for future days
+      });
+
+      // Generate confidence intervals
+      const confidenceLow = predictionData.map(
+        (val) => +(val * 0.8).toFixed(2)
+      );
+      const confidenceHigh = predictionData.map(
+        (val) => +(val * 1.2).toFixed(2)
+      );
+
+      // Update chart
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = predictionData;
+      chart.data.datasets[1].data = historicalData;
+      chart.data.datasets[2].data = confidenceLow;
+      chart.data.datasets[3].data = confidenceHigh;
+      chart.update();
+
+      // Update Alpine.js data
+      if (
+        predictionEl &&
+        predictionEl._x_dataStack &&
+        predictionEl._x_dataStack[0]
+      ) {
+        const total = predictionData
+          .reduce((sum, val) => sum + val, 0)
+          .toFixed(2);
+        predictionEl._x_dataStack[0].totalPrediction = total;
+        predictionEl._x_dataStack[0].isLoading = false;
+      }
+    }
+  }
+
+  function deselectSegment(chart) {
+    console.log("Deselect segment");
+
+    if (chart && typeof chart.dispatchAction === "function") {
+      chart.dispatchAction({
+        type: "downplay",
+        seriesIndex: 0,
+      });
+    }
+  }
 </script>

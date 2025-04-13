@@ -8,7 +8,58 @@ block content %}
   <!-- Include the dashboard metrics component from its new location -->
   {% include "metrics/dashboard_metrics.html" %}
 
-  <p class="text-lg font-medium mb-4 text-gray-700">Available Routes:</p>
+  <!-- Add new weather widget with chart -->
+  <div class="weather-widget mt-8 bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Current Weather</h2>
+    <div id="weather-widget-app" v-cloak>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="weather-overview bg-blue-50 p-4 rounded-lg">
+          <div class="weather-location text-lg font-medium mb-2">
+            <span v-if="weatherData.location">${ weatherData.location }</span>
+            <span
+              v-else
+              class="animate-pulse bg-gray-200 h-6 w-32 inline-block rounded"
+            ></span>
+          </div>
+          <div class="weather-current flex items-center">
+            <div class="weather-temp text-3xl font-bold mr-3">
+              <span v-if="weatherData.temperature"
+                >${ weatherData.temperature }</span
+              >
+              <span
+                v-else
+                class="animate-pulse bg-gray-200 h-10 w-20 inline-block rounded"
+              ></span>
+            </div>
+            <div class="weather-condition">
+              <div v-if="weatherData.weather" class="text-sm">
+                ${ weatherData.weather }
+              </div>
+              <div
+                v-else
+                class="animate-pulse bg-gray-200 h-4 w-24 inline-block rounded"
+              ></div>
+              <div class="text-sm text-gray-600">
+                <span v-if="weatherData.humidity"
+                  >Humidity: ${ weatherData.humidity }</span
+                >
+                <span
+                  v-else
+                  class="animate-pulse bg-gray-200 h-4 w-24 inline-block rounded"
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="weather-chart md:col-span-2">
+          <canvas id="weatherTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-lg font-medium mb-4 text-gray-700 mt-8">Available Routes:</p>
   <ul class="space-y-3 bg-white rounded-lg shadow-md p-6">
     <li class="hover:bg-gray-50 p-2 rounded transition-colors">
       <a
@@ -67,4 +118,159 @@ block content %}
     </li>
   </ul>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize the weather widget app
+    const WeatherWidgetApp = {
+      delimiters: ["${", "}"], // Use different delimiters to avoid conflict with Jinja2
+      data() {
+        return {
+          weatherData: {},
+          isLoading: true,
+          temperatureHistory: [22, 24, 27, 28, 26, 23],
+          humidityHistory: [60, 55, 48, 45, 50, 58],
+          timeLabels: ["6 AM", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM"],
+        };
+      },
+      mounted() {
+        this.fetchWeatherData();
+        this.initWeatherChart();
+      },
+      methods: {
+        fetchWeatherData() {
+          // In a real app, fetch from API
+          // For demo, simulate API call
+          this.isLoading = true;
+
+          // Simulate more realistic data
+          setTimeout(() => {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // Temperature varies throughout the day with peak in afternoon
+            let currentTemp = 22;
+            if (hour >= 6 && hour < 12) {
+              currentTemp = 22 + (hour - 6) * 0.8; // Morning warming
+            } else if (hour >= 12 && hour < 18) {
+              currentTemp = 26 + Math.sin(((hour - 12) / 6) * Math.PI) * 4; // Afternoon peak
+            } else if (hour >= 18 && hour < 22) {
+              currentTemp = 26 - (hour - 18) * 1.2; // Evening cooling
+            }
+
+            // Add some randomness
+            currentTemp = (currentTemp + (Math.random() * 2 - 1)).toFixed(1);
+
+            // Humidity tends to be inverse of temperature
+            const currentHumidity = (
+              70 -
+              parseInt(currentTemp) +
+              10 +
+              (Math.random() * 10 - 5)
+            ).toFixed(0);
+
+            // Weather condition based on temperature and time
+            let condition = "Sunny";
+            if (currentHumidity > 70) {
+              condition = "Cloudy";
+            } else if (currentHumidity > 85) {
+              condition = "Rainy";
+            }
+            if (hour < 6 || hour > 19) {
+              condition = hour < 6 ? "Clear Night" : "Partly Cloudy Night";
+            }
+
+            this.weatherData = {
+              location: "Solar Plant A",
+              temperature: `${currentTemp}°C`,
+              weather: condition,
+              humidity: `${currentHumidity}%`,
+              last_update_time: now.toLocaleTimeString(),
+              date: now.toLocaleDateString(),
+            };
+
+            // Update temperature history (shift and add new value)
+            this.temperatureHistory.push(parseFloat(currentTemp));
+            this.temperatureHistory.shift();
+
+            // Update humidity history
+            this.humidityHistory.push(parseInt(currentHumidity));
+            this.humidityHistory.shift();
+
+            // Update chart
+            this.updateWeatherChart();
+
+            this.isLoading = false;
+          }, 1000);
+        },
+
+        initWeatherChart() {
+          setTimeout(() => {
+            if (
+              window.EnergyCharts &&
+              document.getElementById("weatherTrendChart")
+            ) {
+              const data = {
+                labels: this.timeLabels,
+                datasets: [
+                  window.EnergyCharts.createDataset(
+                    "Temperature (°C)",
+                    this.temperatureHistory,
+                    "tertiary",
+                    { pointRadius: 3 }
+                  ),
+                  window.EnergyCharts.createDataset(
+                    "Humidity (%)",
+                    this.humidityHistory,
+                    "secondary",
+                    { pointRadius: 3 }
+                  ),
+                ],
+              };
+
+              this.weatherChart = window.EnergyCharts.createLineChart(
+                "weatherTrendChart",
+                data,
+                {
+                  plugins: {
+                    title: {
+                      display: true,
+                      text: "Weather Trends",
+                    },
+                  },
+                }
+              );
+            }
+          }, 1200);
+        },
+
+        updateWeatherChart() {
+          if (this.weatherChart) {
+            // Update the datasets
+            this.weatherChart.data.datasets[0].data = [
+              ...this.temperatureHistory,
+            ];
+            this.weatherChart.data.datasets[1].data = [...this.humidityHistory];
+
+            // Update time labels to show last 6 hours
+            const now = new Date();
+            this.timeLabels = Array.from({ length: 6 }, (_, i) => {
+              const d = new Date(now);
+              d.setHours(now.getHours() - 5 + i);
+              return d.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            });
+
+            this.weatherChart.data.labels = this.timeLabels;
+            this.weatherChart.update();
+          }
+        },
+      },
+    };
+
+    Vue.createApp(WeatherWidgetApp).mount("#weather-widget-app");
+  });
+</script>
 {% endblock %}

@@ -1,108 +1,104 @@
 {% extends "base.html" %} {% block title %}Plants - Growatt API{% endblock %} {%
 block content %}
-<div class="container mx-auto px-4 py-6">
+<div id="plants-app" class="container mx-auto px-4 py-6" x-data="plantsApp">
   <h1 class="text-xl font-medium mb-4">Plants</h1>
 
-  <div id="loading" class="flex justify-center py-4">
+  <div id="loading" class="flex justify-center py-4" x-show="isLoading">
     <div class="spinner border-2 border-t-2 rounded-full w-8 h-8"></div>
   </div>
 
-  <div id="error-message" class="hidden bg-red-50 text-red-600 px-3 py-2 mb-3">
-    Invalid response received. Please ensure you are logged in by checking the
-    Get Access link in the navigation bar.
-  </div>
+  <div
+    id="error-message"
+    class="bg-red-50 text-red-600 px-3 py-2 mb-3"
+    x-show="errorMessage"
+    x-text="errorMessage"
+  ></div>
 
   <div class="overflow-x-auto rounded">
     <table id="plants-table" class="w-full">
-      <thead class="">
+      <thead>
         <tr>
           <th class="px-3 text-left font-medium">Plant ID</th>
           <th class="px-3 text-left font-medium">Plant Name</th>
+          <th class="px-3 text-left font-medium">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <!-- Data will be dynamically inserted here -->
+        <tr x-show="plants.length === 0 && !isLoading">
+          <td colspan="3" class="py-3 px-3 text-center text-gray-500">
+            No plants found
+          </td>
+        </tr>
+        <template x-for="plant in plants" :key="plant.id">
+          <tr class="border-t">
+            <td class="py-2 px-3" x-text="plant.id"></td>
+            <td class="py-2 px-3" x-text="plant.plantName"></td>
+            <td class="py-2 px-3">
+              <a
+                :href="`/plant/${plant.id}/devices`"
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+              >
+                View Devices
+              </a>
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>
 </div>
 
 <script>
-  const loadingElement = document.getElementById("loading");
-  const errorElement = document.getElementById("error-message");
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("plantsApp", () => ({
+      plants: [],
+      isLoading: true,
+      errorMessage: "",
 
-  // Don't immediately show the error message, wait for fetch result
-  // Just show loading initially
-  loadingElement.classList.remove("hidden");
-  errorElement.classList.add("hidden");
+      init() {
+        this.fetchPlants();
+      },
 
-  fetch("/api/plants")
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((response) => {
-      // Check if response contains an error
-      if (response.length === 1 && response[0].error) {
-        // Handle API error response
-        const errorData = response[0];
-        throw new Error(errorData.ui_message || errorData.error);
-      }
+      fetchPlants() {
+        this.isLoading = true;
+        this.errorMessage = "";
 
-      // Hide loading and keep error hidden since fetch was successful
-      loadingElement.classList.add("hidden");
-      errorElement.classList.add("hidden");
+        fetch("/api/plants")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((response) => {
+            // Check if response contains an error
+            if (response.length === 1 && response[0].error) {
+              // Handle API error response
+              const errorData = response[0];
+              throw new Error(errorData.ui_message || errorData.error);
+            }
 
-      const plantsTableBody = document.querySelector("#plants-table tbody");
+            // Process data
+            const data = Array.isArray(response)
+              ? response
+              : response.data
+              ? response.data
+              : response.plants
+              ? response.plants
+              : [];
 
-      // Check if data is in response.data (common API pattern)
-      const data = Array.isArray(response)
-        ? response
-        : response.data
-        ? response.data
-        : response.plants
-        ? response.plants
-        : [];
-
-      console.log("Plants data:", data); // For debugging
-
-      if (!Array.isArray(data) || data.length === 0) {
-        // Show message if no plants or data isn't an array
-        const emptyRow = document.createElement("tr");
-        const emptyCell = document.createElement("td");
-        emptyCell.textContent = "No plants found";
-        emptyCell.colSpan = 2;
-        emptyCell.className = "py-3 px-3 text-center text-gray-500";
-        emptyRow.appendChild(emptyCell);
-        plantsTableBody.appendChild(emptyRow);
-        return;
-      }
-
-      data.forEach((plant) => {
-        const row = document.createElement("tr");
-        row.className = "border-t";
-
-        const idCell = document.createElement("td");
-        const nameCell = document.createElement("td");
-
-        idCell.textContent = plant.id;
-        nameCell.textContent = plant.plantName;
-
-        idCell.className = "py-2 px-3";
-        nameCell.className = "py-2 px-3";
-
-        row.appendChild(idCell);
-        row.appendChild(nameCell);
-        plantsTableBody.appendChild(row);
-      });
-    })
-    .catch((error) => {
-      loadingElement.classList.add("hidden");
-      errorElement.textContent = "Error loading plants: " + error.message;
-      errorElement.classList.remove("hidden");
-      console.error("Error fetching plants:", error);
-    });
+            this.plants = data;
+            console.log("Plants data:", data);
+          })
+          .catch((error) => {
+            this.errorMessage = "Error loading plants: " + error.message;
+            console.error("Error fetching plants:", error);
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
+      },
+    }));
+  });
 </script>
 {% endblock %}

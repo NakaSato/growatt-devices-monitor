@@ -1,193 +1,257 @@
 {% extends "base.html" %} {% block title %}Devices - Growatt API{% endblock %}
 {% block content %}
-<h1>Devices for Plant: {{ plant_name }}</h1>
+<div class="container">
+  <h1>Devices for Plant: {{ plant_name }}</h1>
 
-<!-- Loading spinner -->
-<div id="loading-spinner" class="spinner" style="display: none"></div>
+  <div class="controls mb-3">
+    <!-- Loading spinner -->
+    <div id="loading-spinner" class="spinner" style="display: none"></div>
 
-<!-- Export Button -->
-<button id="export-button" class="btn btn-primary" onclick="exportToExcel()">
-  Export to Excel
-</button>
+    <!-- Export Button -->
+    <button
+      id="export-button"
+      class="btn btn-primary"
+      onclick="exportToExcel()"
+    >
+      <i class="fa fa-download"></i> Export to Excel
+    </button>
 
-<table id="devices-table" border="1" data-sort-order="asc">
-  <thead>
-    <tr>
-      <th onclick="sortTable(0)">
-        Plant Name <span class="sort-icon">▲</span>
-      </th>
-      <th onclick="sortTable(1)">
-        Device Alias <span class="sort-icon">▲</span>
-      </th>
-      <th onclick="sortTable(2)">
-        Serial Number <span class="sort-icon">▲</span>
-      </th>
-      <th onclick="sortTable(3)">Status <span class="sort-icon">▲</span></th>
-      <th onclick="sortTable(4)">
-        Total Energy <span class="sort-icon">▲</span>
-      </th>
-      <th onclick="sortTable(5)">
-        Last Update Time <span class="sort-icon">▲</span>
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Data will be dynamically inserted here -->
-  </tbody>
-</table>
+    <!-- Refresh Button -->
+    <button
+      id="refresh-button"
+      class="btn btn-secondary ms-2"
+      onclick="fetchDevices(true)"
+    >
+      <i class="fa fa-sync"></i> Refresh Data
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table
+      id="devices-table"
+      class="table table-striped table-hover"
+      data-sort-order="asc"
+    >
+      <thead class="table-dark">
+        <tr>
+          <th onclick="sortTable(0)">
+            Plant Name <span class="sort-icon">▲</span>
+          </th>
+          <th onclick="sortTable(1)">
+            Device Alias <span class="sort-icon">▲</span>
+          </th>
+          <th onclick="sortTable(2)">
+            Serial Number <span class="sort-icon">▲</span>
+          </th>
+          <th onclick="sortTable(3)">
+            Status <span class="sort-icon">▲</span>
+          </th>
+          <th onclick="sortTable(4)">
+            Total Energy <span class="sort-icon">▲</span>
+          </th>
+          <th onclick="sortTable(5)">
+            Last Update Time <span class="sort-icon">▲</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <script>
-  const plantId = "{{ plant_id }}"; // Pass the plant ID from the server-side
-  const cacheKey = `devices_${plantId}`;
-  const cacheExpiration = 15 * 60 * 1000; // Cache expiration time in milliseconds (e.g., 15 minutes)
+  document.addEventListener("DOMContentLoaded", () => {
+    const plantId = "{{ plant_id }}";
+    const cacheKey = `devices_${plantId}`;
+    const cacheExpiration = 15 * 60 * 1000; // 15 minutes
+    const apiUrl = "http://127.0.0.1:5000/api/devices/"; // Use Django URL tag for robustness
+    const loadingSpinner = document.getElementById("loading-spinner");
+    const devicesTable = document.getElementById("devices-table");
+    const exportButton = document.getElementById("export-button");
+    const refreshButton = document.getElementById("refresh-button");
 
-  function renderDevices(data) {
-    const devicesTableBody = document.querySelector("#devices-table tbody");
-    devicesTableBody.innerHTML = ""; // Clear existing rows
-    data.forEach((device) => {
-      const row = document.createElement("tr");
+    function renderDevices(data) {
+      const devicesTableBody = devicesTable.querySelector("tbody");
+      devicesTableBody.innerHTML = ""; // Clear existing rows
 
-      // Add a CSS class if the status is "Offline"
-      if (device.status === "Offline") {
-        row.classList.add("offline-row");
+      if (!data || data.length === 0) {
+        const emptyRow = document.createElement("tr");
+        const emptyCell = document.createElement("td");
+        emptyCell.textContent = "No device data available";
+        emptyCell.colSpan = 6;
+        emptyCell.className = "text-center";
+        emptyRow.appendChild(emptyCell);
+        devicesTableBody.appendChild(emptyRow);
+        return;
       }
 
-      const plantNameCell = document.createElement("td");
-      const aliasCell = document.createElement("td");
-      const serialCell = document.createElement("td");
-      const statusCell = document.createElement("td");
-      const energyCell = document.createElement("td");
-      const updateTimeCell = document.createElement("td");
-
-      plantNameCell.textContent = device.plant_name;
-      aliasCell.textContent = device.alias;
-      serialCell.textContent = device.serial_number;
-
-      // Create styled status indicator
-      statusCell.innerHTML = `<div><span class="px-3 py-1 rounded-md ${
-        device.status === "Online"
-          ? "bg-green-500/20 text-green-400"
-          : device.status === "Offline"
-          ? "bg-red-500/20 text-red-400"
-          : "bg-gray-500/20 text-gray-400"
-      }">${device.status}</span></div>`;
-
-      energyCell.textContent = device.total_energy;
-      updateTimeCell.textContent = device.last_update_time;
-
-      row.appendChild(plantNameCell);
-      row.appendChild(aliasCell);
-      row.appendChild(serialCell);
-      row.appendChild(statusCell);
-      row.appendChild(energyCell);
-      row.appendChild(updateTimeCell);
-
-      devicesTableBody.appendChild(row);
-    });
-  }
-
-  function fetchDevices() {
-    // Show the loading spinner
-    document.getElementById("loading-spinner").style.display = "block";
-
-    fetch(`/api/devices`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      data.forEach((device) => {
+        const row = document.createElement("tr");
+        if (device.status === "Offline") {
+          row.classList.add("table-danger");
         }
-        return response.json();
-      })
-      .then((data) => {
-        // Cache the data with a timestamp
-        const cacheData = {
-          timestamp: Date.now(),
-          data: data,
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        renderDevices(data);
-      })
-      .catch((error) => console.error("Error fetching devices:", error))
-      .finally(() => {
-        // Hide the loading spinner
-        document.getElementById("loading-spinner").style.display = "none";
+
+        [
+          "plant_name",
+          "alias",
+          "serial_number",
+          "status",
+          "total_energy",
+          "last_update_time",
+        ].forEach((field) => {
+          const cell = document.createElement("td");
+          cell.textContent = device[field] || "N/A";
+          row.appendChild(cell);
+        });
+
+        devicesTableBody.appendChild(row);
       });
-  }
-
-  // Check cache
-  const cachedData = localStorage.getItem(cacheKey);
-  if (cachedData) {
-    const parsedCache = JSON.parse(cachedData);
-    const isCacheValid = Date.now() - parsedCache.timestamp < cacheExpiration;
-
-    if (isCacheValid) {
-      renderDevices(parsedCache.data);
-    } else {
-      fetchDevices(); // Cache expired, fetch new data
     }
-  } else {
-    fetchDevices(); // No cache, fetch data
-  }
 
-  // Function to sort the table
-  function sortTable(columnIndex) {
-    const table = document.getElementById("devices-table");
-    const rows = Array.from(table.rows).slice(1); // Exclude the header row
-    const isAscending = table.getAttribute("data-sort-order") === "asc";
-    const direction = isAscending ? 1 : -1;
+    function fetchDevices(forceRefresh = false) {
+      loadingSpinner.style.display = "block";
+      exportButton.disabled = true;
+      refreshButton.disabled = true;
 
-    rows.sort((a, b) => {
-      const cellA = a.cells[columnIndex].textContent.trim();
-      const cellB = b.cells[columnIndex].textContent.trim();
+      // Check cache first unless forced refresh
+      if (!forceRefresh) {
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          const parsedCache = JSON.parse(cachedData);
+          const isCacheValid =
+            Date.now() - parsedCache.timestamp < cacheExpiration;
 
-      // Handle numeric sorting
-      if (!isNaN(cellA) && !isNaN(cellB)) {
-        return direction * (parseFloat(cellA) - parseFloat(cellB));
+          if (isCacheValid) {
+            renderDevices(parsedCache.data);
+            loadingSpinner.style.display = "none";
+            exportButton.disabled = false;
+            refreshButton.disabled = false;
+            return;
+          }
+        }
       }
 
-      // Handle string sorting
-      return direction * cellA.localeCompare(cellB);
-    });
+      // Fetch new data
+      fetch(apiUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Cache the data with a timestamp
+          const cacheData = {
+            timestamp: Date.now(),
+            data: data,
+          };
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+          renderDevices(data);
+        })
+        .catch((error) => {
+          console.error("Error fetching devices:", error);
+          const devicesTableBody = devicesTable.querySelector("tbody");
+          devicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">
+            Error loading devices: ${error.message}</td></tr>`;
+        })
+        .finally(() => {
+          loadingSpinner.style.display = "none";
+          exportButton.disabled = false;
+          refreshButton.disabled = false;
+        });
+    }
 
-    // Append sorted rows back to the table
-    const tbody = table.querySelector("tbody");
-    rows.forEach((row) => tbody.appendChild(row));
+    function sortTable(columnIndex) {
+      const rows = Array.from(devicesTable.rows).slice(1); // Exclude the header row
+      const isAscending =
+        devicesTable.getAttribute("data-sort-order") === "asc";
+      const direction = isAscending ? 1 : -1;
 
-    // Toggle sort order
-    table.setAttribute("data-sort-order", isAscending ? "desc" : "asc");
+      // Stop if no data to sort
+      if (rows.length <= 1 && rows[0]?.cells.length === 1) return;
 
-    // Update sort icons
-    const headers = table.querySelectorAll("th");
-    headers.forEach((header, index) => {
-      const icon = header.querySelector(".sort-icon");
-      if (icon) {
-        icon.textContent =
-          index === columnIndex ? (isAscending ? "▼" : "▲") : "▲";
-      }
-    });
-  }
+      rows.sort((a, b) => {
+        const cellA = a.cells[columnIndex].textContent.trim();
+        const cellB = b.cells[columnIndex].textContent.trim();
 
-  // Function to export table data to Excel
-  function exportToExcel() {
-    const table = document.getElementById("devices-table");
-    const rows = Array.from(table.rows);
-    let csvContent = "\uFEFF"; // Add BOM for proper Unicode handling in Excel
+        // Handle numeric sorting
+        if (!isNaN(cellA) && !isNaN(cellB)) {
+          return direction * (parseFloat(cellA) - parseFloat(cellB));
+        }
 
-    rows.forEach((row) => {
-      const cells = Array.from(row.cells);
-      const rowContent = cells
-        .map((cell) => `"${cell.textContent.replace(/"/g, '""')}"`) // Escape double quotes
-        .join(",");
-      csvContent += rowContent + "\n";
-    });
+        // Try date sorting for the last column
+        if (columnIndex === 5) {
+          try {
+            const dateA = new Date(cellA);
+            const dateB = new Date(cellB);
+            if (!isNaN(dateA) && !isNaN(dateB)) {
+              return direction * (dateA - dateB);
+            }
+          } catch (e) {
+            // Fall back to string comparison
+          }
+        }
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `devices.csv`;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+        // String sorting
+        return direction * cellA.localeCompare(cellB);
+      });
+
+      // Append sorted rows back to the table
+      const tbody = devicesTable.querySelector("tbody");
+      rows.forEach((row) => tbody.appendChild(row));
+
+      // Toggle sort order
+      devicesTable.setAttribute(
+        "data-sort-order",
+        isAscending ? "desc" : "asc"
+      );
+
+      // Update sort icons
+      const headers = devicesTable.querySelectorAll("th");
+      headers.forEach((header, index) => {
+        const icon = header.querySelector(".sort-icon");
+        if (icon) {
+          icon.textContent =
+            index === columnIndex ? (isAscending ? "▼" : "▲") : "▲";
+        }
+      });
+    }
+
+    window.exportToExcel = function () {
+      const rows = Array.from(devicesTable.rows);
+      let csvContent = "\uFEFF"; // Add BOM for Unicode support
+
+      // Add title row
+      csvContent += `"Devices for Plant: {{ plant_name }}"\n\n`;
+
+      rows.forEach((row) => {
+        const cells = Array.from(row.cells);
+        const rowContent = cells
+          .map((cell) => `"${cell.textContent.replace(/"/g, '""')}"`)
+          .join(",");
+        csvContent += rowContent + "\n";
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      link.href = URL.createObjectURL(blob);
+      link.download = `devices-{{ plant_name }}-${timestamp}.csv`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // Expose sortTable to global scope for onclick handlers
+    window.sortTable = sortTable;
+    window.fetchDevices = fetchDevices;
+
+    // Initial data load
+    fetchDevices();
+  });
 </script>
 {% endblock %}
