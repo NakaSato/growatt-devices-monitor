@@ -7,8 +7,9 @@ from pathlib import Path
 import logging
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,15 +20,25 @@ MODEL_DIR = Path(__file__).parent / "models"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 class EnergyPredictor:
-    """Energy production prediction service using ML techniques."""
+    """
+    Energy production prediction service using ML techniques.
+    
+    This service uses historical energy production data to train
+    machine learning models that can predict future energy generation.
+    It handles data preprocessing, feature engineering, model training,
+    evaluation, and prediction with uncertainty bounds.
+    """
     
     def __init__(self, db_connector=None):
         """Initialize the predictor with database connection."""
         self.db_connector = db_connector
         self.model_path = MODEL_DIR / "energy_prediction_model.joblib"
         self.scaler_path = MODEL_DIR / "energy_prediction_scaler.joblib"
+        self.metrics_path = MODEL_DIR / "model_metrics.json"
         self.model = None
         self.scaler = None
+        self.model_version = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.model_metrics = {}
         self._load_model()
     
     def _load_model(self):
@@ -160,8 +171,18 @@ class EnergyPredictor:
         
         return X, y, data
     
-    def train_model(self, plant_id=None, mix_sn=None):
-        """Train a new prediction model using historical data."""
+    def train_model(self, plant_id=None, mix_sn=None, tune_hyperparams=False):
+        """
+        Train a new prediction model using historical data.
+        
+        Args:
+            plant_id: Plant identifier
+            mix_sn: Device serial number
+            tune_hyperparams: Whether to perform hyperparameter tuning
+            
+        Returns:
+            bool: Success status of training
+        """
         try:
             # Get historical data
             df = self.get_historical_data(plant_id, mix_sn)
@@ -185,12 +206,42 @@ class EnergyPredictor:
             
             # Train model
             logger.info("Training new model...")
-            self.model = RandomForestRegressor(
-                n_estimators=100, 
-                random_state=42,
-                n_jobs=-1
-            )
-            self.model.fit(X_train_scaled, y_train)
+            
+            if tune_hyperparams:
+                # Define parameter grid
+                param_grid = {
+                    'n_estimators': [50, 100, 200],
+                    'max_depth': [None, 10, 20, 30],
+                    'min_samples_split': [2, 5, 10],
+                    'min_samples_leaf': [1, 2, 4]
+                }
+                
+                # Create base model
+                base_model = RandomForestRegressor(random_state=42, n_jobs=-1)
+                
+                # Perform grid search
+                logger.info("Performing hyperparameter tuning (this may take a while)...")
+                grid_search = GridSearchCV(
+                    estimator=base_model,
+                    param_grid=param_grid,
+                    cv=5,
+                    scoring='neg_mean_squared_error',
+                    n_jobs=-1,
+                    verbose=1
+                )
+                grid_search.fit(X_train_scaled, y_train)
+                
+                # Get best model
+                self.model = grid_search.best_estimator_
+                logger.info(f"Best hyperparameters: {grid_search.best_params_}")
+            else:
+                # Use default hyperparameters
+                self.model = RandomForestRegressor(
+                    n_estimators=100, 
+                    random_state=42,
+                    n_jobs=-1
+                )
+                self.model.fit(X_train_scaled, y_train)
             
             # Evaluate model
             y_pred = self.model.predict(X_test_scaled)
@@ -200,6 +251,21 @@ class EnergyPredictor:
             
             logger.info(f"Model trained - MAE: {mae:.2f}, RMSE: {rmse:.2f}, R²: {r2:.2f}")
             
+            # Store metrics
+            self.model_metrics = {
+                'version': self.model_version,
+                'date_trained': datetime.now().isoformat(),
+                'mae': round(float(mae), 3),
+                'rmse': round(float(rmse), 3),
+                'r2': round(float(r2), 3),
+                'data_points': len(X),
+                'feature_importance': self.get_feature_importance()
+            }
+            
+            # Save metrics
+            with open(self.metrics_path, 'w') as f:
+                json.dump(self.model_metrics, f, indent=2)
+            
             # Save the model
             self._save_model()
             
@@ -207,6 +273,65 @@ class EnergyPredictor:
         except Exception as e:
             logger.error(f"Error training model: {e}")
             return False
+    
+    def get_feature_importance(self):
+        """Get the importance of each feature in the model."""
+        if self.model is None:
+            return {}
+        
+        try:
+            # Get feature names
+            feature_columns = [
+                'day_of_week', 'month', 'day', 'day_of_year',
+                'energy_lag_1', 'energy_lag_2', 'energy_lag_3', 
+                'energy_lag_4', 'energy_lag_5', 'energy_lag_6', 'energy_lag_7',
+                'rolling_mean_3', 'rolling_mean_7', 'rolling_std_7'
+            ]
+            
+            # Get importance scores
+            importance = self.model.feature_importances_
+            
+            # Create a dictionary of feature importance
+            feature_importance = {}
+            for feature, score in zip(feature_columns, importance):
+                feature_importance[feature] = round(float(score), 4)
+                
+            # Sort by importance
+            feature_importance = {k: v for k, v in sorted(
+                feature_importance.items(), 
+                key=lambda item: item[1], 
+                reverse=True
+            )}
+            
+            return feature_importance
+        except Exception as e:
+            logger.error(f"Error getting feature importance: {e}")
+            return {}
+    
+    def get_model_info(self):
+        """Get information about the current model."""
+        if self.model is None:
+            return {"status": "No model loaded"}
+        
+        try:
+            # Load metrics if available
+            if os.path.exists(self.metrics_path):
+                with open(self.metrics_path, 'r') as f:
+                    metrics = json.load(f)
+            else:
+                metrics = self.model_metrics
+            
+            # Add additional information
+            metrics["model_type"] = self.model.__class__.__name__
+            metrics["n_estimators"] = self.model.n_estimators
+            
+            return metrics
+        except Exception as e:
+            logger.error(f"Error getting model info: {e}")
+            return {
+                "status": "Model loaded but info unavailable",
+                "error": str(e)
+            }
     
     def predict_energy(self, plant_id=None, mix_sn=None, days=7):
         """
