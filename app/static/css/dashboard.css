@@ -1,22 +1,17 @@
 /* Metrics Container */
 .metrics-container {
-  display: flex;
-  flex-direction: column;
-  max-width: 1400px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  gap: 30px;
 }
 
-/* Metrics Row */
 .metrics-row {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  width: 100%;
 }
 
-/* Metric Card Styling */
 .metric-card {
   background-color: white;
   border-radius: 8px;
@@ -28,6 +23,12 @@
   min-height: 160px;
   min-width: 250px;
   flex: 1;
+}
+
+@media (max-width: 768px) {
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .metric-card:hover {
