@@ -23,6 +23,12 @@
       rel="stylesheet"
     />
 
+    <!-- Alpine.js -->
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
 
@@ -30,10 +36,6 @@
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/dashboard.css') }}"
     />
 
     <title>
@@ -50,39 +52,10 @@
     <!-- Custom JavaScript block -->
     {% block head_scripts %}{% endblock %}
   </head>
-  <body class="min-h-screen flex flex-col">
-    <header class="shadow-md mb-6">
-      <nav class="p-4">
-        <div class="container mx-auto flex justify-center gap-6">
-          <a href="/" class="text-white font-bold hover:underline">Home</a>
-          <a href="/plants" class="text-white font-bold hover:underline"
-            >Plants</a
-          >
-          <a href="/devices" class="text-white font-bold hover:underline"
-            >Status Devices</a
-          >
-          <a href="/weather" class="text-white font-bold hover:underline"
-            >Weather Status</a
-          >
-          {% if not authenticated %}
-          <a
-            href="/api/access"
-            id="api-access-link"
-            class="text-white font-bold hover:underline"
-          >
-            Get Access
-          </a>
-          {% endif %}
-          <a
-            href="javascript:void(0);"
-            onclick="clearCacheAndLogout()"
-            class="text-white font-bold hover:underline"
-          >
-            Sign Out
-          </a>
-        </div>
-      </nav>
-    </header>
+
+  <body class="min-h-screen flex flex-col" x-data="{}">
+    <!-- Header and Navigation -->
+    {% include 'navbar.html' %}
 
     <main class="container mx-auto flex-grow px-4">
       {% block content %}{% endblock %}
@@ -115,7 +88,7 @@
         event.target.classList.add("opacity-50");
 
         fetch("/api/access", {
-          method: "POST", // Changed from GET to POST to avoid automatic redirect handling
+          method: "POST",
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
@@ -193,6 +166,15 @@
         // Finally redirect to logout URL
         window.location.href = "/api/logout";
       }
+
+      // Make functions available to Alpine.js
+      document.addEventListener("alpine:init", () => {
+        Alpine.data("app", () => ({
+          clearCacheAndLogout() {
+            clearCacheAndLogout();
+          },
+        }));
+      });
     </script>
   </body>
 </html>

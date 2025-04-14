@@ -1,0 +1,70 @@
+
+  <!-- API Routes Section -->
+  <p class="text-lg font-medium mb-4 text-gray-700 mt-8">Available Routes:</p>
+  <ul class="space-y-3 bg-white rounded-lg shadow-md p-6">
+    <!-- Plants listing endpoint -->
+    <li class="hover:bg-gray-50 p-2 rounded transition-colors">
+      <a
+        href="/plants"
+        class="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+      >
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 text-sm"
+          >GET</span
+        >
+        /plants - List all plants
+      </a>
+    </li>
+
+    <!-- Plant devices endpoint -->
+    <li class="hover:bg-gray-50 p-2 rounded transition-colors">
+      <a
+        href="/plant/1/devices"
+        class="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+      >
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 text-sm"
+          >GET</span
+        >
+        /plant/&lt;plant_id&gt;/devices - List devices for a specific plant
+      </a>
+    </li>
+
+    <!-- Daily energy endpoint -->
+    <li class="hover:bg-gray-50 p-2 rounded transition-colors">
+      <a
+        href="/energy/daily?date=YYYY-MM-DD&plantId=1&mixSn=12345"
+        class="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+      >
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 text-sm"
+          >GET</span
+        >
+        /energy/daily - Get daily energy statistics
+      </a>
+    </li>
+
+    <!-- Monthly energy endpoint -->
+    <li class="hover:bg-gray-50 p-2 rounded transition-colors">
+      <a
+        href="/energy/monthly?date=YYYY-MM&plantId=1&mixSn=12345"
+        class="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+      >
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 text-sm"
+          >GET</span
+        >
+        /energy/monthly - Get monthly energy statistics
+      </a>
+    </li>
+
+    <!-- Yearly energy endpoint -->
+    <li class="hover:bg-gray-50 p-2 rounded transition-colors">
+      <a
+        href="/energy/yearly?year=YYYY&plantId=1&mixSn=12345"
+        class="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+      >
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 text-sm"
+          >GET</span
+        >
+        /energy/yearly - Get yearly energy statistics
+      </a>
+    </li>
+  </ul>
+</div>

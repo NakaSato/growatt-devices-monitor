@@ -3,40 +3,6 @@ block content %}
 <div id="plants-app" class="container mx-auto px-4 py-6" x-data="plantsApp">
   <h1 class="text-xl font-medium mb-4">Plants</h1>
 
-  <div class="flex justify-between items-center mb-4">
-    <div class="flex space-x-2">
-      <button
-        @click="fetchPlants(true)"
-        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm flex items-center"
-        :disabled="isLoading"
-      >
-        <span x-show="isLoading" class="mr-2">
-          <svg
-            class="animate-spin h-4 w-4 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-        </span>
-        <span x-text="isLoading ? 'Refreshing...' : 'Refresh Plants'"></span>
-      </button>
-    </div>
-  </div>
-
   <div id="loading" class="flex justify-center py-4" x-show="isLoading">
     <div class="spinner border-2 border-t-2 rounded-full w-8 h-8"></div>
   </div>
@@ -74,38 +40,55 @@ block content %}
   </div>
 
   <div class="overflow-x-auto rounded" x-show="plants.length > 0">
-    <table id="plants-table" class="w-full">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-3 py-2 text-left font-medium text-gray-700">
-            Plant ID
-          </th>
-          <th class="px-3 py-2 text-left font-medium text-gray-700">
-            Plant Name
-          </th>
-          <th class="px-3 py-2 text-left font-medium text-gray-700">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="plant in plants" :key="plant.id">
-          <tr class="border-t hover:bg-gray-50">
-            <td class="py-2 px-3" x-text="plant.id"></td>
-            <td
-              class="py-2 px-3"
-              x-text="plant.plantName || 'Unnamed Plant'"
-            ></td>
-            <td class="py-2 px-3">
-              <a
-                :href="`/plant/${plant.id}/devices`"
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
-              >
-                View Devices
-              </a>
-            </td>
+    <div class="w-full overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Plant ID</th>
+            <th>Plant Name</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
           </tr>
-        </template>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <template x-for="plant in plants" :key="plant.id">
+            <tr class="row-hover">
+              <td x-text="plant.id"></td>
+              <td x-text="plant.plantName || 'Unnamed Plant'"></td>
+              <td>
+                <span
+                  class="badge badge-soft badge-success text-xs"
+                  x-text="plant.status || ''"
+                ></span>
+              </td>
+              <td x-text="plant.createDate || '-'"></td>
+              <td>
+                <a
+                  :href="`/plant/${plant.id}/devices`"
+                  class="btn btn-circle btn-text btn-sm"
+                  aria-label="View devices"
+                >
+                  <span class="icon-[tabler--device-laptop] size-5"></span>
+                </a>
+                <button
+                  class="btn btn-circle btn-text btn-sm"
+                  aria-label="Edit plant"
+                >
+                  <span class="icon-[tabler--pencil] size-5"></span>
+                </button>
+                <button
+                  class="btn btn-circle btn-text btn-sm"
+                  aria-label="More options"
+                >
+                  <span class="icon-[tabler--dots-vertical] size-5"></span>
+                </button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 

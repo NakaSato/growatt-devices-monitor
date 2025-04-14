@@ -1,0 +1,277 @@
+<!-- Overview Tab -->
+<div
+  x-show="activeTab === 'overview'"
+  x-transition:enter="transition ease-out duration-200"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+>
+  <div class="status-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Power Generation Status -->
+    <div
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-green-500"
+    >
+      <div class="flex justify-between">
+        <h3 class="text-gray-700 font-medium">Power Generation</h3>
+        <span
+          class="status-indicator bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded"
+          >Active</span
+        >
+      </div>
+      <div class="mt-2">
+        <div class="flex items-baseline">
+          <span class="text-2xl font-bold text-gray-900">8.12 kW</span>
+          <span class="ml-2 text-sm text-gray-500">Current Output</span>
+        </div>
+        <div class="flex items-center mt-1">
+          <span class="text-green-500 flex items-center text-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            +3.2% from avg
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Status -->
+    <div
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-purple-500"
+      x-data="{ 
+      inverterStatus: 'Online',
+      devices: [
+        { name: 'Inverter', status: 'Online' },
+        { name: 'Smart Meter', status: 'Online' }
+        ],
+      }"
+    >
+      <div class="flex justify-between">
+        <h3 class="text-gray-700 font-medium">Devices Status</h3>
+        <span
+          class="status-indicator bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded"
+          :class="{ 'status-critical': inverterStatus === 'Offline' }"
+          x-text="inverterStatus"
+        ></span>
+      </div>
+      <div class="mt-2">
+        <div class="flex items-baseline">
+          <span
+            class="text-2xl font-bold text-gray-900"
+            x-text="devices.length"
+          ></span>
+          <span class="ml-2 text-sm text-gray-500">Active Devices</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <template x-for="device in devices" :key="device.name">
+            <div class="text-sm text-gray-600">
+              <span x-text="device.name + ':'" class="mr-1"></span>
+              <span
+                x-text="device.status"
+                :class="{
+                  'text-green-600 font-medium': device.status === 'Online' || device.status === 'Active',
+                  'text-red-600 font-medium': device.status === 'Offline',
+                  'text-yellow-600 font-medium': device.status === 'Waiting'
+                }"
+              ></span>
+            </div>
+          </template>
+        </div>
+        <div class="mt-2">
+          <button
+            @click="inverterStatus = 'Online'"
+            class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded mr-1 hover:bg-green-200"
+          >
+            Online (<span
+              x-text="devices.filter(d => d.status === 'Online').length"
+            ></span
+            >)
+          </button>
+          <button
+            @click="inverterStatus = 'Offline'"
+            class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded mr-1 hover:bg-red-200"
+          >
+            Offline (<span
+              x-text="devices.filter(d => d.status === 'Offline').length"
+            ></span
+            >)
+          </button>
+          <button
+            @click="inverterStatus = 'Waiting'"
+            class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+          >
+            Waiting (<span
+              x-text="devices.filter(d => d.status === 'Waiting').length"
+            ></span
+            >)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faults Status -->
+    <div
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4"
+      :class="faultsCount > 0 ? 'border-red-500' : 'border-green-500'"
+      x-data="faultsData"
+      x-init="setInterval(() => checkFaults(), 10000)"
+    >
+      <div class="flex justify-between">
+        <h3
+          class="text-gray-700 font-medium fault-indicator"
+          :class="{'has-faults': faultsCount > 0}"
+        >
+          Total Faults
+        </h3>
+        <span
+          class="status-indicator text-xs font-medium px-2 py-0.5 rounded"
+          :class="faultsCount > 0 ? 'bg-red-100 text-red-800 status-critical' : 'bg-green-100 text-green-800'"
+          x-text="faultsCount > 0 ? 'Faults' : 'Healthy'"
+        ></span>
+      </div>
+      <div class="mt-2">
+        <div class="flex flex-col">
+          <div class="flex items-baseline">
+            <span
+              class="text-2xl font-bold text-gray-900"
+              x-text="faultsCount"
+            ></span>
+            <span class="ml-2 text-sm text-gray-500">Active Errors</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+            <div
+              class="h-2.5 rounded-full"
+              :class="faultsCount > 0 ? 'bg-red-500' : 'bg-green-500'"
+              :style="`width: ${faultsCount > 0 ? (faultsCount * 20) : 0}%`"
+            ></div>
+          </div>
+          <span
+            class="text-sm text-gray-500 mt-1"
+            x-text="`Last system check: ${lastCheck}`"
+          ></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'components/metrics/system_health_metrics.html' %}
+</div>
+
+<style>
+  /* Status indicator styles without the line animation */
+  .status-indicator {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Pulse animation for critical status */
+  .status-indicator.status-critical {
+    animation: status-pulse 1.5s infinite;
+  }
+
+  @keyframes status-pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* Water animation for fault indicator */
+  .fault-indicator {
+    position: relative;
+  }
+
+  .fault-indicator.has-faults::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    right: -16px;
+    width: 12px;
+    height: 12px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    animation: status-pulse 1s infinite;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Water wave animation for fault indicator */
+  .fault-indicator.has-faults::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    animation: water-wave 2s ease-in-out infinite;
+  }
+
+  @keyframes water-wave {
+    0% {
+      transform: translateX(-100%);
+    }
+    50% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("faultsData", () => ({
+      faultsCount: 0,
+      lastCheck: "Just now",
+
+      init() {
+        this.checkFaults();
+      },
+
+      checkFaults() {
+        // Generate random faults (0-5 faults)
+        // With 70% chance of no faults, 30% chance of having faults
+        const randomValue = Math.random();
+
+        if (randomValue > 0.7) {
+          // Generate 1-5 faults
+          this.faultsCount = Math.floor(Math.random() * 5) + 1;
+        } else {
+          // No faults (healthy system)
+          this.faultsCount = 0;
+        }
+
+        // Update last check time
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        this.lastCheck = `${hours}:${minutes}`;
+
+        // Add some variation to fault count over time if faults exist
+        if (this.faultsCount > 0) {
+          setTimeout(() => {
+            // 50% chance to change fault count slightly
+            if (Math.random() > 0.5) {
+              const change = Math.random() > 0.5 ? 1 : -1;
+              this.faultsCount = Math.max(
+                0,
+                Math.min(5, this.faultsCount + change)
+              );
+            }
+          }, 10000); // Update after 10 seconds
+        }
+      },
+    }));
+  });
+</script>

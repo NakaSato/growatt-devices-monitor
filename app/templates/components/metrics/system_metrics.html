@@ -1,0 +1,32 @@
+<div
+  class="status-header flex justify-between items-center mb-4 p-4 bg-white rounded-lg shadow border border-green-300"
+>
+  <h2 class="text-xl font-bold text-gray-800">System Status Overview</h2>
+  <div class="status-tabs flex space-x-2">
+    <button
+      @click="activeTab = 'overview'"
+      :class="{'bg-indigo-600 text-white': activeTab === 'overview', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'overview'}"
+      class="px-4 py-1 rounded-md text-sm font-medium transition duration-150"
+    >
+      Overview
+    </button>
+    <button
+      @click="activeTab = 'alerts'"
+      :class="{'bg-indigo-600 text-white': activeTab === 'alerts', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'alerts'}"
+      class="px-4 py-1 rounded-md text-sm font-medium transition duration-150 flex items-center"
+    >
+      <span>Alerts</span>
+      <span
+        class="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5"
+        >3</span
+      >
+    </button>
+    <button
+      @click="activeTab = 'analytics'"
+      :class="{'bg-indigo-600 text-white': activeTab === 'analytics', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'analytics'}"
+      class="px-4 py-1 rounded-md text-sm font-medium transition duration-150"
+    >
+      Analytics
+    </button>
+  </div>
+</div>

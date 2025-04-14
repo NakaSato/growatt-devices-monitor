@@ -1,0 +1,1083 @@
+<!-- System Status Overview Component -->
+<div class="system-status-container" x-data="{ activeTab: 'overview' }">
+  <!-- System Status Header -->
+  {% include 'components/metrics/system_metrics.html' %}
+
+  <!-- Overview Tab (Default) -->
+  {% include 'components/tab-overview.html' %}
+
+  <div
+    x-show="activeTab === 'overview'"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+  >
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Power Flow Card -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="text-gray-700 font-medium mb-4">Current Power Flow</h3>
+        <div class="flex justify-center">
+          <div class="relative power-flow-diagram">
+            <!-- Simple power flow diagram -->
+            <div class="p-4 text-center">
+              <img
+                src="/static/images/power-flow.svg"
+                alt="Power Flow Diagram"
+                class="max-w-full h-auto"
+                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Power+Flow+Diagram'"
+              />
+              <p class="mt-2 text-sm text-gray-600">
+                Current system power flow visualization
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+          <div class="bg-blue-50 p-2 rounded-md">
+            <div class="text-xs text-gray-500">Solar</div>
+            <div class="font-bold text-blue-600">8.42 kW</div>
+          </div>
+          <div class="bg-green-50 p-2 rounded-md">
+            <div class="text-xs text-gray-500">Home</div>
+            <div class="font-bold text-green-600">3.16 kW</div>
+          </div>
+          <div class="bg-purple-50 p-2 rounded-md">
+            <div class="text-xs text-gray-500">Grid</div>
+            <div class="font-bold text-purple-600">5.26 kW</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Health Card -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="text-gray-700 font-medium mb-4">System Health</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-sm text-gray-600">Inverter 01</span>
+              <span class="text-xs font-medium text-green-600"
+                >Operational</span
+              >
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                class="bg-green-500 h-2 rounded-full"
+                style="width: 98%"
+              ></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Temperature: 42°C</span>
+              <span>Efficiency: 98%</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-sm text-gray-600">Battery System</span>
+              <span class="text-xs font-medium text-green-600">Charging</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                class="bg-green-500 h-2 rounded-full"
+                style="width: 82%"
+              ></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>State of Charge: 82%</span>
+              <span>Temperature: 24°C</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-sm text-gray-600">Grid Connection</span>
+              <span class="text-xs font-medium text-green-600">Connected</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                class="bg-green-500 h-2 rounded-full"
+                style="width: 100%"
+              ></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Voltage: 242V</span>
+              <span>Frequency: 50Hz</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Energy Card -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="text-gray-700 font-medium mb-4">Today's Energy</h3>
+        <div class="space-y-4">
+          <div class="flex items-center justify-center">
+            <div class="relative" style="height: 150px; width: 150px">
+              <!-- Placeholder for a chart - in a real app you'd use a charting library -->
+              <canvas id="dailyEnergyDonut"></canvas>
+              <div
+                class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
+              >
+                <div class="text-2xl font-bold text-gray-700">36.5</div>
+                <div class="text-xs text-gray-500">kWh</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="bg-green-50 p-2 rounded">
+              <div class="text-xs text-gray-600">Self-used</div>
+              <div class="text-lg font-semibold text-green-600">14.3 kWh</div>
+              <div class="text-xs text-gray-500">39%</div>
+            </div>
+            <div class="bg-blue-50 p-2 rounded">
+              <div class="text-xs text-gray-600">Grid Export</div>
+              <div class="text-lg font-semibold text-blue-600">22.2 kWh</div>
+              <div class="text-xs text-gray-500">61%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts Tab -->
+  <div
+    x-show="activeTab === 'alerts'"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+  >
+    <div class="alerts-container bg-white rounded-lg shadow">
+      <div class="p-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <h3 class="text-gray-700 font-medium">Active Alerts</h3>
+          <span
+            class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded"
+            >3 Critical</span
+          >
+        </div>
+      </div>
+      <ul class="divide-y divide-gray-200">
+        <li class="p-4 hover:bg-gray-50">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 bg-red-500 rounded-full p-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900">
+                Inverter Communication Error
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                Inverter 02 has lost connection to monitoring system
+              </p>
+              <div class="mt-2 flex items-center justify-between">
+                <span class="text-xs text-gray-500">Today, 10:23 AM</span>
+                <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                  Investigate
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="p-4 hover:bg-gray-50">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 bg-red-500 rounded-full p-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900">
+                Battery Low Voltage
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                Battery system showing abnormal voltage levels
+              </p>
+              <div class="mt-2 flex items-center justify-between">
+                <span class="text-xs text-gray-500">Today, 11:42 AM</span>
+                <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                  Investigate
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="p-4 hover:bg-gray-50">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 bg-yellow-500 rounded-full p-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900">
+                High Temperature Warning
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                Inverter 01 temperature above optimal range (52°C)
+              </p>
+              <div class="mt-2 flex items-center justify-between">
+                <span class="text-xs text-gray-500">Today, 01:18 PM</span>
+                <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                  Investigate
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <div class="p-4 border-t border-gray-200">
+        <a
+          href="#"
+          class="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+          >View all alerts</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Tab -->
+  <div
+    x-show="activeTab === 'analytics'"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-init="if (activeTab === 'analytics') { initAnalytics() }"
+    @tab-changed.window="if ($event.detail.tab === 'analytics') { initAnalytics() }"
+  >
+    <div class="analytics-container bg-white rounded-lg shadow p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-gray-700 font-medium">Performance Analytics</h3>
+        <div class="flex space-x-2">
+          <select
+            id="timeRange"
+            class="text-xs rounded border border-gray-300 px-2 py-1"
+            @change="updateChartData($event.target.value)"
+          >
+            <option value="7">Last 7 days</option>
+            <option value="14" selected>Last 14 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 3 months</option>
+          </select>
+          <button
+            class="bg-indigo-100 text-indigo-700 text-xs rounded px-2 py-1 hover:bg-indigo-200 transition"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-3 w-3 inline-block mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading indicator -->
+      <div id="analytics-loading" class="py-10 text-center">
+        <div
+          class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"
+        ></div>
+        <p class="mt-2 text-gray-600 text-sm">Loading analytics data...</p>
+      </div>
+
+      <!-- Error state -->
+      <div id="analytics-error" class="py-10 text-center hidden">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-10 w-10 text-red-500 mx-auto"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <p class="mt-2 text-gray-800 font-medium">
+          Failed to load analytics data
+        </p>
+        <p class="text-gray-600 text-sm">Please try refreshing the page</p>
+        <button
+          id="retry-analytics"
+          class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-1 px-4 rounded transition"
+        >
+          Retry
+        </button>
+      </div>
+
+      <div id="analytics-content" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="performance-card p-3 bg-gray-50 rounded-lg">
+            <h4 class="text-sm font-medium text-gray-700">
+              Energy Conversion Ratio
+            </h4>
+            <div class="flex items-end mt-1">
+              <span
+                class="text-2xl font-bold text-indigo-600"
+                id="energy-conversion-value"
+                >96.8%</span
+              >
+              <span
+                class="ml-2 text-xs text-green-600 flex items-center"
+                id="energy-conversion-change"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-3 w-3 mr-0.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.586 14.586 7H12z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                +1.2%
+              </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+              <div
+                id="energy-conversion-bar"
+                class="bg-indigo-600 h-1.5 rounded-full"
+                style="width: 96.8%"
+              ></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Optimal performance above industry standard (94%)
+            </p>
+          </div>
+
+          <div class="performance-card p-3 bg-gray-50 rounded-lg">
+            <h4 class="text-sm font-medium text-gray-700">System Uptime</h4>
+            <div class="flex items-end mt-1">
+              <span class="text-2xl font-bold text-indigo-600" id="uptime-value"
+                >99.87%</span
+              >
+              <span class="ml-2 text-xs flex items-center" id="uptime-change">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-3 w-3 mr-0.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                -0.03%
+              </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+              <div
+                id="uptime-bar"
+                class="bg-indigo-600 h-1.5 rounded-full"
+                style="width: 99.8%"
+              ></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1" id="uptime-detail">
+              Total downtime: 47 minutes in last 30 days
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div class="md:col-span-2">
+            <div
+              class="efficiency-chart bg-white border border-gray-200 rounded-lg p-3"
+            >
+              <div class="flex justify-between items-center mb-2">
+                <h4 class="text-sm font-medium text-gray-700">
+                  Generation Efficiency Trend
+                </h4>
+                <div class="flex items-center text-xs text-gray-500">
+                  <span
+                    class="w-3 h-3 inline-block rounded-full bg-green-500 mr-1"
+                  ></span>
+                  Current
+                  <span
+                    class="w-3 h-3 inline-block rounded-full bg-gray-300 ml-3 mr-1"
+                  ></span>
+                  Previous Period
+                </div>
+              </div>
+              <div
+                class="chart-container"
+                style="position: relative; height: 180px"
+              >
+                <canvas id="efficiencyTrendChart"></canvas>
+                <div
+                  class="chart-placeholder flex items-center justify-center"
+                  style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    display: none;
+                  "
+                >
+                  <span class="text-gray-400"
+                    >No data available for selected period</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="energy-distribution bg-white border border-gray-200 rounded-lg p-3"
+          >
+            <h4 class="text-sm font-medium text-gray-700 mb-2">
+              Energy Distribution
+            </h4>
+            <div class="flex justify-center">
+              <div class="relative" style="height: 180px; width: 180px">
+                <canvas id="energyDistributionChart"></canvas>
+                <div
+                  id="energy-distribution-center"
+                  class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
+                >
+                  <div class="text-xl font-bold text-gray-700">1,842</div>
+                  <div class="text-xs text-gray-500">kWh Total</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div class="flex items-center">
+                <span
+                  class="w-3 h-3 inline-block rounded-full bg-green-500 mr-1"
+                ></span>
+                <span id="self-usage-percentage">Self-used: 37%</span>
+              </div>
+              <div class="flex items-center">
+                <span
+                  class="w-3 h-3 inline-block rounded-full bg-blue-500 mr-1"
+                ></span>
+                <span id="grid-export-percentage">Grid Export: 63%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="performance-metrics mt-6">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">
+            Key Performance Indicators
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div
+              class="metric-box p-3 bg-blue-50 rounded-lg border border-blue-100"
+            >
+              <div class="text-xs text-gray-500">Peak Power</div>
+              <div
+                class="text-lg font-bold text-blue-700"
+                id="peak-power-value"
+              >
+                12.4 kW
+              </div>
+              <div class="text-xs mt-1" id="peak-power-change">
+                +0.8 vs prev. week
+              </div>
+            </div>
+            <div
+              class="metric-box p-3 bg-green-50 rounded-lg border border-green-100"
+            >
+              <div class="text-xs text-gray-500">Daily Average</div>
+              <div
+                class="text-lg font-bold text-green-700"
+                id="daily-average-value"
+              >
+                42.8 kWh
+              </div>
+              <div class="text-xs mt-1" id="daily-average-change">
+                +3.2 kWh vs prev. week
+              </div>
+            </div>
+            <div
+              class="metric-box p-3 bg-purple-50 rounded-lg border border-purple-100"
+            >
+              <div class="text-xs text-gray-500">Grid Export</div>
+              <div
+                class="text-lg font-bold text-purple-700"
+                id="grid-export-value"
+              >
+                63%
+              </div>
+              <div class="text-xs text-gray-500 mt-1" id="grid-export-total">
+                1,160 kWh total
+              </div>
+            </div>
+            <div
+              class="metric-box p-3 bg-yellow-50 rounded-lg border border-yellow-100"
+            >
+              <div class="text-xs text-gray-500">Self-consumption</div>
+              <div
+                class="text-lg font-bold text-yellow-700"
+                id="self-consumption-value"
+              >
+                37%
+              </div>
+              <div
+                class="text-xs text-gray-500 mt-1"
+                id="self-consumption-total"
+              >
+                682 kWh total
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 text-right">
+          <button
+            class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded transition"
+          >
+            View Detailed Reports
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Global variables for charts
+    let efficiencyChart = null;
+    let distributionChart = null;
+    let chartData = {
+      efficiency: null,
+      distribution: null,
+    };
+    let dataCache = {};
+    let isAnalyticsInitialized = false;
+
+    // Function to initialize analytics when tab is shown
+    window.initAnalytics = function () {
+      if (!isAnalyticsInitialized) {
+        loadAnalyticsData(14); // Default to 14 days
+        isAnalyticsInitialized = true;
+      }
+    };
+
+    // Function to update chart data based on selection
+    window.updateChartData = function (days) {
+      showLoading();
+      loadAnalyticsData(days);
+    };
+
+    // Show/hide UI elements
+    function showLoading() {
+      document.getElementById("analytics-loading").classList.remove("hidden");
+      document.getElementById("analytics-content").classList.add("hidden");
+      document.getElementById("analytics-error").classList.add("hidden");
+    }
+
+    function showError() {
+      document.getElementById("analytics-loading").classList.add("hidden");
+      document.getElementById("analytics-content").classList.add("hidden");
+      document.getElementById("analytics-error").classList.remove("hidden");
+    }
+
+    function showContent() {
+      document.getElementById("analytics-loading").classList.add("hidden");
+      document.getElementById("analytics-content").classList.remove("hidden");
+      document.getElementById("analytics-error").classList.add("hidden");
+    }
+
+    // Load analytics data
+    function loadAnalyticsData(days) {
+      // Check if data is already in cache
+      if (dataCache[days]) {
+        updateUIWithData(dataCache[days]);
+        showContent();
+        return;
+      }
+
+      // Simulate API request with timeout
+      setTimeout(() => {
+        try {
+          // Generate data for the requested period
+          const data = generateAnalyticsData(days);
+
+          // Cache the data
+          dataCache[days] = data;
+
+          // Update UI
+          updateUIWithData(data);
+          showContent();
+        } catch (error) {
+          console.error("Error loading analytics data:", error);
+          showError();
+        }
+      }, 700); // Simulate network delay
+    }
+
+    // Update UI elements with new data
+    function updateUIWithData(data) {
+      // Update metrics
+      document.getElementById("energy-conversion-value").textContent =
+        data.conversionRatio + "%";
+      document.getElementById("energy-conversion-bar").style.width =
+        data.conversionRatio + "%";
+      document.getElementById("energy-conversion-change").textContent =
+        (data.conversionChange > 0 ? "+" : "") +
+        data.conversionChange.toFixed(2) +
+        "%";
+      document.getElementById("energy-conversion-change").className =
+        data.conversionChange >= 0
+          ? "ml-2 text-xs text-green-600 flex items-center"
+          : "ml-2 text-xs text-yellow-600 flex items-center";
+
+      document.getElementById("uptime-value").textContent = data.uptime + "%";
+      document.getElementById("uptime-bar").style.width = data.uptime + "%";
+      document.getElementById("uptime-change").textContent =
+        (data.uptimeChange > 0 ? "+" : "") + data.uptimeChange.toFixed(2) + "%";
+      document.getElementById("uptime-change").className =
+        data.uptimeChange >= 0
+          ? "ml-2 text-xs text-green-600 flex items-center"
+          : "ml-2 text-xs text-yellow-600 flex items-center";
+      document.getElementById(
+        "uptime-detail"
+      ).textContent = `Total downtime: ${data.downtime} minutes in last ${data.days} days`;
+
+      document.getElementById("peak-power-value").textContent =
+        data.peakPower + " kW";
+      document.getElementById("peak-power-change").textContent =
+        (data.peakPowerChange > 0 ? "+" : "") +
+        data.peakPowerChange +
+        " vs prev. period";
+      document.getElementById("peak-power-change").className =
+        data.peakPowerChange >= 0
+          ? "text-xs text-green-600 mt-1"
+          : "text-xs text-yellow-600 mt-1";
+
+      document.getElementById("daily-average-value").textContent =
+        data.dailyAverage + " kWh";
+      document.getElementById("daily-average-change").textContent =
+        (data.dailyAverageChange > 0 ? "+" : "") +
+        data.dailyAverageChange +
+        " kWh vs prev. period";
+      document.getElementById("daily-average-change").className =
+        data.dailyAverageChange >= 0
+          ? "text-xs text-green-600 mt-1"
+          : "text-xs text-yellow-600 mt-1";
+
+      document.getElementById("grid-export-value").textContent =
+        data.gridExportPercentage + "%";
+      document.getElementById("grid-export-total").textContent =
+        data.gridExportTotal + " kWh total";
+      document.getElementById("self-consumption-value").textContent =
+        data.selfConsumptionPercentage + "%";
+      document.getElementById("self-consumption-total").textContent =
+        data.selfConsumptionTotal + " kWh total";
+
+      document.getElementById("energy-distribution-center").innerHTML = `
+        <div class="text-xl font-bold text-gray-700">${data.totalEnergy}</div>
+        <div class="text-xs text-gray-500">kWh Total</div>
+      `;
+
+      document.getElementById(
+        "self-usage-percentage"
+      ).textContent = `Self-used: ${data.selfConsumptionPercentage}%`;
+      document.getElementById(
+        "grid-export-percentage"
+      ).textContent = `Grid Export: ${data.gridExportPercentage}%`;
+
+      // Update charts
+      updateEfficiencyChart(data);
+      updateDistributionChart(data);
+    }
+
+    // Update efficiency trend chart
+    function updateEfficiencyChart(data) {
+      const ctx = document
+        .getElementById("efficiencyTrendChart")
+        .getContext("2d");
+
+      // Destroy previous chart if it exists to prevent memory leaks
+      if (efficiencyChart) {
+        efficiencyChart.destroy();
+      }
+
+      // Check if we have data
+      const hasData = data.efficiencyData && data.efficiencyData.length > 0;
+      if (!hasData) {
+        document.querySelector(".chart-placeholder").style.display = "flex";
+        return;
+      }
+
+      document.querySelector(".chart-placeholder").style.display = "none";
+
+      // Create new chart with optimized options
+      efficiencyChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: data.dateLabels,
+          datasets: [
+            {
+              label: "Current Period",
+              data: data.efficiencyData,
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              borderColor: "rgba(16, 185, 129, 1)",
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointRadius: window.innerWidth > 768 ? 3 : 0, // Only show points on larger screens
+              pointHoverRadius: 5,
+            },
+            {
+              label: "Previous Period",
+              data: data.previousEfficiencyData,
+              backgroundColor: "rgba(160, 160, 160, 0.1)",
+              borderColor: "rgba(160, 160, 160, 0.8)",
+              borderWidth: 2,
+              borderDash: [5, 5],
+              tension: 0.3,
+              fill: false,
+              pointRadius: 0, // Don't show points for comparison data
+              pointHoverRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 800, // Reduced animation time
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              mode: "index",
+              intersect: false,
+              callbacks: {
+                label: function (context) {
+                  return `${context.dataset.label}: ${context.parsed.y.toFixed(
+                    1
+                  )}%`;
+                },
+              },
+            },
+          },
+          interaction: {
+            mode: "nearest",
+            axis: "x",
+            intersect: false,
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: window.innerWidth < 768 ? 5 : 10, // Show fewer labels on mobile
+              },
+            },
+            y: {
+              min: 90,
+              max: 100,
+              ticks: {
+                stepSize: 2,
+              },
+              grid: {
+                color: "rgba(0, 0, 0, 0.05)",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Update distribution chart
+    function updateDistributionChart(data) {
+      const ctx = document
+        .getElementById("energyDistributionChart")
+        .getContext("2d");
+
+      // Destroy previous chart if it exists
+      if (distributionChart) {
+        distributionChart.destroy();
+      }
+
+      // Create new chart
+      distributionChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Self-consumption", "Grid Export"],
+          datasets: [
+            {
+              data: [data.selfConsumptionPercentage, data.gridExportPercentage],
+              backgroundColor: [
+                "rgba(16, 185, 129, 0.8)",
+                "rgba(59, 130, 246, 0.8)",
+              ],
+              borderColor: ["rgba(16, 185, 129, 1)", "rgba(59, 130, 246, 1)"],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "70%",
+          animation: {
+            animateRotate: true,
+            animateScale: false,
+            duration: 500,
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce(
+                    (acc, data) => acc + data,
+                    0
+                  );
+                  const percentage = Math.round((value / total) * 100);
+                  return `${context.label}: ${percentage}%`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Generate analytics data with a specified time range
+    function generateAnalyticsData(days) {
+      // Simulate slightly different metrics based on selected time range
+      const conversionRatio = 95 + Math.random() * 2;
+      const conversionChange = Math.random() * 2 - 0.5;
+
+      const uptime = 99.5 + Math.random() * 0.5;
+      const uptimeChange = Math.random() * 0.2 - 0.1;
+
+      const downtime = Math.round((days * 1440 * (100 - uptime)) / 100); // minutes of downtime
+
+      const peakPower = 11 + Math.random() * 2;
+      const peakPowerChange = Math.random() * 1.5 - 0.5;
+
+      const dailyAverage = 40 + Math.random() * 8;
+      const dailyAverageChange = Math.random() * 4 - 1;
+
+      const selfConsumptionPercentage = 35 + Math.random() * 5;
+      const gridExportPercentage = 100 - selfConsumptionPercentage;
+
+      const totalEnergy = Math.round(dailyAverage * days);
+      const selfConsumptionTotal = Math.round(
+        totalEnergy * (selfConsumptionPercentage / 100)
+      );
+      const gridExportTotal = totalEnergy - selfConsumptionTotal;
+
+      // Generate date labels and efficiency data
+      const dateLabels = generateDateLabels(days);
+      const efficiencyData = generateEfficiencyData(days);
+      const previousEfficiencyData = generateEfficiencyData(days).map(
+        (val) => val - Math.random() * 1.5
+      );
+
+      // Limit data points for performance on longer time ranges
+      const dataPointLimit = days > 30 ? 30 : days;
+      const step = Math.ceil(days / dataPointLimit);
+
+      return {
+        days: days,
+        conversionRatio: conversionRatio.toFixed(1),
+        conversionChange: conversionChange,
+        uptime: uptime.toFixed(2),
+        uptimeChange: uptimeChange,
+        downtime: downtime,
+        peakPower: peakPower.toFixed(1),
+        peakPowerChange: peakPowerChange.toFixed(1),
+        dailyAverage: dailyAverage.toFixed(1),
+        dailyAverageChange: dailyAverageChange.toFixed(1),
+        selfConsumptionPercentage: Math.round(selfConsumptionPercentage),
+        gridExportPercentage: Math.round(gridExportPercentage),
+        totalEnergy: totalEnergy.toLocaleString(),
+        selfConsumptionTotal: selfConsumptionTotal.toLocaleString(),
+        gridExportTotal: gridExportTotal.toLocaleString(),
+        dateLabels: dateLabels.filter((_, i) => i % step === 0),
+        efficiencyData: efficiencyData.filter((_, i) => i % step === 0),
+        previousEfficiencyData: previousEfficiencyData.filter(
+          (_, i) => i % step === 0
+        ),
+      };
+    }
+
+    // Add event listener for time range selector
+    document
+      .getElementById("timeRange")
+      ?.addEventListener("change", function (e) {
+        updateChartData(e.target.value);
+      });
+
+    // Add event listener for retry button
+    document
+      .getElementById("retry-analytics")
+      ?.addEventListener("click", function () {
+        const days = document.getElementById("timeRange").value;
+        showLoading();
+        loadAnalyticsData(days);
+      });
+
+    // Window resize handler for responsive charts
+    let resizeTimeout;
+    window.addEventListener("resize", function () {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function () {
+        if (efficiencyChart || distributionChart) {
+          const days = document.getElementById("timeRange").value;
+          if (dataCache[days]) {
+            updateEfficiencyChart(dataCache[days]);
+            updateDistributionChart(dataCache[days]);
+          }
+        }
+      }, 250); // Debounce resize events
+    });
+
+    // Add custom event to trigger tab changes
+    document.querySelectorAll("[x-data]").forEach((element) => {
+      if (element.getAttribute("x-data").includes("activeTab")) {
+        // Watch for changes to activeTab
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (
+              mutation.type === "attributes" &&
+              mutation.attributeName === "class"
+            ) {
+              const tab = element.querySelector(
+                "div[x-show='activeTab === \"analytics\"']:not(.hidden)"
+              );
+              if (tab) {
+                // Dispatch event when analytics tab becomes visible
+                window.dispatchEvent(
+                  new CustomEvent("tab-changed", {
+                    detail: { tab: "analytics" },
+                  })
+                );
+              }
+            }
+          });
+        });
+
+        // Start observing
+        observer.observe(element, { attributes: true, subtree: true });
+      }
+    });
+
+    // Original helper functions
+    function generateHourlyData() {
+      // ...existing code...
+    }
+
+    function generateDateLabels(days) {
+      return Array.from({ length: days }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (days - 1) + i);
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      });
+    }
+
+    function generateEfficiencyData(days) {
+      const baseEfficiency = 96.5;
+      return Array.from({ length: days }, () => {
+        // Random efficiency between 94% and 98%
+        return baseEfficiency + (Math.random() * 2.5 - 1);
+      });
+    }
+
+    // Create simple donut chart for daily energy on the overview tab
+    const donutCtx = document
+      .getElementById("dailyEnergyDonut")
+      ?.getContext("2d");
+
+    if (donutCtx) {
+      new Chart(donutCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Self-used", "Grid Export"],
+          datasets: [
+            {
+              data: [39, 61],
+              backgroundColor: [
+                "rgba(16, 185, 129, 0.8)",
+                "rgba(59, 130, 246, 0.8)",
+              ],
+              borderColor: ["rgba(16, 185, 129, 1)", "rgba(59, 130, 246, 1)"],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          cutout: "70%",
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    }
+  });
+</script>
