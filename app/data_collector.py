@@ -1,8 +1,9 @@
 import logging
-from typing import Dict, Any, List, Optional, Union
-from datetime import datetime, timedelta
-import time
+import os
 import json
+from typing import Dict, Any, List, Optional, Union
+from datetime import datetime, timedelta, date
+import time
 
 # Fix the imports from app.core.growatt - use Growatt class instead of GrowattAPI
 from app.core.growatt import Growatt
@@ -42,8 +43,12 @@ class GrowattDataCollector:
         self.json_data = []
         
         # File saving options
-        self.data_dir = data_dir
+        self.data_dir = data_dir or 'data'
         self.save_to_file = save_to_file
+        
+        # Create data directory if it doesn't exist
+        if self.save_to_file and not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
     
     def enable_json_collection(self):
         """Enable collection of raw JSON data"""
@@ -347,7 +352,7 @@ class GrowattDataCollector:
                         except Exception as weather_err:
                             error_msg = f"Weather data error for plant {plant_id} ({plant_name}): {str(weather_err)}"
                             logger.error(error_msg)
-                            results["errors"].append(error_msg)
+                            results["errors"].append(weather_err)
                     
                 except Exception as plant_err:
                     error_msg = f"Error processing plant {plant_id} ({plant_name}): {str(plant_err)}"
@@ -540,3 +545,199 @@ class GrowattDataCollector:
             results["plants"] = len(plants)
             
         return plants
+    
+    def _save_to_json(self, data, filename):
+        """Save data to a JSON file"""
+        if not self.save_to_file:
+            return
+            
+        file_path = os.path.join(self.data_dir, filename)
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=4)
+    
+    def _save_to_database(self, data, collection_name):
+        """Save data to database - placeholder for future implementation"""
+        # Implementation will depend on the database being used
+        pass
+    
+    def _collect_plants(self):
+        """Collect plants data from Growatt API"""
+        self.api.login(self.username, self.password)
+        plants = self.api.get_plants()
+        
+        if self.save_to_file:
+            self._save_to_json(plants, "plants.json")
+            
+        return plants
+    
+    def _collect_devices(self, plant_id):
+        """Collect devices data for a specific plant"""
+        devices = self.api.get_devices_by_plant_list(plant_id)
+        
+        if self.save_to_file:
+            self._save_to_json(devices, f"devices_{plant_id}.json")
+            
+        return devices
+    
+    def _collect_energy_stats(self, plant_id, mix_sn, time_period, date_str):
+        """Collect energy statistics for a specific device"""
+        if time_period == "daily":
+            stats = self.api.get_energy_stats_daily(date_str, plant_id, mix_sn)
+        elif time_period == "monthly":
+            stats = self.api.get_energy_stats_monthly(date_str, plant_id, mix_sn)
+        elif time_period == "yearly":
+            stats = self.api.get_energy_stats_yearly(date_str, plant_id, mix_sn)
+        else:
+            stats = {}
+        
+        if self.save_to_file:
+            self._save_to_json(stats, f"energy_{time_period}_{plant_id}_{mix_sn}_{date_str}.json")
+            
+        return stats
+    
+    def _generate_test_plants(self):
+        """Generate test plant data for testing"""
+        return [
+            {"id": "1234567", "plantName": "Test Plant 1"},
+            {"id": "7654321", "plantName": "Test Plant 2"}
+        ]
+    
+    def _generate_test_devices(self, plant_id):
+        """Generate test device data for testing"""
+        return {
+            "result": 1,
+            "obj": {
+                "totalCount": 2,
+                "mix": [
+                    ["TESTMIX1", "TESTMIX1", "0"],
+                    ["TESTMIX2", "TESTMIX2", "1"]
+                ]
+            }
+        }
+    
+    def _generate_test_energy_stats(self, plant_id, mix_sn, time_period, date_str):
+        """Generate test energy statistics for testing"""
+        return {
+            "obj": {
+                "etouser": "5.2",
+                "elocalLoad": "12.6",
+                "charts": {
+                    "ppv": [0, 1, 2, 3, 4],
+                    "elocalLoad": [1, 2, 3, 4, 5]
+                }
+            }
+        }
+    
+    def test_data_collection(self, options):
+        """Collect test data based on provided options"""
+        data_type = options.get('data_type', 'daily')
+        test_date = options.get('test_date', date.today().strftime("%Y-%m-%d"))
+        dry_run = options.get('dry_run', False)
+        output_dir = options.get('output_dir', self.data_dir)
+        
+        # Generate test data
+        plants = self._generate_test_plants()
+        
+        results = {
+            'success': True,
+            'plants': [],
+            'devices': {},
+            'energy_stats': {}
+        }
+        
+        for plant in plants:
+            plant_id = plant['id']
+            results['plants'].append(plant)
+            
+            # Get devices for this plant
+            devices = self._generate_test_devices(plant_id)
+            results['devices'][plant_id] = devices
+            
+            if not dry_run:
+                if devices.get('result') == 1 and 'obj' in devices and 'mix' in devices['obj']:
+                    for mix_device in devices['obj']['mix']:
+                        mix_sn = mix_device[0]
+                        
+                        # Get energy stats
+                        stats = self._generate_test_energy_stats(
+                            plant_id, mix_sn, data_type, test_date
+                        )
+                        
+                        if plant_id not in results['energy_stats']:
+                            results['energy_stats'][plant_id] = {}
+                        
+                        results['energy_stats'][plant_id][mix_sn] = stats
+                        
+                        # Save to file if requested
+                        if self.save_to_file:
+                            self._save_to_json(
+                                stats,
+                                f"test_energy_{data_type}_{plant_id}_{mix_sn}_{test_date}.json"
+                            )
+        
+        return results
+    
+    def collect_and_store_all_data(self):
+        """Collect and store all data from Growatt API"""
+        results = {
+            'success': True,
+            'plants': [],
+            'devices': {},
+            'energy_stats': {}
+        }
+        
+        try:
+            # Login and collect plants
+            self.api.login(self.username, self.password)
+            plants = self.api.get_plants()
+            results['plants'] = plants
+            
+            # Process each plant
+            for plant in plants:
+                plant_id = plant['id']
+                
+                # Get devices for this plant
+                devices = self.api.get_devices_by_plant_list(plant_id)
+                results['devices'][plant_id] = devices
+                
+                # Process devices
+                if devices.get('result') == 1 and 'obj' in devices and 'mix' in devices['obj']:
+                    for mix_device in devices['obj']['mix']:
+                        mix_sn = mix_device[0]
+                        
+                        # Get energy stats (daily, monthly, yearly)
+                        today = date.today().strftime("%Y-%m-%d")
+                        current_month = date.today().strftime("%Y-%m")
+                        current_year = date.today().strftime("%Y")
+                        
+                        # Daily stats
+                        daily_stats = self.api.get_energy_stats_daily(today, plant_id, mix_sn)
+                        
+                        # Monthly stats
+                        monthly_stats = self.api.get_energy_stats_monthly(current_month, plant_id, mix_sn)
+                        
+                        # Yearly stats
+                        yearly_stats = self.api.get_energy_stats_yearly(current_year, plant_id, mix_sn)
+                        
+                        # Save to file if requested
+                        if self.save_to_file:
+                            self._save_to_json(
+                                daily_stats,
+                                f"energy_daily_{plant_id}_{mix_sn}_{today}.json"
+                            )
+                            self._save_to_json(
+                                monthly_stats,
+                                f"energy_monthly_{plant_id}_{mix_sn}_{current_month}.json"
+                            )
+                            self._save_to_json(
+                                yearly_stats,
+                                f"energy_yearly_{plant_id}_{mix_sn}_{current_year}.json"
+                            )
+            
+            return results
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }

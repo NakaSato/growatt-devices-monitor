@@ -4,147 +4,111 @@ Data synchronization script to fetch data from Growatt API and store in the data
 Run this script periodically (e.g., via cron job) to keep the database up to date.
 """
 
-import logging
-import argparse
 import os
 import sys
-from datetime import datetime
-
-# Add the project directory to the path so we can import app modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
+import json
+import logging
+import argparse
+from datetime import date
+from logging import FileHandler
 from app.data_collector import GrowattDataCollector
 from app.database import init_db
-from app.config import Config  # Add import for Config class
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('data_sync.log')
+        logging.StreamHandler(sys.stdout)
     ]
 )
+logger = logging.getLogger('data_sync')
 
-logger = logging.getLogger(__name__)
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description='Sync data from Growatt API')
+    parser.add_argument('--config', type=str, default='config.json', help='Path to config file')
+    parser.add_argument('--test', action='store_true', help='Run in test mode')
+    parser.add_argument('--date', type=str, help='Date for test data (YYYY-MM-DD)')
+    parser.add_argument('--output', type=str, help='Output directory for test data')
+    parser.add_argument('--log-file', type=str, help='Log to file')
+    
+    return parser.parse_args()
+
+def load_config(config_path):
+    """Load configuration from file"""
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        else:
+            logger.warning(f"Config file not found: {config_path}")
+            return {}
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        return {}
 
 def main():
-    """Main function to run the data synchronization process"""
-    parser = argparse.ArgumentParser(description='Sync data from Growatt API to local database')
-    parser.add_argument('--init', action='store_true', help='Initialize the database before syncing')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
+    """Main function to sync data"""
+    args = parse_args()
+    config = load_config(args.config)
     
-    # Add test mode arguments
-    parser.add_argument('--test', action='store_true', help='Run in test mode with simulated data')
-    parser.add_argument('--collect', choices=['daily', 'monthly', 'yearly', 'all'], 
-                        default='all', help='Specify which data types to collect in test mode')
-    parser.add_argument('--date', type=str, help='Simulate data for a specific date (YYYY-MM-DD)')
-    parser.add_argument('--dry-run', action='store_true', 
-                        help='Test process without saving data to database')
+    # Setup file logging if requested
+    if args.log_file:
+        file_handler = FileHandler(args.log_file)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        logger.addHandler(file_handler)
     
-    # Add credential arguments to override config
-    parser.add_argument('--username', type=str, help='Growatt API username')
-    parser.add_argument('--password', type=str, help='Growatt API password')
+    # Get credentials from config or environment
+    username = config.get('username', os.environ.get('GROWATT_USERNAME', ''))
+    password = config.get('password', os.environ.get('GROWATT_PASSWORD', ''))
+    data_dir = config.get('data_dir', 'data')
     
-    args = parser.parse_args()
-    
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    
-    # Override credentials with command line arguments if provided
-    if args.username:
-        Config.GROWATT_USERNAME = args.username
-    if args.password:
-        Config.GROWATT_PASSWORD = args.password
-        
-    # Validate credentials before proceeding
-    if not Config.GROWATT_USERNAME or not Config.GROWATT_PASSWORD:
-        logger.error("Growatt API credentials are missing. Please check your config or provide --username and --password arguments.")
+    if not username or not password:
+        logger.error("Missing credentials. Please provide username and password.")
         return
     
-    # JSON data will always be stored in a standard location
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    
-    # Always ensure the data directory exists
-    if not os.path.exists(data_dir):
-        try:
-            os.makedirs(data_dir, exist_ok=True)
-            logger.info(f"Created data directory: {data_dir}")
-        except Exception as e:
-            logger.error(f"Failed to create data directory: {e}")
-            return
-    
-    # Configure test mode logging if needed
-    if args.test:
-        # Use a different log file for test mode
-        for handler in logging.getLogger().handlers:
-            if isinstance(handler, logging.FileHandler):
-                logging.getLogger().removeHandler(handler)
+    try:
+        # Initialize database if not in test mode
+        if not args.test:
+            logger.info("Initializing database...")
+            init_db()
         
-        # Add test-specific file handler
-        test_file_handler = logging.FileHandler('data_sync_test.log')
-        test_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-        logging.getLogger().addHandler(test_file_handler)
+        # Create data collector
+        collector = GrowattDataCollector(
+            username=username,
+            password=password,
+            save_to_file=True,
+            data_dir=data_dir
+        )
         
-        # Create test_data directory if it doesn't exist
-        test_data_dir = os.path.join(data_dir, 'test_data')
-        os.makedirs(test_data_dir, exist_ok=True)
+        # Collect data based on mode
+        if args.test:
+            logger.info("Running in test mode...")
+            test_options = {
+                'data_type': 'daily',
+                'test_date': args.date or date.today().strftime("%Y-%m-%d"),
+                'dry_run': False,
+                'output_dir': args.output or os.path.join(data_dir, 'test')
+            }
+            result = collector.test_data_collection(test_options)
+        else:
+            logger.info("Collecting data from Growatt API...")
+            result = collector.collect_and_store_all_data()
         
-        logger.info("Running in TEST MODE - No actual API calls will be made")
-        if args.collect != 'all':
-            logger.info(f"Collecting only {args.collect} data")
-        if args.date:
-            logger.info(f"Simulating data for date: {args.date}")
-        if args.dry_run:
-            logger.info("Dry run mode: No data will be saved to the database")
-    
-    start_time = datetime.now()
-    logger.info(f"Starting data synchronization at {start_time}")
-    
-    # Initialize the database if requested
-    if args.init:
-        logger.info("Initializing database...")
-        init_db()
-        logger.info("Database initialized.")
-    
-    # Create and run the data collector - always save to file by default
-    collector = GrowattDataCollector(
-        username=Config.GROWATT_USERNAME,
-        password=Config.GROWATT_PASSWORD,
-        save_to_file=True,
-        data_dir=data_dir
-    )
-    
-    if args.test:
-        # Run in test mode
-        test_options = {
-            'data_type': args.collect,
-            'test_date': args.date,
-            'dry_run': args.dry_run,
-            'output_dir': os.path.join(data_dir, 'test_data')
-        }
-        result = collector.test_data_collection(test_options)
-    else:
-        # Run normal data collection
-        result = collector.collect_and_store_all_data()
-    
-    if result.get('success'):
-        stats = result.get('results', {})
-        logger.info(f"Data sync complete. Stats: Plants: {stats.get('plants', 0)}, "
-                   f"Devices: {stats.get('devices', 0)}, Energy records: {stats.get('energy_stats', 0)}, "
-                   f"Weather records: {stats.get('weather', 0)}")
+        if result['success']:
+            logger.info("Data sync completed successfully.")
+        else:
+            logger.error(f"Data sync failed: {result.get('error', 'Unknown error')}")
         
-        if stats.get('errors'):
-            logger.warning(f"There were {len(stats.get('errors'))} errors during sync")
-            for error in stats.get('errors'):
-                logger.warning(f"Error: {error}")
-    else:
-        logger.error(f"Data sync failed: {result.get('message')}")
-        
-    end_time = datetime.now()
-    duration = end_time - start_time
-    logger.info(f"Data synchronization completed in {duration.total_seconds():.2f} seconds")
+    except Exception as e:
+        logger.error(f"Data sync failed: {str(e)}")
+    
+    # Clean up file handlers to avoid resource leaks
+    for handler in logger.handlers[:]:
+        if isinstance(handler, FileHandler):
+            handler.close()
+            logger.removeHandler(handler)
 
 if __name__ == "__main__":
     main()

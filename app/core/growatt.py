@@ -692,3 +692,48 @@ class Growatt:
             return json_res
         except re.exceptions.JSONDecodeError:
             raise ValueError("Invalid response received. Please ensure you are logged in.")
+        
+    def get_devices_by_plant_list(self, plantId: str, currPage: int = None):
+        """
+        Retrieves a list of all devices associated with a plant.
+
+        Args:
+            plantId (str): The ID of the plant to retrieve devices for.
+            currPage (int, optional): The page number for pagination. Defaults to 1.
+
+        Returns:
+            dict: A dictionary containing detailed information about all devices in the plant.
+            Example:
+                {
+                    "result": 1,
+                    "obj": {
+                        "totalCount": 5,
+                        "mix": [...],
+                        "max": [...],
+                        "tlx": [...],
+                        "inv": [...],
+                        "storage": [...],
+                        "other devices": [...]
+                    }
+                }
+        """
+        data = {
+            "plantId": str(plantId),
+            "currPage": currPage
+        }
+
+        res = self.session.post(f"{self.BASE_URL}/panel/getDevicesByPlantList", data=data)
+        res.raise_for_status()
+
+        try:
+            json_res = res.json()
+            # Ensure all text values in JSON response properly handle Unicode characters
+            if isinstance(json_res, dict):
+                # The response is already parsed as a Python dictionary with Unicode support
+                pass
+
+            if not json_res:
+                raise ValueError("Empty response. Please ensure you are logged in.")
+            return json_res
+        except re.exceptions.JSONDecodeError:
+            raise ValueError("Invalid response received. Please ensure you are logged in.")
