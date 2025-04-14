@@ -142,10 +142,6 @@ button {
   font-size: 1rem;
 }
 
-button:hover {
-  background: #3d8b40;
-}
-
 /* Cards */
 .card {
   background: #fff;

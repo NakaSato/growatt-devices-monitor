@@ -9,26 +9,34 @@
     <!-- Power Generation Status -->
     <div
       class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-green-500"
+      x-data="powerGenerationData"
     >
-      <div class="flex justify-between">
-        <h3 class="text-gray-700 font-medium">Power Generation</h3>
+      <div class="flex justify-between items-center">
+        <h3 class="text-gray-700 font-medium">Total Energy Yield Today</h3>
         <span
           class="status-indicator bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded"
-          >Active</span
-        >
+          x-text="status"
+        ></span>
       </div>
       <div class="mt-2">
         <div class="flex items-baseline">
-          <span class="text-2xl font-bold text-gray-900">8.12 kW</span>
+          <span
+            class="text-2xl font-bold text-gray-900"
+            x-text="currentOutput + ' kW'"
+          ></span>
           <span class="ml-2 text-sm text-gray-500">Current Output</span>
         </div>
         <div class="flex items-center mt-1">
-          <span class="text-green-500 flex items-center text-sm">
+          <span
+            class="text-green-500 flex items-center text-sm"
+            :class="{'text-red-500': percentChange < 0}"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4 mr-1"
               viewBox="0 0 20 20"
               fill="currentColor"
+              x-show="percentChange >= 0"
             >
               <path
                 fill-rule="evenodd"
@@ -36,7 +44,22 @@
                 clip-rule="evenodd"
               />
             </svg>
-            +3.2% from avg
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              x-show="percentChange < 0"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12 13a1 1 0 100 2h5a1 1 0 001-1v-5a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span
+              x-text="(percentChange >= 0 ? '+' : '') + percentChange + '% from avg'"
+            ></span>
           </span>
         </div>
       </div>
@@ -45,19 +68,14 @@
     <!-- Devices Status -->
     <div
       class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-purple-500"
-      x-data="{ 
-      inverterStatus: 'Online',
-      devices: [
-        { name: 'Inverter', status: 'Online' },
-        { name: 'Smart Meter', status: 'Online' }
-        ],
-      }"
+      x-data="devicesStatus"
+      x-effect="updateCardBorder"
     >
       <div class="flex justify-between">
         <h3 class="text-gray-700 font-medium">Devices Status</h3>
         <span
           class="status-indicator bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded"
-          :class="{ 'status-critical': inverterStatus === 'Offline' }"
+          :class="statusClass"
           x-text="inverterStatus"
         ></span>
       </div>
@@ -65,7 +83,7 @@
         <div class="flex items-baseline">
           <span
             class="text-2xl font-bold text-gray-900"
-            x-text="devices.length"
+            x-text="devicesCount.toLocaleString()"
           ></span>
           <span class="ml-2 text-sm text-gray-500">Active Devices</span>
         </div>
@@ -75,43 +93,24 @@
               <span x-text="device.name + ':'" class="mr-1"></span>
               <span
                 x-text="device.status"
-                :class="{
-                  'text-green-600 font-medium': device.status === 'Online' || device.status === 'Active',
-                  'text-red-600 font-medium': device.status === 'Offline',
-                  'text-yellow-600 font-medium': device.status === 'Waiting'
-                }"
+                :class="getStatusClass(device.status)"
               ></span>
             </div>
           </template>
         </div>
-        <div class="mt-2">
-          <button
-            @click="inverterStatus = 'Online'"
-            class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded mr-1 hover:bg-green-200"
-          >
-            Online (<span
-              x-text="devices.filter(d => d.status === 'Online').length"
-            ></span
-            >)
-          </button>
-          <button
-            @click="inverterStatus = 'Offline'"
-            class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded mr-1 hover:bg-red-200"
-          >
-            Offline (<span
-              x-text="devices.filter(d => d.status === 'Offline').length"
-            ></span
-            >)
-          </button>
-          <button
-            @click="inverterStatus = 'Waiting'"
-            class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
-          >
-            Waiting (<span
-              x-text="devices.filter(d => d.status === 'Waiting').length"
-            ></span
-            >)
-          </button>
+        <div class="mt-2 flex flex-wrap gap-1">
+          <template x-for="(label, status) in statusLabels" :key="status">
+            <button
+              @click="updateStatus(status)"
+              class="px-2 py-1 text-xs rounded hover:bg-opacity-80 transition-colors"
+              :class="statusButtonClass(status)"
+            >
+              <span x-text="label"></span> (<span
+                x-text="countDevicesByStatus(status)"
+              ></span
+              >)
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -121,7 +120,7 @@
       class="status-card bg-white rounded-lg shadow p-4 border-l-4"
       :class="faultsCount > 0 ? 'border-red-500' : 'border-green-500'"
       x-data="faultsData"
-      x-init="setInterval(() => checkFaults(), 10000)"
+      x-init="initFaults"
     >
       <div class="flex justify-between">
         <h3
@@ -147,9 +146,9 @@
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
             <div
-              class="h-2.5 rounded-full"
+              class="h-2.5 rounded-full transition-all duration-300"
               :class="faultsCount > 0 ? 'bg-red-500' : 'bg-green-500'"
-              :style="`width: ${faultsCount > 0 ? (faultsCount * 20) : 0}%`"
+              :style="`width: ${faultsCount > 0 ? Math.min(100, faultsCount * 20) : 0}%`"
             ></div>
           </div>
           <span
@@ -164,13 +163,11 @@
 </div>
 
 <style>
-  /* Status indicator styles without the line animation */
   .status-indicator {
     position: relative;
     overflow: hidden;
   }
 
-  /* Pulse animation for critical status */
   .status-indicator.status-critical {
     animation: status-pulse 1.5s infinite;
   }
@@ -187,7 +184,6 @@
     }
   }
 
-  /* Water animation for fault indicator */
   .fault-indicator {
     position: relative;
   }
@@ -205,7 +201,6 @@
     box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
   }
 
-  /* Water wave animation for fault indicator */
   .fault-indicator.has-faults::after {
     content: "";
     position: absolute;
@@ -231,37 +226,51 @@
 
 <script>
   document.addEventListener("alpine:init", () => {
+    Alpine.data("powerGenerationData", () => ({
+      currentOutput: 8.12,
+      percentChange: 3.2,
+      status: "Active",
+
+      init() {
+        // Could be replaced with real data fetching
+        this.fetchPowerData();
+      },
+
+      fetchPowerData() {
+        // Simulate data fetching - would be replaced with actual API call
+        setInterval(() => {
+          // Random fluctuation to simulate real-time data
+          this.currentOutput = (8 + Math.random() * 2).toFixed(2);
+          this.percentChange = (Math.random() * 8 - 2).toFixed(1);
+        }, 15000);
+      },
+    }));
+
     Alpine.data("faultsData", () => ({
       faultsCount: 0,
       lastCheck: "Just now",
+      checkInterval: null,
 
-      init() {
+      initFaults() {
         this.checkFaults();
+        this.checkInterval = setInterval(() => this.checkFaults(), 10000);
       },
 
       checkFaults() {
-        // Generate random faults (0-5 faults)
-        // With 70% chance of no faults, 30% chance of having faults
-        const randomValue = Math.random();
-
-        if (randomValue > 0.7) {
-          // Generate 1-5 faults
-          this.faultsCount = Math.floor(Math.random() * 5) + 1;
-        } else {
-          // No faults (healthy system)
-          this.faultsCount = 0;
-        }
+        // Generate random faults with 70% chance of no faults
+        this.faultsCount =
+          Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0;
 
         // Update last check time
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, "0");
-        const minutes = String(now.getMinutes()).padStart(2, "0");
-        this.lastCheck = `${hours}:${minutes}`;
+        this.lastCheck = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
 
-        // Add some variation to fault count over time if faults exist
+        // Add variation to fault count over time if faults exist
         if (this.faultsCount > 0) {
           setTimeout(() => {
-            // 50% chance to change fault count slightly
             if (Math.random() > 0.5) {
               const change = Math.random() > 0.5 ? 1 : -1;
               this.faultsCount = Math.max(
@@ -269,8 +278,91 @@
                 Math.min(5, this.faultsCount + change)
               );
             }
-          }, 10000); // Update after 10 seconds
+          }, 5000);
         }
+      },
+    }));
+
+    Alpine.data("devicesStatus", () => ({
+      inverterStatus: "Online",
+      devicesCount: 250,
+      devices: [
+        { name: "Inverter", status: "Online" },
+        { name: "Smart Meter", status: "Online" },
+      ],
+      statusLabels: {
+        Online: "Online",
+        Offline: "Offline",
+        Waiting: "Waiting",
+      },
+      statusCounts: {
+        Online: 229,
+        Offline: 15,
+        Waiting: 6,
+      },
+
+      init() {
+        this.refreshDevicesData();
+        // Periodically update the device counts
+        setInterval(() => this.updateRandomDeviceCounts(), 15000);
+      },
+
+      updateRandomDeviceCounts() {
+        const totalDevices = this.devicesCount;
+        // Random distribution with most devices being online
+        const offlineCount = Math.floor(Math.random() * (totalDevices * 0.1));
+        const waitingCount = Math.floor(Math.random() * (totalDevices * 0.15));
+        const onlineCount = totalDevices - offlineCount - waitingCount;
+
+        this.statusCounts = {
+          Online: onlineCount,
+          Offline: offlineCount,
+          Waiting: waitingCount,
+        };
+      },
+
+      updateCardBorder() {
+        // Could dynamically update card border based on status
+      },
+
+      get statusClass() {
+        return {
+          "bg-green-100 text-green-800": this.inverterStatus === "Online",
+          "bg-red-100 text-red-800 status-critical":
+            this.inverterStatus === "Offline",
+          "bg-yellow-100 text-yellow-800": this.inverterStatus === "Waiting",
+        };
+      },
+
+      refreshDevicesData() {
+        // Initialize with random device counts
+        this.updateRandomDeviceCounts();
+      },
+
+      updateStatus(status) {
+        this.inverterStatus = status;
+      },
+
+      countDevicesByStatus(status) {
+        // Return the random counts instead of counting actual devices
+        return this.statusCounts[status] || 0;
+      },
+
+      getStatusClass(status) {
+        return {
+          "text-green-600 font-medium":
+            status === "Online" || status === "Active",
+          "text-red-600 font-medium": status === "Offline",
+          "text-yellow-600 font-medium": status === "Waiting",
+        };
+      },
+
+      statusButtonClass(status) {
+        return {
+          "bg-green-100 text-green-800": status === "Online",
+          "bg-red-100 text-red-800": status === "Offline",
+          "bg-yellow-100 text-yellow-800": status === "Waiting",
+        };
       },
     }));
   });
