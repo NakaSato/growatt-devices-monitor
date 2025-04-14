@@ -5,7 +5,9 @@
 
   <div class="controls mb-3">
     <!-- Loading spinner -->
-    <div id="loading-spinner" class="spinner" style="display: none"></div>
+    <div id="loading" class="flex justify-center py-4" style="display: none">
+      <div class="spinner border-2 border-t-2 rounded-full w-8 h-8"></div>
+    </div>
 
     <!-- Export Button -->
     <button
@@ -67,7 +69,7 @@
     const cacheKey = `devices_${plantId}`;
     const cacheExpiration = 15 * 60 * 1000; // 15 minutes
     const apiUrl = "http://127.0.0.1:5000/api/devices/"; // Use Django URL tag for robustness
-    const loadingSpinner = document.getElementById("loading-spinner");
+    const loadingSpinner = document.getElementById("loading");
     const devicesTable = document.getElementById("devices-table");
     const exportButton = document.getElementById("export-button");
     const refreshButton = document.getElementById("refresh-button");
@@ -100,9 +102,29 @@
           "status",
           "total_energy",
           "last_update_time",
-        ].forEach((field) => {
+        ].forEach((field, index) => {
           const cell = document.createElement("td");
-          cell.textContent = device[field] || "N/A";
+
+          if (field === "status") {
+            const badge = document.createElement("span");
+            badge.textContent = device[field] || "N/A";
+
+            if (device[field] === "Offline") {
+              badge.className =
+                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-500 text-white";
+            } else if (device[field] === "Online") {
+              badge.className =
+                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white";
+            } else {
+              badge.className =
+                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-500 text-white";
+            }
+
+            cell.appendChild(badge);
+          } else {
+            cell.textContent = device[field] || "N/A";
+          }
+
           row.appendChild(cell);
         });
 
@@ -111,7 +133,7 @@
     }
 
     function fetchDevices(forceRefresh = false) {
-      loadingSpinner.style.display = "block";
+      loadingSpinner.style.display = "flex";
       exportButton.disabled = true;
       refreshButton.disabled = true;
 
@@ -220,31 +242,149 @@
     }
 
     window.exportToExcel = function () {
-      const rows = Array.from(devicesTable.rows);
-      let csvContent = "\uFEFF"; // Add BOM for Unicode support
+      // Show loading spinner during export
+      loadingSpinner.style.display = "flex";
 
-      // Add title row
-      csvContent += `"Devices for Plant: {{ plant_name }}"\n\n`;
+      // Create a new workbook and worksheet
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Devices");
 
-      rows.forEach((row) => {
-        const cells = Array.from(row.cells);
-        const rowContent = cells
-          .map((cell) => `"${cell.textContent.replace(/"/g, '""')}"`)
-          .join(",");
-        csvContent += rowContent + "\n";
+      // Set column definitions and widths
+      worksheet.columns = [
+        { header: "Plant Name", key: "plant", width: 15 },
+        { header: "Device Alias", key: "alias", width: 15 },
+        { header: "Serial Number", key: "serial", width: 20 },
+        { header: "Status", key: "status", width: 10 },
+        { header: "Total Energy", key: "energy", width: 12 },
+        { header: "Last Update Time", key: "lastUpdate", width: 20 },
+      ];
+
+      // Add title row and merge cells
+      worksheet.addRow([`Devices for Plant: {{ plant_name }}`]);
+      worksheet.mergeCells("A1:F1");
+
+      // Style the title row
+      worksheet.getCell("A1").font = {
+        bold: true,
+        size: 16,
+        color: { argb: "FFFFFF" },
+      };
+      worksheet.getCell("A1").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "9fc5e8" },
+      };
+      worksheet.getCell("A1").alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+      worksheet.getRow(1).height = 30;
+
+      // Add an empty row for spacing
+      worksheet.addRow([]);
+
+      // Style the header row
+      const headerRow = worksheet.getRow(3);
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: "FFFFFF" } };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "9fc5e8" },
+        };
+        cell.alignment = { horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
       });
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      // Add column title row before header
+      worksheet.spliceRows(3, 0, ["DEVICE INFORMATION"]);
+      worksheet.mergeCells("A3:F3");
+      worksheet.getCell("A3").font = {
+        bold: true,
+        size: 14,
+        color: { argb: "FFFFFF" },
+      };
+      worksheet.getCell("A3").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "9fc5e8" },
+      };
+      worksheet.getCell("A3").alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+      worksheet.getRow(3).height = 24;
 
-      link.href = URL.createObjectURL(blob);
-      link.download = `devices-{{ plant_name }}-${timestamp}.csv`;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Add data rows
+      const rows = Array.from(devicesTable.querySelectorAll("tbody tr"));
+      rows.forEach((row) => {
+        const cells = Array.from(row.cells);
+        const rowData = cells.map((cell) => cell.textContent.trim());
+        worksheet.addRow(rowData);
+      });
+
+      // Add borders to all data cells
+      const lastRowNum = rows.length + 4; // Title + Empty row + Column title + Header + Data rows
+      worksheet.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+        if (rowNumber >= 4) {
+          // Only style data rows and header
+          row.eachCell({ includeEmpty: true }, function (cell) {
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+        }
+      });
+
+      // Generate timestamp for filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const fileName = `devices{{ plant_name }}-${timestamp}.xlsx`;
+
+      // Write to blob and trigger download
+      workbook.xlsx
+        .writeBuffer()
+        .then((buffer) => {
+          const blob = new Blob([buffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          window.URL.revokeObjectURL(url);
+          loadingSpinner.style.display = "none";
+        })
+        .catch((err) => {
+          console.error("Error creating Excel file:", err);
+          loadingSpinner.style.display = "none";
+        });
     };
+
+    // Load ExcelJS library dynamically
+    if (!window.ExcelJS) {
+      const script = document.createElement("script");
+      script.src =
+        "https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js";
+      script.async = true;
+      script.onload = () => {
+        console.log("ExcelJS loaded successfully");
+        exportButton.disabled = false;
+      };
+      script.onerror = () => {
+        console.error("Failed to load ExcelJS");
+        exportButton.disabled = true;
+      };
+      document.head.appendChild(script);
+    }
 
     // Expose sortTable to global scope for onclick handlers
     window.sortTable = sortTable;
