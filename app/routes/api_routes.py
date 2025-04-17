@@ -9,7 +9,7 @@ from flask import (
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .api_helpers import (
-    get_plants, get_devices_for_plant, get_weather_list,
+    get_plant_fault_logs, get_plants, get_devices_for_plant, get_weather_list,
     get_access_api, get_logout
 )
 
@@ -212,3 +212,99 @@ def render_weather() -> str:
 def render_error_404() -> Tuple[str, int]:
     """Render a 404 error page"""
     return render_template('404.html'), 404
+
+@api_blueprint.route('/device/fault-logs', methods=['GET', 'POST'])
+def api_device_fault_logs() -> Tuple[Response, int]:
+    """
+    API endpoint to get fault logs for a specific device.
+    
+    Query Parameters:
+        device_sn/deviceSn: The serial number of the device to fetch fault logs for
+        plant_id/plantId: The ID of the plant to fetch fault logs for
+        date: The date to fetch logs for (format: YYYY-MM-DD)
+        page_num/toPageNum: Page number for pagination (default: 1)
+        device_flag/deviceFlag: Flag indicating device type (0=all, 1=inverter, etc.)
+        type: Type of fault log to retrieve (1=fault, 2=alarm, etc.)
+    
+    Returns:
+        Tuple[Response, int]: JSON response with status code
+    """
+    try:
+        # Support both naming conventions in parameters
+        device_sn = request.args.get('device_sn') or request.args.get('deviceSn', '')
+        plant_id = request.args.get('plant_id') or request.args.get('plantId')
+        date = request.args.get('date')
+        
+        # Ensure numeric parameters are properly converted to integers
+        try:
+            page_num = int(request.args.get('page_num') or request.args.get('toPageNum', 1))
+        except (ValueError, TypeError):
+            page_num = 1
+            
+        try:
+            device_flag = int(request.args.get('device_flag') or request.args.get('deviceFlag', 0))
+        except (ValueError, TypeError):
+            device_flag = 0
+            
+        try:
+            fault_type = int(request.args.get('type', 1))
+        except (ValueError, TypeError):
+            fault_type = 1
+        
+        if not plant_id:
+            return jsonify({
+                "error": "Missing required parameter: plant_id/plantId",
+                "code": "INVALID_PARAMETER",
+                "ui_message": "Plant ID must be provided"
+            }), 400
+            
+        current_app.logger.debug(f"Fetching fault logs for plant: {plant_id}, device: {device_sn}, date: {date}, page: {page_num}, type: {fault_type}, deviceFlag: {device_flag}")
+        
+        # Get fault logs with explicit parameters to avoid keyword/slicing errors
+        # This ensures all parameters are properly passed by keyword
+        fault_logs = get_plant_fault_logs(
+            plant_id=str(plant_id), 
+            date=date if date else None,
+            device_sn=str(device_sn) if device_sn else "",
+            page_num=page_num,
+            device_flag=device_flag,
+            fault_type=fault_type
+        )
+        
+        # Check if there was an error
+        if isinstance(fault_logs, dict) and 'error' in fault_logs:
+            return jsonify(fault_logs), 500
+        
+        if isinstance(fault_logs, list) and len(fault_logs) > 0 and isinstance(fault_logs[0], dict) and 'error' in fault_logs[0]:
+            return jsonify(fault_logs[0]), 500
+        
+        # Calculate pagination info if not already included in the response
+        total_count = len(fault_logs) if isinstance(fault_logs, list) else 0
+        
+        response = {
+            "total_count": total_count,
+            "current_page": page_num,
+            "device_sn": device_sn,
+            "plant_id": plant_id,
+            "fault_logs": fault_logs
+        }
+        
+        return jsonify(response), 200
+    except ValueError as e:
+        error_message = f"Invalid parameter: {str(e)}"
+        current_app.logger.error(error_message)
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "code": "INVALID_PARAMETER",
+            "ui_message": "Invalid parameters provided"
+        }), 400
+    except Exception as e:
+        error_message = f"Error in api_device_fault_logs: {str(e)}"
+        current_app.logger.error(error_message)
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "code": "API_ERROR",
+            "ui_message": "An error occurred while fetching fault logs"
+        }), 500

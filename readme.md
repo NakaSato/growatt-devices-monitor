@@ -283,6 +283,46 @@ Test options:
 - `--date YYYY-MM-DD`: Simulate data for a specific date
 - `--dry-run`: Run without saving data to the database
 
+## Running PV Forecasting Model
+
+To generate PV output forecasts using the hybrid model, run the prediction script:
+
+```bash
+python app/ml/models/predict.py [arguments]
+```
+
+### Arguments
+
+All arguments are optional - if omitted, the script will guide you through interactive selection:
+
+- `--model`: Directory containing the saved model files
+- `--weather`: Path to CSV file with weather forecast data
+- `--historical`: Path to CSV file with recent historical PV system data
+- `--output`: Path to save forecast results
+- `--lat`: Latitude of the PV system location
+- `--lon`: Longitude of the PV system location
+- `--alt`: Altitude of the PV system in meters (default: 0)
+
+### Example Usage
+
+```bash
+# Interactive mode (script will ask for inputs)
+python app/ml/models/predict.py
+
+# Specify all parameters
+python app/ml/models/predict.py --model ./models/trained --weather ./data/weather_forecast.csv --historical ./data/historical_data.csv --output ./results/forecast.csv --lat 13.7563 --lon 100.5018
+
+# Specify only location (other parameters will be asked interactively)
+python app/ml/models/predict.py --lat 13.7563 --lon 100.5018
+```
+
+### Expected Data Formats
+
+- **Weather forecast CSV**: Must contain columns for 'timestamp', 'ghi' (solar irradiance), 'temp_air', 'wind_speed'
+- **Historical PV data CSV**: Must contain columns for 'timestamp', 'voltage', 'current', and other features used by the model
+
+The script will output prediction results to a CSV file and generate a visualization plot.
+
 ## Project Structure
 
 ```

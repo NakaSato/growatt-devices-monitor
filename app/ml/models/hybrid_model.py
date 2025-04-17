@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import MinMaxScaler
 import joblib
+import os
 
 class HybridPVForecaster:
     def __init__(self, pvlib_model, lstm_model, feature_scaler, target_scaler, seq_length=24):
@@ -122,8 +124,9 @@ class HybridPVForecaster:
         Args:
             filepath_prefix: Prefix for saving model files
         """
-        # Save the LSTM model
-        self.lstm_model.save(f"{filepath_prefix}_lstm.h5")
+        # Save the LSTM model using the modern Keras format
+        model_path = f"{filepath_prefix}_lstm.keras"
+        self.lstm_model.save(model_path, save_format='keras')
         
         # Save the blender model
         joblib.dump(self.blender, f"{filepath_prefix}_blender.joblib")
@@ -146,8 +149,16 @@ class HybridPVForecaster:
         Returns:
             Loaded HybridPVForecaster instance
         """
-        # Load the LSTM model
-        lstm_model = tf.keras.models.load_model(f"{filepath_prefix}_lstm.h5")
+        # Check which format is available and load the LSTM model accordingly
+        keras_path = f"{filepath_prefix}_lstm.keras"
+        h5_path = f"{filepath_prefix}_lstm.h5"
+        
+        if os.path.exists(keras_path):
+            lstm_model = tf.keras.models.load_model(keras_path)
+        elif os.path.exists(h5_path):
+            lstm_model = tf.keras.models.load_model(h5_path)
+        else:
+            raise FileNotFoundError(f"No model file found at {keras_path} or {h5_path}")
         
         # Load the blender model
         blender = joblib.load(f"{filepath_prefix}_blender.joblib")

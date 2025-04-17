@@ -737,3 +737,79 @@ class Growatt:
             return json_res
         except re.exceptions.JSONDecodeError:
             raise ValueError("Invalid response received. Please ensure you are logged in.")
+        
+    def get_fault_logs(self, plantId: str, date: str = None, device_sn: str = "", page_num: int = 1, device_flag: int = 0, fault_type: int = 1):
+        """
+        Retrieves fault logs for a specific plant.
+        
+        Args:
+            plantId (str): The ID of the plant to retrieve fault logs for.
+            date (str, optional): The date for which to retrieve logs in 'YYYY-MM-DD' format. Defaults to current date.
+            device_sn (str, optional): Serial number of a specific device. Empty string for all devices.
+            page_num (int, optional): Page number for pagination. Defaults to 1.
+            device_flag (int, optional): Flag indicating device type (0=all, 1=inverter, etc). Defaults to 0.
+            fault_type (int, optional): Type of fault log to retrieve (1=fault, 2=alarm, etc). Defaults to 1.
+            
+        Returns:
+            dict: A dictionary containing fault logs.
+            Example:
+                {
+                    "result": 1,
+                    "obj": {
+                        "pageNum": 1,
+                        "count": 10,
+                        "datas": [
+                            {
+                                "deviceSn": "EXAMPLE123",
+                                "deviceName": "Inverter",
+                                "errorMsg": "Error description",
+                                "happenTime": "2024-04-15 14:30:22"
+                            },
+                            ...
+                        ]
+                    }
+                }
+                
+        Raises:
+            ValueError: If the API returns an empty or invalid response.
+            requests.exceptions.HTTPError: If the HTTP request fails.
+        """
+        # Use current date if none provided
+        if date is None:
+            date = datetime.now().strftime("%Y-%m-%d")
+            
+        # Validate inputs
+        if not plantId:
+            raise ValueError("Plant ID must be provided")
+        
+        # Prepare request data
+        data = {
+            "deviceSn": device_sn,
+            "date": date,
+            "plantId": str(plantId),
+            "toPageNum": str(page_num),
+            "type": str(fault_type),
+            "deviceFlag": str(device_flag)
+        }
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json, text/javascript, */*; q=0.01"
+        }
+        
+        # Make API request
+        res = self.session.post(f"{self.BASE_URL}/log/getNewPlantFaultLog", data=data, headers=headers)
+        res.raise_for_status()
+        
+        try:
+            json_res = res.json()
+            
+            if not json_res:
+                raise ValueError("Empty response received from server")
+            return json_res
+        except re.exceptions.JSONDecodeError:
+            raise ValueError("Invalid JSON response received from server")
+    
+    # Alias for backward compatibility
+    get_plant_fault_logs = get_fault_logs

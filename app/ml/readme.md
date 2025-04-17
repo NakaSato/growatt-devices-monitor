@@ -47,6 +47,28 @@ The system expects data with the following columns:
 | temp_air    | Ambient temperature          | °C        |
 | wind_speed  | Wind speed                   | m/s       |
 
+## Generating Training Data
+
+If you don't have real PV system data available, you can generate synthetic data for training and testing:
+
+```bash
+python app/ml/utils/generate_training_data.py --days 90 --forecast_days 7 --system_size 5.0 --output ./data
+```
+
+Arguments:
+
+- `--days`: Number of days of historical data to generate (default: 90)
+- `--forecast_days`: Number of days of weather forecast to generate (default: 7)
+- `--start_date`: Start date for historical data in YYYY-MM-DD format (default: today - days)
+- `--system_size`: PV system size in kW (default: 5.0)
+- `--output`: Directory to save the generated data (default: ./data)
+
+The utility will generate:
+
+- Historical PV system data with realistic patterns
+- Weather forecast data for future days
+- Visualizations of the generated data
+
 ## Training the Model
 
 To train the hybrid model:

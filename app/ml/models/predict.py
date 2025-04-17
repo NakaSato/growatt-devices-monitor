@@ -2,10 +2,73 @@ import pandas as pd
 import numpy as np
 import argparse
 import os
+import sys
+import pathlib
+import tensorflow as tf
+import glob
 from pvlib_model import PVLibModel
 from hybrid_model import HybridPVForecaster
-import tensorflow as tf
 import matplotlib.pyplot as plt
+
+# Fix the import path
+# Add the project root to the path
+current_file = pathlib.Path(__file__)
+project_root = current_file.parent.parent.parent.parent
+sys.path.append(str(project_root))
+
+def find_csv_files(directory=None):
+    """
+    Find all CSV files in the specified directory or in the default data directory.
+    
+    Args:
+        directory: Path to directory to search for CSV files
+                  If None, use the default data directory
+    
+    Returns:
+        List of CSV file paths
+    """
+    if directory is None:
+        directory = os.path.join(project_root, 'data')
+    
+    if not os.path.exists(directory):
+        print(f"Warning: Directory {directory} does not exist.")
+        return []
+    
+    csv_files = glob.glob(os.path.join(directory, '*.csv'))
+    return csv_files
+
+def select_csv_file(files, purpose_description):
+    """
+    Present a list of CSV files to the user and let them select one.
+    
+    Args:
+        files: List of file paths
+        purpose_description: Description of what this file will be used for
+    
+    Returns:
+        Selected file path
+    """
+    if not files:
+        return None
+    
+    print(f"\nSelect a CSV file for {purpose_description}:")
+    for i, file in enumerate(files):
+        print(f"{i+1}. {os.path.basename(file)}")
+    
+    selected = 0
+    if len(files) > 1:
+        while selected < 1 or selected > len(files):
+            try:
+                selected = int(input(f"Please select a file (1-{len(files)}): "))
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+        
+        selected_file = files[selected-1]
+    else:
+        selected_file = files[0]
+    
+    print(f"Using file: {selected_file}")
+    return selected_file
 
 def load_forecast_weather(weather_path):
     """Load weather forecast data from CSV."""
@@ -14,7 +77,7 @@ def load_forecast_weather(weather_path):
     
     return weather
 
-def main(model_dir, weather_path, historical_data_path, output_path, lat, lon, alt):
+def main(model_dir=None, weather_path=None, historical_data_path=None, output_path=None, lat=None, lon=None, alt=0):
     """
     Generate PV output forecasts using the hybrid model.
     
@@ -25,6 +88,64 @@ def main(model_dir, weather_path, historical_data_path, output_path, lat, lon, a
         output_path: Path to save forecast results
         lat, lon, alt: System location coordinates
     """
+    data_folder = os.path.join(project_root, 'data')
+    
+    # Search for model directory if not provided
+    if model_dir is None:
+        model_dirs = [d for d in os.listdir(os.path.join(project_root)) if os.path.isdir(os.path.join(project_root, d)) and 'model' in d.lower()]
+        if not model_dirs:
+            model_dirs = [d for d in os.listdir('.') if os.path.isdir(d) and 'model' in d.lower()]
+            
+        if model_dirs:
+            print("\nSelect a model directory:")
+            for i, dir_name in enumerate(model_dirs):
+                print(f"{i+1}. {dir_name}")
+            
+            selected = 0
+            if len(model_dirs) > 1:
+                while selected < 1 or selected > len(model_dirs):
+                    try:
+                        selected = int(input(f"Please select a model directory (1-{len(model_dirs)}): "))
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                
+                model_dir = os.path.join(project_root, model_dirs[selected-1])
+            else:
+                model_dir = os.path.join(project_root, model_dirs[0])
+        else:
+            raise ValueError("No model directory found. Please provide a path with --model argument.")
+    
+    # Search for weather forecast data if not provided
+    if weather_path is None:
+        weather_files = find_csv_files()
+        weather_files = [f for f in weather_files if 'weather' in os.path.basename(f).lower() or 'forecast' in os.path.basename(f).lower()]
+        
+        if not weather_files:
+            weather_files = find_csv_files()
+        
+        weather_path = select_csv_file(weather_files, "weather forecast data")
+        if weather_path is None:
+            raise ValueError("No weather forecast CSV files found. Please provide a path with --weather argument.")
+    
+    # Search for historical data if not provided
+    if historical_data_path is None:
+        historical_files = find_csv_files()
+        historical_files = [f for f in historical_files if 'historical' in os.path.basename(f).lower() or 'history' in os.path.basename(f).lower()]
+        
+        if not historical_files:
+            historical_files = [f for f in find_csv_files() if f not in [weather_path]]
+        
+        historical_data_path = select_csv_file(historical_files, "historical PV system data")
+        if historical_data_path is None:
+            raise ValueError("No historical data CSV files found. Please provide a path with --historical argument.")
+    
+    # Set default output path if not provided
+    if output_path is None:
+        output_dir = os.path.join(project_root, 'results')
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, 'pv_forecast_results.csv')
+        print(f"Output will be saved to {output_path}")
+    
     # 1. Load weather forecast data
     print("Loading weather forecast data...")
     weather_forecast = load_forecast_weather(weather_path)
@@ -42,12 +163,18 @@ def main(model_dir, weather_path, historical_data_path, output_path, lat, lon, a
     historical_data['month_sin'] = np.sin(2 * np.pi * historical_data['month'] / 12)
     historical_data['month_cos'] = np.cos(2 * np.pi * historical_data['month'] / 12)
     
+    # Ask for lat/lon if not provided
+    if lat is None or lon is None:
+        print("\nLocation coordinates are required for the PVLib model.")
+        lat = float(input("Enter latitude: ")) if lat is None else lat
+        lon = float(input("Enter longitude: ")) if lon is None else lon
+    
     # 3. Recreate PVLib model with system parameters
     print("Setting up PVLib model...")
-    # For simplicity, we'll use dummy values; in a real app you should load saved parameters
     module_params = {
         'pdc0': 5000,  # DC power rating
         'gamma_pdc': -0.004,  # power temperature coefficient
+        'module_type': 'glass_polymer',  # Add module type for temperature model
     }
     
     inverter_params = {
@@ -60,6 +187,7 @@ def main(model_dir, weather_path, historical_data_path, output_path, lat, lon, a
         'surface_tilt': 20,  # degrees
         'surface_azimuth': 180,  # degrees, facing south
         'albedo': 0.2,  # ground reflectance
+        'racking_model': 'open_rack',  # Add racking model for temperature model
     }
     
     pvlib_model = PVLibModel(
@@ -112,14 +240,23 @@ def main(model_dir, weather_path, historical_data_path, output_path, lat, lon, a
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate PV system output forecasts')
-    parser.add_argument('--model', required=True, help='Directory containing saved model files')
-    parser.add_argument('--weather', required=True, help='Path to weather forecast CSV')
-    parser.add_argument('--historical', required=True, help='Path to historical PV data CSV')
-    parser.add_argument('--output', required=True, help='Path to save forecast results')
-    parser.add_argument('--lat', type=float, required=True, help='Latitude of the PV system')
-    parser.add_argument('--lon', type=float, required=True, help='Longitude of the PV system')
+    parser.add_argument('--model', required=False, default=None, 
+                        help='Directory containing saved model files')
+    parser.add_argument('--weather', required=False, default=None, 
+                        help='Path to weather forecast CSV')
+    parser.add_argument('--historical', required=False, default=None, 
+                        help='Path to historical PV data CSV')
+    parser.add_argument('--output', required=False, default=None, 
+                        help='Path to save forecast results')
+    parser.add_argument('--lat', type=float, help='Latitude of the PV system')
+    parser.add_argument('--lon', type=float, help='Longitude of the PV system')
     parser.add_argument('--alt', type=float, default=0, help='Altitude of the PV system in meters')
     
     args = parser.parse_args()
     
-    main(args.model, args.weather, args.historical, args.output, args.lat, args.lon, args.alt)
+    try:
+        main(args.model, args.weather, args.historical, args.output, args.lat, args.lon, args.alt)
+    except KeyboardInterrupt:
+        print("\nPrediction cancelled by user.")
+    except Exception as e:
+        print(f"\nError during prediction: {str(e)}")

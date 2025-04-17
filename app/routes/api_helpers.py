@@ -210,3 +210,66 @@ def get_weather_list(plant_id: str = None) -> Union[List[Dict[str, Any]], Dict[s
         return [{"error": str(e), "code": "API_ERROR", 
                 "ui_message": "An error occurred while fetching weather data.",
                 "authenticated": False}]
+
+def get_plant_fault_logs(plant_id: str, date: str = None, device_sn: str = "", page_num: int = 1, device_flag: int = 0, fault_type: int = 1) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Fetch fault logs for a specific plant by its ID from the Growatt API.
+    
+    Args:
+        plant_id (str): The ID of the plant to retrieve fault logs for
+        date (str, optional): The date for which to retrieve logs in 'YYYY-MM-DD' format. Defaults to current date.
+        device_sn (str, optional): Serial number of a specific device. Empty string for all devices.
+        page_num (int, optional): Page number for pagination. Defaults to 1.
+        device_flag (int, optional): Flag indicating device type (0=all, 1=inverter, etc). Defaults to 0.
+        fault_type (int, optional): Type of fault log to retrieve (1=fault, 2=alarm, etc). Defaults to 1.
+    
+    Returns:
+        Union[List[Dict[str, Any]], Dict[str, Any]]: Plant fault logs data
+    """
+    try:
+        # Ensure login before making API call
+        login_status = ensure_login()
+        if not login_status.get("success", False):
+            current_app.logger.error("Failed to establish session before fetching fault logs")
+            return [{"error": "Authentication failed", "code": "AUTH_ERROR", 
+                    "ui_message": "Please log in to access fault logs data",
+                    "authenticated": False}]
+        
+        # Validate and convert parameters to appropriate types
+        plant_id_str = str(plant_id) if plant_id else ""
+        device_sn_str = str(device_sn) if device_sn else ""
+        page_num_int = int(page_num) if page_num else 1
+        device_flag_int = int(device_flag) if isinstance(device_flag, (int, str)) else 0
+        fault_type_int = int(fault_type) if isinstance(fault_type, (int, str)) else 1
+        
+        # Call the API object's get_fault_logs method with explicit keyword arguments
+        try:
+            fault_logs = growatt_api.get_fault_logs(
+                plantId=plant_id_str,
+                date=date,
+                device_sn=device_sn_str,
+                page_num=page_num_int,
+                device_flag=device_flag_int,
+                fault_type=fault_type_int
+            )
+        except TypeError as te:
+            current_app.logger.warning(f"TypeError in get_fault_logs with keyword args: {te}")
+            # Fallback to original implementation with just plantId if the newer API fails
+            fault_logs = growatt_api.get_fault_logs(plant_id_str)
+        
+        if fault_logs is None:
+            current_app.logger.warning(f"No fault logs retrieved for plant ID {plant_id}")
+            return []
+            
+        current_app.logger.info(f"Retrieved fault logs for plant ID {plant_id}")
+        return fault_logs
+    except TypeError as te:
+        current_app.logger.error(f"Type error in get_plant_fault_logs: {str(te)}")
+        return [{"error": f"Parameter error: {str(te)}", "code": "TYPE_ERROR", 
+                "ui_message": "Invalid parameter format when requesting fault logs.",
+                "authenticated": True}]
+    except Exception as e:
+        current_app.logger.error(f"Error fetching fault logs for plant ID {plant_id}: {e}")
+        return [{"error": str(e), "code": "API_ERROR", 
+                "ui_message": "An error occurred while fetching fault logs for this plant.",
+                "authenticated": False}]
