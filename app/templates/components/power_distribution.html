@@ -1,0 +1,23 @@
+<div
+  class="chart-container additional-charts"
+  id="power-distribution-chart"
+  x-data="{ selectedSegment: null }"
+>
+  <div class="chart-card">
+    <div class="card-header">
+      <h3 class="card-title">Power Distribution</h3>
+      <div class="chart-controls" x-show="selectedSegment">
+        <div class="selected-segment-info">
+          <span>Selected: <strong x-text="selectedSegment"></strong></span>
+          <button
+            class="btn-close"
+            @click="$dispatch('deselect-segment'); selectedSegment = null"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="powerDistributionChart" style="height: 300px"></div>
+  </div>
+</div>

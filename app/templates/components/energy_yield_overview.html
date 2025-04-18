@@ -1,0 +1,358 @@
+<!-- Energy Production Chart -->
+<div
+  class="chart-container mt-4"
+  id="energy-production-chart"
+  x-data="{ 
+    activePeriod: 'day', 
+    summaryText: 'Loading...', 
+    periodComparison: '', 
+    filters: [],
+    chartInstance: null,
+    energyData: null,
+    capacity: 10, // Default system capacity in kW
+    
+    init() {
+      console.log('Initializing Energy Yield Chart');
+      this.loadChartData(this.activePeriod);
+      this.initializeFilters();
+    },
+    
+    loadChartData(period) {
+      console.log('Loading chart data for period:', period);
+      
+      try {
+        // Make sure EnergyDataUtils is available
+        if (!window.EnergyDataUtils) {
+          console.error('EnergyDataUtils not found!');
+          return;
+        }
+        
+        // Generate data
+        this.energyData = window.EnergyDataUtils.generateEnergyData(period, this.capacity);
+        console.log('Generated energy data:', this.energyData);
+        
+        // Render chart
+        this.renderChart(this.energyData, period);
+        
+        // Update summary
+        this.updateSummary(this.energyData);
+      } catch (error) {
+        console.error('Error loading chart data:', error);
+      }
+    },
+    
+    handlePeriodChange(period) {
+      this.activePeriod = period;
+      this.loadChartData(period);
+    },
+    
+    renderChart(data, period) {
+      console.log('Rendering chart with period:', period);
+      
+      try {
+        const canvas = document.getElementById('energyProductionChart');
+        if (!canvas) {
+          console.error('Chart canvas element not found!');
+          return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (this.chartInstance) {
+          console.log('Destroying existing chart instance');
+          this.chartInstance.destroy();
+        }
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+          console.error('Chart.js library not loaded!');
+          return;
+        }
+        
+        // Try using the dedicated chart function first
+        if (window.EnergyCharts && window.EnergyCharts.createEnergyYieldChart) {
+          console.log('Using EnergyCharts.createEnergyYieldChart');
+          this.chartInstance = window.EnergyCharts.createEnergyYieldChart('energyProductionChart', data);
+          return;
+        }
+        
+        // Fallback to manual creation
+        console.log('Falling back to manual chart creation');
+        
+        // Prepare datasets with improved styling
+        const datasets = [
+          {
+            label: 'Energy Production (kWh)',
+            data: data.datasets.production,
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderColor: 'rgba(16, 185, 129, 0.8)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+            pointHoverBackgroundColor: '#ffffff',
+            pointBorderColor: 'rgba(16, 185, 129, 1)',
+            pointHoverBorderColor: 'rgba(16, 185, 129, 1)',
+            pointBorderWidth: 2,
+            pointHoverBorderWidth: 2,
+          },
+          {
+            label: 'Energy Consumption (kWh)',
+            data: data.datasets.consumption,
+            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            borderColor: 'rgba(249, 115, 22, 0.8)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: 'rgba(249, 115, 22, 1)',
+            pointHoverBackgroundColor: '#ffffff',
+            pointBorderColor: 'rgba(249, 115, 22, 1)',
+            pointHoverBorderColor: 'rgba(249, 115, 22, 1)',
+            pointBorderWidth: 2,
+            pointHoverBorderWidth: 2,
+          },
+          {
+            label: 'Grid Exchange (kWh)',
+            data: data.datasets.gridExchange,
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderColor: 'rgba(59, 130, 246, 0.8)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+            pointHoverBackgroundColor: '#ffffff',
+            pointBorderColor: 'rgba(59, 130, 246, 1)',
+            pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+            pointBorderWidth: 2,
+            pointHoverBorderWidth: 2,
+          }
+        ];
+        
+        // Enhanced chart configuration with light theme styling
+        const chartConfig = {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                align: 'center',
+                labels: {
+                  usePointStyle: true,
+                  padding: 20,
+                  boxWidth: 10,
+                  boxHeight: 10,
+                  font: {
+                    size: 12,
+                    family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                  }
+                },
+                title: {
+                  padding: {
+                    bottom: 10
+                  }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                titleColor: '#111827',
+                bodyColor: '#374151',
+                borderColor: 'rgba(229, 231, 235, 1)',
+                borderWidth: 1,
+                padding: 12,
+                boxPadding: 6,
+                titleFont: {
+                  weight: 'bold',
+                  size: 13
+                },
+                bodyFont: {
+                  size: 12
+                },
+                displayColors: true,
+                boxWidth: 8,
+                boxHeight: 8,
+                usePointStyle: true,
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += context.parsed.y.toFixed(2) + ' kWh';
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(243, 244, 246, 0.8)',
+                  lineWidth: 1,
+                  drawBorder: false
+                },
+                border: {
+                  display: false
+                },
+                ticks: {
+                  padding: 10,
+                  color: '#6B7280',
+                  font: {
+                    size: 11
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Energy (kWh)',
+                  color: '#374151',
+                  font: {
+                    size: 12,
+                    weight: 'normal'
+                  },
+                  padding: {
+                    bottom: 10
+                  }
+                }
+              },
+              x: {
+                grid: {
+                  display: false,
+                  drawBorder: false
+                },
+                border: {
+                  display: false
+                },
+                ticks: {
+                  padding: 10,
+                  color: '#6B7280',
+                  font: {
+                    size: 11
+                  },
+                  maxRotation: 45,
+                  minRotation: 0
+                }
+              }
+            },
+            layout: {
+              padding: {
+                top: 10,
+                right: 16,
+                bottom: 10,
+                left: 10
+              }
+            },
+            elements: {
+              line: {
+                borderJoinStyle: 'round'
+              }
+            },
+            animation: {
+              duration: 1000,
+              easing: 'easeOutQuart'
+            }
+          }
+        };
+        
+        console.log('Creating new chart with config:', chartConfig);
+        this.chartInstance = new Chart(ctx, chartConfig);
+      } catch (error) {
+        console.error('Error rendering chart:', error);
+      }
+    },
+    
+    updateSummary(data) {
+      this.summaryText = `Total Production: ${data.totals.production} kWh`;
+      const selfConsumptionPct = data.percentages.selfConsumption;
+      this.periodComparison = `Self-Consumption: ${selfConsumptionPct}%`;
+    },
+    
+    initializeFilters() {
+      this.filters = [
+        { id: 'inverter1', name: 'Main Inverter', type: 'inverter' },
+        { id: 'meter1', name: 'Grid Meter', type: 'meter' }
+      ];
+    }
+  }"
+>
+  <!-- Add a debugging element to check if data is loaded -->
+  <div x-show="false" x-text="JSON.stringify(energyData)"></div>
+  
+  <div class="chart-card">
+    <div class="card-header flex justify-between">
+      <h3 class="card-title">Energy Yield Overview</h3>
+      <div class="chart-controls">
+        <div class="chart-period-info">
+          <strong class="period-summary" x-text="summaryText"></strong>
+          <span
+            class="period-comparison text-sm text-gray-500 ml-2"
+            x-text="periodComparison"
+          ></span>
+        </div>
+        <select
+          class="chart-period-selector"
+          x-model="activePeriod"
+          @change="handlePeriodChange($event.target.value)"
+          id="period-selector"
+        >
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-wrapper" style="height: 350px">
+      <canvas id="energyProductionChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Add script to ensure Chart.js is loaded before initializing -->
+<script>
+  // Check if Chart.js is loaded
+  document.addEventListener("DOMContentLoaded", function() {
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js is not loaded! Make sure it is included before this component.');
+    } else {
+      console.log('Chart.js is loaded and ready to use.');
+    }
+    
+    // Check EnergyDataUtils
+    if (typeof window.EnergyDataUtils === 'undefined') {
+      console.error('EnergyDataUtils is not available! Check if energy_chart.js is properly loaded.');
+    } else {
+      console.log('EnergyDataUtils is available.');
+    }
+  });
+
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("chartData", () => ({
+      energyData: null,
+      updateChartDisplay() {
+        this.loadChartData(this.activePeriod);
+      },
+      refreshChartData() {
+        this.loadChartData(this.activePeriod);
+      },
+    }));
+  });
+</script>

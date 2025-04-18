@@ -37,6 +37,21 @@ const chartColors = {
   },
   grid: "rgba(243, 244, 246, 0.7)",
   text: "#6b7280",
+  primaryEnhanced: {
+    base: "rgba(16, 185, 129, 0.8)",
+    light: "rgba(16, 185, 129, 0.1)",
+    hover: "rgba(16, 185, 129, 1)",
+  },
+  secondaryEnhanced: {
+    base: "rgba(59, 130, 246, 0.8)",
+    light: "rgba(59, 130, 246, 0.1)",
+    hover: "rgba(59, 130, 246, 1)",
+  },
+  tertiaryEnhanced: {
+    base: "rgba(249, 115, 22, 0.8)",
+    light: "rgba(249, 115, 22, 0.1)",
+    hover: "rgba(249, 115, 22, 1)",
+  },
 };
 
 /**
@@ -560,6 +575,269 @@ function createDataset(label, data, color = "primary", options = {}) {
 }
 
 /**
+ * Energy Yield Overview Chart Functions
+ */
+const EnergyYieldChart = {
+  /**
+   * Initialize energy yield overview chart
+   * @param {string} elementId - Canvas element ID
+   * @param {Object} data - Chart data object with labels and datasets
+   * @returns {Object} Chart instance
+   */
+  createEnergyYieldChart(elementId, data) {
+    const canvas = document.getElementById(elementId);
+    if (!canvas) {
+      console.error(`Canvas element with ID '${elementId}' not found`);
+      return null;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    // Prepare datasets with enhanced styling
+    const datasets = [
+      {
+        label: "Energy Production (kWh)",
+        data: data.datasets.production,
+        backgroundColor:
+          chartColors.primaryEnhanced.light || "rgba(16, 185, 129, 0.1)",
+        borderColor:
+          chartColors.primaryEnhanced.base || "rgba(16, 185, 129, 0.8)",
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor:
+          chartColors.primaryEnhanced.hover || "rgba(16, 185, 129, 1)",
+        pointHoverBackgroundColor: "#ffffff",
+        pointBorderColor:
+          chartColors.primaryEnhanced.hover || "rgba(16, 185, 129, 1)",
+        pointHoverBorderColor:
+          chartColors.primaryEnhanced.hover || "rgba(16, 185, 129, 1)",
+        pointBorderWidth: 2,
+        pointHoverBorderWidth: 2,
+      },
+      {
+        label: "Energy Consumption (kWh)",
+        data: data.datasets.consumption,
+        backgroundColor:
+          chartColors.tertiaryEnhanced.light || "rgba(249, 115, 22, 0.1)",
+        borderColor:
+          chartColors.tertiaryEnhanced.base || "rgba(249, 115, 22, 0.8)",
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor:
+          chartColors.tertiaryEnhanced.hover || "rgba(249, 115, 22, 1)",
+        pointHoverBackgroundColor: "#ffffff",
+        pointBorderColor:
+          chartColors.tertiaryEnhanced.hover || "rgba(249, 115, 22, 1)",
+        pointHoverBorderColor:
+          chartColors.tertiaryEnhanced.hover || "rgba(249, 115, 22, 1)",
+        pointBorderWidth: 2,
+        pointHoverBorderWidth: 2,
+      },
+      {
+        label: "Grid Exchange (kWh)",
+        data: data.datasets.gridExchange,
+        backgroundColor:
+          chartColors.secondaryEnhanced.light || "rgba(59, 130, 246, 0.1)",
+        borderColor:
+          chartColors.secondaryEnhanced.base || "rgba(59, 130, 246, 0.8)",
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor:
+          chartColors.secondaryEnhanced.hover || "rgba(59, 130, 246, 1)",
+        pointHoverBackgroundColor: "#ffffff",
+        pointBorderColor:
+          chartColors.secondaryEnhanced.hover || "rgba(59, 130, 246, 1)",
+        pointHoverBorderColor:
+          chartColors.secondaryEnhanced.hover || "rgba(59, 130, 246, 1)",
+        pointBorderWidth: 2,
+        pointHoverBorderWidth: 2,
+      },
+    ];
+
+    // Enhanced chart configuration with light theme styling
+    const chartConfig = {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            position: "bottom",
+            align: "center",
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              boxWidth: 10,
+              boxHeight: 10,
+              font: {
+                size: 12,
+                family:
+                  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              },
+            },
+            title: {
+              padding: {
+                bottom: 10,
+              },
+            },
+          },
+          tooltip: {
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            titleColor: "#111827",
+            bodyColor: "#374151",
+            borderColor: "rgba(229, 231, 235, 1)",
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            titleFont: {
+              weight: "bold",
+              size: 13,
+            },
+            bodyFont: {
+              size: 12,
+            },
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y.toFixed(2) + " kWh";
+                }
+                return label;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(243, 244, 246, 0.8)",
+              lineWidth: 1,
+              drawBorder: false,
+            },
+            border: {
+              display: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6B7280",
+              font: {
+                size: 11,
+              },
+            },
+            title: {
+              display: true,
+              text: "Energy (kWh)",
+              color: "#374151",
+              font: {
+                size: 12,
+                weight: "normal",
+              },
+              padding: {
+                bottom: 10,
+              },
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+              drawBorder: false,
+            },
+            border: {
+              display: false,
+            },
+            ticks: {
+              padding: 10,
+              color: "#6B7280",
+              font: {
+                size: 11,
+              },
+              maxRotation: 45,
+              minRotation: 0,
+            },
+          },
+        },
+        layout: {
+          padding: {
+            top: 10,
+            right: 16,
+            bottom: 10,
+            left: 10,
+          },
+        },
+        elements: {
+          line: {
+            borderJoinStyle: "round",
+          },
+        },
+        animation: {
+          duration: 1000,
+          easing: "easeOutQuart",
+        },
+      },
+    };
+
+    try {
+      return new Chart(ctx, chartConfig);
+    } catch (error) {
+      console.error("Error creating energy yield chart:", error);
+      return null;
+    }
+  },
+
+  /**
+   * Update chart data with new period
+   * @param {Object} chartInstance - Chart.js chart instance
+   * @param {string} period - Time period (day, week, month, year)
+   * @param {number} capacity - System capacity in kW
+   */
+  updateChartPeriod(chartInstance, period, capacity = 10) {
+    if (!chartInstance) {
+      console.error("No valid chart instance provided");
+      return;
+    }
+
+    // Generate new data
+    const energyData = EnergyDataUtils.generateEnergyData(period, capacity);
+
+    // Update chart data
+    chartInstance.data.labels = energyData.labels;
+    chartInstance.data.datasets[0].data = energyData.datasets.production;
+    chartInstance.data.datasets[1].data = energyData.datasets.consumption;
+    chartInstance.data.datasets[2].data = energyData.datasets.gridExchange;
+
+    // Update chart
+    chartInstance.update();
+
+    return energyData;
+  },
+};
+
+/**
  * Process weather data for chart display
  * @param {Array} weatherData - Array of weather data objects
  * @param {string} metric - The weather metric to display (temperature, humidity, weather)
@@ -730,12 +1008,31 @@ if (typeof window !== "undefined" && window.EnergyCharts) {
   window.EnergyCharts.processWeatherData = processWeatherData;
 }
 
+// Add a debug function to test if the library is properly loaded
+window.EnergyChartDebug = {
+  test: function () {
+    console.log("EnergyChart library is properly loaded and initialized");
+    return true;
+  },
+  generateTestData: function () {
+    return EnergyDataUtils.generateEnergyData("day", 10);
+  },
+};
+
+// Make sure EnergyDataUtils is exported properly
+window.EnergyDataUtils = EnergyDataUtils;
+
+// Signal that the library has loaded
+console.log("Energy chart library loaded successfully");
+
 // Export functions for use in other scripts
 window.EnergyCharts = {
   // Chart creation
   createLineChart,
   createDonutChart,
   createDataset,
+  createEnergyYieldChart: EnergyYieldChart.createEnergyYieldChart,
+  updateEnergyYieldChart: EnergyYieldChart.updateChartPeriod,
 
   // Data utilities
   generateEnergyData: EnergyDataUtils.generateEnergyData.bind(EnergyDataUtils),

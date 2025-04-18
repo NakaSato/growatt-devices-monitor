@@ -6,13 +6,16 @@
   <!-- Overview Tab (Default) -->
   {% include 'components/tab-overview.html' %}
 
+  <!-- System Health Metrics -->
+  {% include 'components/metrics/system_health_metrics.html' %}
+
   <div
     x-show="activeTab === 'overview'"
     x-transition:enter="transition ease-out duration-200"
     x-transition:enter-start="opacity-0"
     x-transition:enter-end="opacity-100"
   >
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
       <!-- Power Flow Card -->
       {% include 'components/cards/power_flow_card.html' %}
 
