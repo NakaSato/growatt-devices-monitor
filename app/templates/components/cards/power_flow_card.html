@@ -1,16 +1,101 @@
-<div class="bg-white rounded-lg shadow p-4">
+<div
+  class="bg-white rounded-lg shadow p-4 h-full flex flex-col transition-shadow hover:shadow-lg"
+>
   <h3 class="text-gray-700 font-medium mb-4">Current Power Flow</h3>
-  <div class="flex justify-center">
-    <div class="relative">
+  <div class="flex justify-center flex-grow">
+    <div class="relative w-full max-w-md mx-auto">
       <!-- Animated power flow diagram -->
       <div class="p-2 text-center" id="power-flow-container">
         <svg
-          width="340"
-          height="360"
+          class="w-full h-auto"
           viewBox="0 0 340 360"
           xmlns="http://www.w3.org/2000/svg"
           id="power-flow-svg"
+          preserveAspectRatio="xMidYMid meet"
         >
+          <!-- Add enhanced filters and gradients -->
+          <defs>
+            <!-- Drop shadow for components -->
+            <filter
+              id="drop-shadow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feDropShadow
+                dx="2"
+                dy="2"
+                stdDeviation="2"
+                flood-opacity="0.3"
+              />
+            </filter>
+
+            <!-- Enhanced glow effect -->
+            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feFlood
+                flood-color="#10B981"
+                flood-opacity="0.8"
+                result="glow-color"
+              />
+              <feComposite
+                in="glow-color"
+                in2="blur"
+                operator="in"
+                result="glow-blur"
+              />
+              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
+            </filter>
+
+            <!-- Flow glow effect -->
+            <filter id="flow-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood
+                flood-color="#3B82F6"
+                flood-opacity="0.6"
+                result="flow-color"
+              />
+              <feComposite
+                in="flow-color"
+                in2="blur"
+                operator="in"
+                result="flow-blur"
+              />
+              <feComposite in="SourceGraphic" in2="flow-blur" operator="over" />
+            </filter>
+
+            <!-- Connection point gradient -->
+            <radialGradient
+              id="connectionPointGradient"
+              cx="50%"
+              cy="50%"
+              r="50%"
+              fx="50%"
+              fy="50%"
+            >
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="100%" stop-color="#4ADE80" />
+            </radialGradient>
+
+            <!-- Flow line gradients -->
+            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3B82F6" />
+              <stop offset="100%" stop-color="#2563EB" />
+            </linearGradient>
+
+            <linearGradient
+              id="greenGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stop-color="#10B981" />
+              <stop offset="100%" stop-color="#059669" />
+            </linearGradient>
+          </defs>
+
           <!-- Solar Panel Image centered with improved shadows and quality -->
           <image
             href="{{ url_for('static', filename='images/solar-panel.png') }}"
@@ -329,25 +414,123 @@
     </div>
   </div>
   <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-    <div class="bg-blue-50 p-2 rounded-md">
+    <div
+      class="bg-blue-50 p-2 rounded-md transform transition-transform hover:scale-105"
+    >
       <div class="text-xs text-gray-500">Solar</div>
-      <div class="font-bold text-blue-600">2.31 kW</div>
+      <div class="font-bold text-blue-600" id="solar-value">2.31 kW</div>
     </div>
-    <div class="bg-green-50 p-2 rounded-md">
+    <div
+      class="bg-green-50 p-2 rounded-md transform transition-transform hover:scale-105"
+    >
       <div class="text-xs text-gray-500">Grid</div>
-      <div class="font-bold text-green-600">2.3 kW</div>
+      <div class="font-bold text-green-600" id="grid-value">2.3 kW</div>
     </div>
-    <div class="bg-green-50 p-2 rounded-md">
+    <div
+      class="bg-green-50 p-2 rounded-md transform transition-transform hover:scale-105"
+    >
       <div class="text-xs text-gray-500">Plant</div>
-      <div class="font-bold text-green-600">3.25 kW</div>
+      <div class="font-bold text-green-600" id="plant-value">3.25 kW</div>
     </div>
   </div>
 </div>
+
+<!-- Add styles for enhanced visual effects -->
+<style>
+  /* Enhance the power flow card's appearance */
+  #power-flow-svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s ease;
+  }
+
+  #power-flow-container:hover #power-flow-svg {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+
+  /* Add pulsing effect to connection points */
+  .connection-point {
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  /* Smooth transitions for power values */
+  #solar-value,
+  #grid-value,
+  #plant-value {
+    transition: color 0.3s ease;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    #power-flow-svg {
+      height: 280px;
+    }
+  }
+
+  /* Add subtle gradient background to the card */
+  .bg-white.rounded-lg.shadow.p-4.h-full {
+    background: linear-gradient(to bottom right, #ffffff, #f9fafb);
+  }
+
+  /* Enhance value displays with subtle animations */
+  .font-bold.text-blue-600,
+  .font-bold.text-green-600 {
+    position: relative;
+  }
+
+  .font-bold.text-blue-600::after,
+  .font-bold.text-green-600::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 25%;
+    width: 50%;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.3;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s ease;
+  }
+
+  .bg-blue-50:hover .font-bold.text-blue-600::after,
+  .bg-green-50:hover .font-bold.text-green-600::after {
+    transform: scaleX(1);
+  }
+</style>
+
 <!-- Add Anime.js for enhanced animations -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Add connection point pulse animations
+    // Make the SVG fully responsive
+    const powerFlowSvg = document.getElementById("power-flow-svg");
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const width = entry.contentRect.width;
+        const height = width * (360 / 340); // Maintain aspect ratio
+
+        // Apply responsive sizing
+        if (width < 300) {
+          // Adjust text sizes for smaller viewports
+          document.querySelectorAll("#power-flow-svg text").forEach((text) => {
+            text.setAttribute(
+              "font-size",
+              parseInt(getComputedStyle(text).fontSize) * 0.8 + "px"
+            );
+          });
+        } else {
+          // Reset text sizes for larger viewports
+          document.querySelectorAll("#power-flow-svg text").forEach((text) => {
+            text.removeAttribute("font-size");
+          });
+        }
+      }
+    });
+
+    resizeObserver.observe(document.getElementById("power-flow-container"));
+
+    // Enhance connection point animations with better performance
     const connectionPoints = document.querySelectorAll(".connection-point");
 
     anime({
@@ -455,5 +638,42 @@
       duration: 1800,
       loop: true,
     });
+
+    // Add subtle value update animations
+    function animateValueChange(elementId, newValue) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const originalValue = parseFloat(element.textContent);
+      const start = performance.now();
+      const duration = 1000; // 1 second animation
+
+      requestAnimationFrame(function updateValue(time) {
+        const elapsed = time - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Use easeOutQuad for smoother animation
+        const easedProgress = 1 - (1 - progress) * (1 - progress);
+
+        const currentValue =
+          originalValue + (newValue - originalValue) * easedProgress;
+        element.textContent = currentValue.toFixed(2) + " kW";
+
+        if (progress < 1) {
+          requestAnimationFrame(updateValue);
+        }
+      });
+    }
+
+    // Periodically update values with smooth transitions (for demo)
+    if (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    ) {
+      setInterval(() => {
+        animateValueChange("solar-value", 2 + Math.random() * 0.8);
+        animateValueChange("grid-value", 2 + Math.random() * 0.6);
+        animateValueChange("plant-value", 3 + Math.random() * 0.5);
+      }, 5000);
+    }
   });
 </script>
