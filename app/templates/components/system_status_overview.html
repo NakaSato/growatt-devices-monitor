@@ -1,13 +1,10 @@
 <!-- System Status Overview Component -->
-<div class="system-status-container" x-data="{ activeTab: 'overview' }">
+<div x-data="{ activeTab: 'overview' }">
   <!-- System Status Header -->
   {% include 'components/metrics/system_metrics.html' %}
 
   <!-- Overview Tab (Default) -->
-  {% include 'components/tab-overview.html' %}
-
-  <!-- System Health Metrics -->
-  {% include 'components/metrics/system_health_metrics.html' %}
+  <div class="my-4">{% include 'components/tab-overview.html' %}</div>
 
   <div
     x-show="activeTab === 'overview'"
@@ -107,26 +104,6 @@
       }, 700); // Simulate network delay
     }
 
-    // Update UI elements with new data
-    function updateUIWithData(data) {
-      // ...existing code...
-    }
-
-    // Update efficiency trend chart
-    function updateEfficiencyChart(data) {
-      // ...existing code...
-    }
-
-    // Update distribution chart
-    function updateDistributionChart(data) {
-      // ...existing code...
-    }
-
-    // Generate analytics data with a specified time range
-    function generateAnalyticsData(days) {
-      // ...existing code...
-    }
-
     // Add event listener for time range selector
     document
       .getElementById("timeRange")
@@ -142,34 +119,5 @@
         showLoading();
         loadAnalyticsData(days);
       });
-
-    // Window resize handler for responsive charts
-    let resizeTimeout;
-    window.addEventListener("resize", function () {
-      // ...existing code...
-    });
-
-    // Add custom event to trigger tab changes
-    document.querySelectorAll("[x-data]").forEach((element) => {
-      // ...existing code...
-    });
-
-    // Helper functions
-    function generateDateLabels(days) {
-      // ...existing code...
-    }
-
-    function generateEfficiencyData(days) {
-      // ...existing code...
-    }
-
-    // Create simple donut chart for daily energy on the overview tab
-    const donutCtx = document
-      .getElementById("dailyEnergyDonut")
-      ?.getContext("2d");
-
-    if (donutCtx) {
-      // ...existing code...
-    }
   });
 </script>

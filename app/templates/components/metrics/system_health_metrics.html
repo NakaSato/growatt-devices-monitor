@@ -1,12 +1,19 @@
 <!-- System Health -->
-<div class="system-health mt-2 bg-white rounded-lg shadow p-4 mb-2">
-  <h3 class="text-gray-700 font-medium mb-3">System Health</h3>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="health-item">
+<div
+  class="system-health mt-2 bg-white rounded-lg shadow p-3 mb-2"
+  x-data="systemHealthIndicators()"
+>
+  <h3 class="text-gray-700 text-xs font-medium mb-2">System Health</h3>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+    <div
+      class="p-1.5 border border-gray-100 rounded"
+      :class="{'border-red-200 bg-red-50': inverterTemp > 60, 'border-yellow-200 bg-yellow-50': inverterTemp > 50}"
+    >
       <div class="flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 text-green-500 mr-1.5"
+          class="h-3 w-3 mr-1"
+          :class="{'text-green-500': inverterTemp < 50, 'text-yellow-500': inverterTemp >= 50 && inverterTemp <= 60, 'text-red-500': inverterTemp > 60}"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -16,16 +23,22 @@
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-sm font-medium">Inverter</span>
+        <span class="text-2xs font-medium">Inverter</span>
       </div>
-      <div class="mt-1 text-xs text-gray-500">Temperature: 42°C</div>
+      <div class="text-2xs text-gray-500">
+        Temperature: <span x-text="inverterTemp + '°C'"></span>
+      </div>
     </div>
 
-    <div class="health-item">
+    <div
+      class="p-1.5 border border-gray-100 rounded"
+      :class="{'border-red-200 bg-red-50': solarEfficiency < 70, 'border-yellow-200 bg-yellow-50': solarEfficiency < 85}"
+    >
       <div class="flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 text-green-500 mr-1.5"
+          class="h-3 w-3 mr-1"
+          :class="{'text-green-500': solarEfficiency >= 85, 'text-yellow-500': solarEfficiency >= 70 && solarEfficiency < 85, 'text-red-500': solarEfficiency < 70}"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -35,16 +48,22 @@
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-sm font-medium">Solar Panels</span>
+        <span class="text-2xs font-medium">Solar Panels</span>
       </div>
-      <div class="mt-1 text-xs text-gray-500">Efficiency: 97.3%</div>
+      <div class="text-2xs text-gray-500">
+        Efficiency: <span x-text="solarEfficiency + '%'"></span>
+      </div>
     </div>
 
-    <div class="health-item">
+    <div
+      class="p-1.5 border border-gray-100 rounded"
+      :class="{'border-red-200 bg-red-50': signalStatus === 'Poor', 'border-yellow-200 bg-yellow-50': signalStatus === 'Fair'}"
+    >
       <div class="flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 text-yellow-500 mr-1.5"
+          class="h-3 w-3 mr-1"
+          :class="{'text-green-500': signalStatus === 'Good', 'text-yellow-500': signalStatus === 'Fair', 'text-red-500': signalStatus === 'Poor'}"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -54,16 +73,22 @@
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-sm font-medium">Communication</span>
+        <span class="text-2xs font-medium">Communication</span>
       </div>
-      <div class="mt-1 text-xs text-gray-500">Signal: Good</div>
+      <div class="text-2xs text-gray-500">
+        Signal: <span x-text="signalStatus"></span>
+      </div>
     </div>
 
-    <div class="health-item">
+    <div
+      class="p-1.5 border border-gray-100 rounded"
+      :class="{'border-red-200 bg-red-50': batteryHealth < 75, 'border-yellow-200 bg-yellow-50': batteryHealth < 90}"
+    >
       <div class="flex items-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 text-green-500 mr-1.5"
+          class="h-3 w-3 mr-1"
+          :class="{'text-green-500': batteryHealth >= 90, 'text-yellow-500': batteryHealth >= 75 && batteryHealth < 90, 'text-red-500': batteryHealth < 75}"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -73,9 +98,11 @@
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-sm font-medium">Battery</span>
+        <span class="text-2xs font-medium">Battery</span>
       </div>
-      <div class="mt-1 text-xs text-gray-500">Health: 98%</div>
+      <div class="text-2xs text-gray-500">
+        Health: <span x-text="batteryHealth + '%'"></span>
+      </div>
     </div>
   </div>
 </div>
