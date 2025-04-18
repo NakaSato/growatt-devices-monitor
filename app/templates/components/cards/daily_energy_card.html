@@ -1,14 +1,18 @@
-<div class="bg-white rounded-lg shadow p-4">
+<div class="bg-white rounded-lg shadow p-4 h-full flex flex-col">
   <h3 class="text-gray-700 font-medium mb-4">Today's Energy</h3>
-  <div class="space-y-4">
-    <div class="flex items-center justify-center">
-      <div class="relative" style="height: 150px; width: 150px">
-        <canvas id="dailyEnergyDonut"></canvas>
+  <div class="space-y-4 flex-grow flex flex-col justify-between">
+    <div class="flex items-center justify-center flex-grow">
+      <div
+        class="relative w-full max-w-[200px] sm:max-w-[220px] md:max-w-[250px] mx-auto aspect-square"
+      >
+        <canvas id="dailyEnergyDonut" class="w-full h-full"></canvas>
         <div
           class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
         >
-          <div class="text-2xl font-bold text-gray-700">36.5</div>
-          <div class="text-xs text-gray-500">kWh</div>
+          <div class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-700">
+            36.5
+          </div>
+          <div class="text-xs sm:text-sm text-gray-500">kWh</div>
         </div>
       </div>
     </div>
@@ -32,6 +36,21 @@
   document.addEventListener("DOMContentLoaded", function () {
     const ctx = document.getElementById("dailyEnergyDonut").getContext("2d");
 
+    // Set chart responsiveness
+    function resizeChart() {
+      const container = document.querySelector(".aspect-square");
+      if (container) {
+        // Ensure chart canvas fills its container
+        const dailyEnergyDonut = document.getElementById("dailyEnergyDonut");
+        dailyEnergyDonut.style.width = "100%";
+        dailyEnergyDonut.style.height = "100%";
+      }
+    }
+
+    // Call on load and on window resize
+    resizeChart();
+    window.addEventListener("resize", resizeChart);
+
     // Data for the chart
     const selfUsed = 14.3;
     const gridExport = 22.2;
@@ -54,7 +73,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         cutout: "70%",
         plugins: {
           legend: {
@@ -72,7 +91,35 @@
             },
           },
         },
+        // Add animation for better visual appeal
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+          duration: 1000,
+        },
+        // Optimize performance on mobile
+        responsiveAnimationDuration: 500,
       },
     });
+
+    // Function to update chart size when container changes
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        // Trigger chart resize
+        if (window.Chart && Chart.instances) {
+          Object.values(Chart.instances).forEach((chart) => {
+            if (chart.canvas.id === "dailyEnergyDonut") {
+              chart.resize();
+            }
+          });
+        }
+      }
+    });
+
+    // Observe the chart container
+    const chartContainer = document.querySelector(".aspect-square");
+    if (chartContainer) {
+      resizeObserver.observe(chartContainer);
+    }
   });
 </script>
