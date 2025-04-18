@@ -1,17 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 250">
+  <!-- Add gradient definitions for background glow effect -->
+  <defs>
+    <linearGradient id="lineGlowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4ade80" stop-opacity="0.3" />
+      <stop offset="50%" stop-color="#22c55e" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#4ade80" stop-opacity="0.3" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Transparent background glow for the line -->
+  <path
+    d="M170 50 L170 170 Q170 190 190 190 L230 190"
+    stroke="url(#lineGlowGradient)"
+    stroke-width="8"
+    fill="none"
+    stroke-linecap="round"
+    opacity="0.4"
+  >
+    <animate
+      attributeName="opacity"
+      values="0.4;0.6;0.4"
+      dur="2s"
+      repeatCount="indefinite"
+    />
+  </path>
+  
   <!-- Beginning point marker -->
   <circle 
     cx="170" 
-    cy="60" 
+    cy="50" 
     r="4" 
     fill="#6b6e75" 
-    opacity="0.8"
+    opacity="0.95"
   />
   
   <path
-    d="M170 60 L170 170 Q170 190 190 190 L240 190"
+    d="M170 50 L170 170 Q170 190 190 190 L230 190"
     stroke="#6B7280"
-    stroke-width="1.5"
+    stroke-width="2.5"
     fill="none"
     stroke-linecap="round"
     stroke-dasharray="8,4"
@@ -21,7 +47,7 @@
       attributeName="stroke-dashoffset"
       from="12"
       to="0"
-      dur="10s"
+      dur="1s"
       repeatCount="indefinite"
       media="(prefers-reduced-motion: no-preference)"
     />
@@ -29,10 +55,10 @@
   
   <!-- End point marker -->
   <circle 
-    cx="240" 
+    cx="230" 
     cy="190" 
     r="4" 
     fill="#6b6e75"  
-    opacity="0.8"
+    opacity="0.95"
   />
 </svg>
