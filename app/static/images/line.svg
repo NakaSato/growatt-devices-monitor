@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 250">
+  <!-- Beginning point marker -->
+  <circle 
+    cx="170" 
+    cy="60" 
+    r="4" 
+    fill="#6b6e75" 
+    opacity="0.8"
+  />
+  
+  <path
+    d="M170 60 L170 170 Q170 190 190 190 L240 190"
+    stroke="#6B7280"
+    stroke-width="1.5"
+    fill="none"
+    stroke-linecap="round"
+    stroke-dasharray="8,4"
+    opacity="0.6"
+  >
+    <animate
+      attributeName="stroke-dashoffset"
+      from="12"
+      to="0"
+      dur="10s"
+      repeatCount="indefinite"
+      media="(prefers-reduced-motion: no-preference)"
+    />
+  </path>
+  
+  <!-- End point marker -->
+  <circle 
+    cx="240" 
+    cy="190" 
+    r="4" 
+    fill="#6b6e75"  
+    opacity="0.8"
+  />
+</svg>

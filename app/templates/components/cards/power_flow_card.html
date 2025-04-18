@@ -11,110 +11,6 @@
           xmlns="http://www.w3.org/2000/svg"
           id="power-flow-svg"
         >
-          <!-- Filters for shadows and glows -->
-          <defs>
-            <!-- Drop shadow for components -->
-            <filter
-              id="drop-shadow"
-              x="-20%"
-              y="-20%"
-              width="140%"
-              height="140%"
-            >
-              <feDropShadow
-                dx="2"
-                dy="2"
-                stdDeviation="2"
-                flood-opacity="0.3"
-              />
-            </filter>
-
-            <!-- Glow effect for active components -->
-            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
-              <feFlood
-                flood-color="#10B981"
-                flood-opacity="0.8"
-                result="glow-color"
-              />
-              <feComposite
-                in="glow-color"
-                in2="blur"
-                operator="in"
-                result="glow-blur"
-              />
-              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
-            </filter>
-
-            <!-- Connection point glow -->
-            <filter
-              id="connection-glow"
-              x="-50%"
-              y="-50%"
-              width="200%"
-              height="200%"
-            >
-              <feGaussianBlur stdDeviation="1.5" result="blur" />
-              <feFlood
-                flood-color="#4ADE80"
-                flood-opacity="0.6"
-                result="glow-color"
-              />
-              <feComposite
-                in="glow-color"
-                in2="blur"
-                operator="in"
-                result="glow-blur"
-              />
-              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
-            </filter>
-
-            <!-- Power flow line glow -->
-            <filter id="flow-glow" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="1" result="blur" />
-              <feFlood
-                flood-color="#60A5FA"
-                flood-opacity="0.7"
-                result="glow-color"
-              />
-              <feComposite
-                in="glow-color"
-                in2="blur"
-                operator="in"
-                result="glow-blur"
-              />
-              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
-            </filter>
-
-            <!-- Gradients for power flow -->
-            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#3B82F6" />
-              <stop offset="100%" stop-color="#10B981" />
-            </linearGradient>
-
-            <linearGradient
-              id="greenGradient"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
-              <stop offset="0%" stop-color="#10B981" />
-              <stop offset="100%" stop-color="#34D399" />
-            </linearGradient>
-
-            <radialGradient
-              id="connectionPointGradient"
-              cx="50%"
-              cy="50%"
-              r="50%"
-              fx="50%"
-              fy="50%"
-            >
-              <stop offset="0%" stop-color="#FFFFFF" />
-              <stop offset="100%" stop-color="#4ADE80" />
-            </radialGradient>
-          </defs>
           <!-- Solar Panel Image centered with improved shadows and quality -->
           <image
             href="{{ url_for('static', filename='images/solar-panel.png') }}"
@@ -151,7 +47,7 @@
             <!-- Battery percentage overlay with improved style -->
             <rect
               x="52"
-              y="18"
+              y="-32"
               width="30"
               height="18"
               rx="4"
@@ -159,7 +55,7 @@
             />
             <text
               x="67"
-              y="30"
+              y="-20"
               text-anchor="middle"
               fill="white"
               font-weight="bold"
@@ -338,7 +234,6 @@
             </path>
 
             <!-- Solar to inverter power flow -->
-            <!-- The 'd' attribute defines the path from the solar panel (170, 100) to the inverter (170, 160) -->
             <path
               d="M170 100 L170 160"
               stroke="url(#greenGradient)"
@@ -360,11 +255,59 @@
               />
             </path>
 
+            <!-- New curved current line from PV panel to inverter -->
+            <path
+              d="M170 100 L170 160"
+              stroke="#4ADE80"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              filter="url(#flow-glow)"
+              class="power-flow-line current-flow"
+              stroke-dasharray="2"
+              opacity="0.8"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="20"
+                to="0"
+                dur="1s"
+                repeatCount="indefinite"
+                media="(prefers-reduced-motion: no-preference)"
+              />
+            </path>
+
+            <!-- Black connection line from PV panel to inverter -->
+            <!-- Beginning point marker -->
+            <circle cx="170" cy="60" r="4" fill="#6b6e75" opacity="0.8" />
+
+            <path
+              d="M170 60 L170 170 Q170 190 190 190 L240 190"
+              stroke="#6B7280"
+              stroke-width="1.5"
+              fill="none"
+              stroke-linecap="round"
+              stroke-dasharray="8,4"
+              opacity="0.6"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="12"
+                to="0"
+                dur="10s"
+                repeatCount="indefinite"
+                media="(prefers-reduced-motion: no-preference)"
+              />
+            </path>
+
+            <!-- End point marker -->
+            <circle cx="240" cy="190" r="4" fill="#6b6e75" opacity="0.8" />
+
             <!-- Inverter to load connection path -->
             <path
-              d="M170 160 L170 250"
+              d="M170 15 L170 100 L200 100 L250 100"
               stroke="url(#flowGradient)"
-              stroke-width="4"
+              stroke-width="2"
               fill="none"
               stroke-linecap="round"
               filter="url(#flow-glow)"
@@ -385,7 +328,6 @@
       </div>
     </div>
   </div>
-
   <div class="grid grid-cols-3 gap-2 mt-4 text-center">
     <div class="bg-blue-50 p-2 rounded-md">
       <div class="text-xs text-gray-500">Solar</div>
@@ -401,10 +343,8 @@
     </div>
   </div>
 </div>
-
 <!-- Add Anime.js for enhanced animations -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Add connection point pulse animations
@@ -462,7 +402,7 @@
       loop: true,
     });
 
-    // Additional glow animation for power flow
+    // Additional glow animation for power flow lines
     anime({
       targets: ".power-flow-line",
       filter: [
@@ -473,6 +413,46 @@
       opacity: [0.7, 1, 0.7],
       easing: "easeInOutSine",
       duration: 3000,
+      loop: true,
+    });
+
+    // Additional animation for the current flow line
+    anime({
+      targets: ".current-flow",
+      strokeDashoffset: [anime.setDashoffset, 0],
+      easing: "linear",
+      duration: 1000,
+      direction: "normal",
+      loop: true,
+    });
+
+    // Add pulsing effect to show current intensity
+    anime({
+      targets: ".current-flow",
+      strokeWidth: [2, 3, 2],
+      opacity: [0.6, 0.9, 0.6],
+      easing: "easeInOutSine",
+      duration: 1500,
+      loop: true,
+    });
+
+    // Animation for grid flow line
+    anime({
+      targets: ".grid-flow",
+      strokeDashoffset: [anime.setDashoffset, 0],
+      easing: "linear",
+      duration: 1200,
+      direction: "normal",
+      loop: true,
+    });
+
+    // Pulse effect for grid flow
+    anime({
+      targets: ".grid-flow",
+      strokeWidth: [2, 2.5, 2],
+      opacity: [0.7, 0.9, 0.7],
+      easing: "easeInOutSine",
+      duration: 1800,
       loop: true,
     });
   });
