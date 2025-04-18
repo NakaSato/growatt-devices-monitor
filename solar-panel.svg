@@ -1,0 +1,37 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Base platform with gradient -->
+  <defs>
+    <linearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b4e04b" />
+      <stop offset="100%" stop-color="#7ba9e0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Base platform (isometric square) -->
+  <polygon points="200,250 320,190 320,300 200,360 80,300 80,190" fill="url(#baseGradient)" />
+  
+  <!-- Solar panel frame -->
+  <polygon points="130,170 270,110 270,190 130,250" fill="#aaaaaa" stroke="#888888" stroke-width="1" />
+  
+  <!-- Solar panel face -->
+  <polygon points="140,175 260,120 260,185 140,240" fill="#2a5db0" stroke="#1a4aa0" stroke-width="1" />
+  
+  <!-- Solar panel grid lines - horizontal -->
+  <line x1="140" y1="188" x2="260" y2="133" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="140" y1="201" x2="260" y2="146" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="140" y1="214" x2="260" y2="159" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="140" y1="227" x2="260" y2="172" stroke="#1a3f8a" stroke-width="0.5" />
+  
+  <!-- Solar panel grid lines - vertical -->
+  <line x1="160" y1="170" x2="160" y2="235" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="180" y1="162" x2="180" y2="227" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="200" y1="154" x2="200" y2="219" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="220" y1="146" x2="220" y2="211" stroke="#1a3f8a" stroke-width="0.5" />
+  <line x1="240" y1="138" x2="240" y2="203" stroke="#1a3f8a" stroke-width="0.5" />
+  
+  <!-- Support strut -->
+  <polygon points="200,250 200,310 270,270 270,190" fill="#999999" stroke="#777777" stroke-width="1" />
+  
+  <!-- Highlights/reflections on panel -->
+  <polygon points="140,175 260,120 260,130 140,185" fill="#ffffff" fill-opacity="0.2" />
+</svg>
