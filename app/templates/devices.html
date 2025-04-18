@@ -1,397 +1,545 @@
 {% extends "base.html" %} {% block title %}Devices - Growatt API{% endblock %}
 {% block content %}
-<div class="container">
-  <h1>Devices for Plant: {{ plant_name }}</h1>
-
-  <div class="controls mb-3">
-    <!-- Loading spinner -->
-    <div id="loading" class="flex justify-center py-4" style="display: none">
-      <div class="spinner border-2 border-t-2 rounded-full w-8 h-8"></div>
+<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 max-w-7xl">
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"
+  >
+    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+      Device Status
+    </h1>
+    <div class="flex flex-wrap gap-2">
+      <button
+        id="refresh-btn"
+        class="btn-primary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        <span>Refresh</span>
+      </button>
+      <button
+        id="export-btn"
+        class="btn-excel flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          />
+        </svg>
+        <span>Export</span>
+      </button>
     </div>
+  </div>
 
-    <!-- Export Button -->
-    <button
-      id="export-button"
-      class="btn btn-primary"
-      onclick="exportToExcel()"
-    >
-      <i class="fa fa-download"></i> Export to Excel
-    </button>
+  <div id="loading" class="flex justify-center py-8 hidden">
+    <div class="spinner"></div>
+  </div>
 
-    <!-- Refresh Button -->
+  <div
+    id="error-message"
+    class="bg-red-50 text-red-600 p-4 mb-6 rounded-lg shadow-sm hidden"
+  >
+    <div class="flex items-center">
+      <svg
+        class="h-5 w-5 mr-2 flex-shrink-0"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+          clip-rule="evenodd"
+        ></path>
+      </svg>
+      <span id="error-text" class="text-sm sm:text-base"></span>
+    </div>
     <button
-      id="refresh-button"
-      class="btn btn-secondary ms-2"
-      onclick="fetchDevices(true)"
+      id="dismiss-error"
+      class="text-sm text-red-700 hover:text-red-800 mt-2 ml-7 focus:outline-none focus:underline"
     >
-      <i class="fa fa-sync"></i> Refresh Data
+      Dismiss
     </button>
   </div>
 
-  <div class="table-responsive">
-    <table
-      id="devices-table"
-      class="table table-striped table-hover"
-      data-sort-order="asc"
+  <div id="filters-section" class="mb-4 bg-white p-3 sm:p-4 rounded-lg shadow">
+    <div
+      class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4"
     >
-      <thead class="table-dark">
-        <tr>
-          <th onclick="sortTable(0)">
-            Plant Name <span class="sort-icon">▲</span>
-          </th>
-          <th onclick="sortTable(1)">
-            Device Alias <span class="sort-icon">▲</span>
-          </th>
-          <th onclick="sortTable(2)">
-            Serial Number <span class="sort-icon">▲</span>
-          </th>
-          <th onclick="sortTable(3)">
-            Status <span class="sort-icon">▲</span>
-          </th>
-          <th onclick="sortTable(4)">
-            Total Energy <span class="sort-icon">▲</span>
-          </th>
-          <th onclick="sortTable(5)">
-            Last Update Time <span class="sort-icon">▲</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be dynamically inserted here -->
-      </tbody>
-    </table>
+      <div class="flex flex-grow items-center">
+        <label
+          for="status-filter"
+          class="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap"
+          >Status:</label
+        >
+        <select
+          id="status-filter"
+          class="flex-grow form-control text-sm rounded-md"
+        >
+          <option value="all">All Statuses</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+          <option value="waiting">Waiting</option>
+        </select>
+      </div>
+      <div class="flex flex-grow items-center">
+        <label
+          for="search-input"
+          class="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap"
+          >Search:</label
+        >
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search devices..."
+          class="flex-grow form-control text-sm rounded-md"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="table-responsive overflow-x-auto">
+      <table class="w-full" data-sort-order="asc">
+        <thead class="bg-gray-100">
+          <tr>
+            <th
+              onclick="sortTable(0)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Plant Name <span class="sort-icon">▲</span>
+            </th>
+            <th
+              onclick="sortTable(1)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Device Alias <span class="sort-icon">▲</span>
+            </th>
+            <th
+              onclick="sortTable(2)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Serial Number <span class="sort-icon">▲</span>
+            </th>
+            <th
+              onclick="sortTable(3)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Status <span class="sort-icon">▲</span>
+            </th>
+            <th
+              onclick="sortTable(4)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Total Energy <span class="sort-icon">▲</span>
+            </th>
+            <th
+              onclick="sortTable(5)"
+              class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              Last Update <span class="sort-icon">▲</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be dynamically inserted here -->
+        </tbody>
+      </table>
+    </div>
+    <div id="no-devices" class="p-8 text-center bg-gray-50 hidden">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-12 w-12 mx-auto text-gray-400 mb-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+        />
+      </svg>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No Devices Found</h3>
+      <p class="text-gray-500 max-w-sm mx-auto">
+        No devices match the current filter criteria or no devices are available
+        for this account.
+      </p>
+    </div>
   </div>
 </div>
+
+<style>
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    th,
+    td {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+      font-size: 0.75rem !important;
+    }
+
+    /* Hide sort icons on mobile */
+    .sort-icon {
+      display: none;
+    }
+
+    /* Stack the device cells on small screens for better readability */
+    .device-cell {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Add spacing between device fields */
+    .device-cell > span:not(:last-child) {
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  /* Improve scroll experience */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .table-responsive::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+
+  /* Status indicator styles */
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .status-online {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: rgb(16, 185, 129);
+  }
+
+  .status-offline {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+  }
+
+  .status-waiting {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: rgb(245, 158, 11);
+  }
+</style>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const plantId = "{{ plant_id }}";
-    const cacheKey = `devices_${plantId}`;
-    const cacheExpiration = 15 * 60 * 1000; // 15 minutes
-    const apiUrl = "http://127.0.0.1:5000/api/devices/"; // Use Django URL tag for robustness
-    const loadingSpinner = document.getElementById("loading");
-    const devicesTable = document.getElementById("devices-table");
-    const exportButton = document.getElementById("export-button");
-    const refreshButton = document.getElementById("refresh-button");
+    fetchDevices();
 
-    function renderDevices(data) {
-      const devicesTableBody = devicesTable.querySelector("tbody");
-      devicesTableBody.innerHTML = ""; // Clear existing rows
+    // Setup event listeners
+    document
+      .getElementById("refresh-btn")
+      .addEventListener("click", fetchDevices);
+    document
+      .getElementById("export-btn")
+      .addEventListener("click", exportToCSV);
+    document
+      .getElementById("dismiss-error")
+      .addEventListener("click", dismissError);
+    document
+      .getElementById("status-filter")
+      .addEventListener("change", applyFilters);
+    document
+      .getElementById("search-input")
+      .addEventListener("input", applyFilters);
 
-      if (!data || data.length === 0) {
-        const emptyRow = document.createElement("tr");
-        const emptyCell = document.createElement("td");
-        emptyCell.textContent = "No device data available";
-        emptyCell.colSpan = 6;
-        emptyCell.className = "text-center";
-        emptyRow.appendChild(emptyCell);
-        devicesTableBody.appendChild(emptyRow);
-        return;
-      }
+    // Use debounce for search input to prevent excessive filtering
+    let searchTimeout;
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(applyFilters, 300);
+    });
 
-      data.forEach((device) => {
-        const row = document.createElement("tr");
-        if (device.status === "Offline") {
-          row.classList.add("table-danger");
-        }
+    function fetchDevices() {
+      // Show loading spinner
+      document.getElementById("loading").classList.remove("hidden");
+      document.getElementById("no-devices").classList.add("hidden");
 
-        [
-          "plant_name",
-          "alias",
-          "serial_number",
-          "status",
-          "total_energy",
-          "last_update_time",
-        ].forEach((field, index) => {
-          const cell = document.createElement("td");
-
-          if (field === "status") {
-            const badge = document.createElement("span");
-            badge.textContent = device[field] || "N/A";
-
-            if (device[field] === "Offline") {
-              badge.className =
-                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-600 text-white";
-            } else if (device[field] === "Online") {
-              badge.className =
-                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-600 text-white";
-            } else {
-              badge.className =
-                "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-600 text-white";
-            }
-
-            cell.appendChild(badge);
-          } else {
-            cell.textContent = device[field] || "N/A";
-          }
-
-          row.appendChild(cell);
-        });
-
-        devicesTableBody.appendChild(row);
-      });
-    }
-
-    function fetchDevices(forceRefresh = false) {
-      loadingSpinner.style.display = "flex";
-      exportButton.disabled = true;
-      refreshButton.disabled = true;
-
-      // Check cache first unless forced refresh
-      if (!forceRefresh) {
-        const cachedData = localStorage.getItem(cacheKey);
-        if (cachedData) {
-          const parsedCache = JSON.parse(cachedData);
-          const isCacheValid =
-            Date.now() - parsedCache.timestamp < cacheExpiration;
-
-          if (isCacheValid) {
-            renderDevices(parsedCache.data);
-            loadingSpinner.style.display = "none";
-            exportButton.disabled = false;
-            refreshButton.disabled = false;
-            return;
-          }
-        }
-      }
-
-      // Fetch new data
-      fetch(apiUrl)
+      // Fetch the data
+      fetch(`/api/devices${plantId ? "?plant_id=" + plantId : ""}`)
         .then((response) => {
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
           }
           return response.json();
         })
         .then((data) => {
-          // Cache the data with a timestamp
-          const cacheData = {
-            timestamp: Date.now(),
-            data: data,
-          };
-          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-          renderDevices(data);
+          renderDevicesTable(data);
         })
         .catch((error) => {
+          showError(`Failed to load devices: ${error.message}`);
           console.error("Error fetching devices:", error);
-          const devicesTableBody = devicesTable.querySelector("tbody");
-          devicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">
-            Error loading devices: ${error.message}</td></tr>`;
         })
         .finally(() => {
-          loadingSpinner.style.display = "none";
-          exportButton.disabled = false;
-          refreshButton.disabled = false;
+          document.getElementById("loading").classList.add("hidden");
         });
     }
 
-    function sortTable(columnIndex) {
-      const rows = Array.from(devicesTable.rows).slice(1); // Exclude the header row
-      const isAscending =
-        devicesTable.getAttribute("data-sort-order") === "asc";
-      const direction = isAscending ? 1 : -1;
+    function renderDevicesTable(devices) {
+      const tableBody = document.querySelector("table tbody");
+      tableBody.innerHTML = "";
 
-      // Stop if no data to sort
-      if (rows.length <= 1 && rows[0]?.cells.length === 1) return;
+      if (!devices || devices.length === 0) {
+        document.getElementById("no-devices").classList.remove("hidden");
+        return;
+      }
 
-      rows.sort((a, b) => {
-        const cellA = a.cells[columnIndex].textContent.trim();
-        const cellB = b.cells[columnIndex].textContent.trim();
+      // Populate the table
+      devices.forEach((device) => {
+        const row = document.createElement("tr");
+        row.className =
+          "border-b border-gray-200 hover:bg-gray-50 transition-colors";
+        row.setAttribute("data-status", device.status.toLowerCase());
 
-        // Handle numeric sorting
-        if (!isNaN(cellA) && !isNaN(cellB)) {
-          return direction * (parseFloat(cellA) - parseFloat(cellB));
+        // Create status indicator class based on device status
+        let statusClass = "status-waiting";
+        if (device.status.toLowerCase() === "online") {
+          statusClass = "status-online";
+        } else if (device.status.toLowerCase() === "offline") {
+          statusClass = "status-offline";
         }
 
-        // Try date sorting for the last column
-        if (columnIndex === 5) {
-          try {
-            const dateA = new Date(cellA);
-            const dateB = new Date(cellB);
-            if (!isNaN(dateA) && !isNaN(dateB)) {
-              return direction * (dateA - dateB);
-            }
-          } catch (e) {
-            // Fall back to string comparison
-          }
-        }
+        // Format the last update time
+        const lastUpdateDate = device.last_update_time
+          ? new Date(device.last_update_time)
+          : null;
+        const formattedDate = lastUpdateDate
+          ? lastUpdateDate.toLocaleDateString() +
+            " " +
+            lastUpdateDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "N/A";
 
-        // String sorting
-        return direction * cellA.localeCompare(cellB);
+        // Build the row
+        row.innerHTML = `
+          <td class="px-4 py-3 device-cell">
+            <span class="text-gray-900">${device.plant_name || "N/A"}</span>
+          </td>
+          <td class="px-4 py-3 device-cell">
+            <span class="text-gray-900">${device.alias || "N/A"}</span>
+          </td>
+          <td class="px-4 py-3 device-cell">
+            <span class="text-gray-500 font-mono text-xs">${
+              device.serial_number || "N/A"
+            }</span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="${statusClass} status-indicator">
+              ${device.status || "Unknown"}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-gray-900">${
+            device.total_energy || "0 kWh"
+          }</td>
+          <td class="px-4 py-3 text-gray-500 text-sm">${formattedDate}</td>
+        `;
+
+        tableBody.appendChild(row);
       });
 
-      // Append sorted rows back to the table
-      const tbody = devicesTable.querySelector("tbody");
-      rows.forEach((row) => tbody.appendChild(row));
+      // Apply any active filters after rendering
+      applyFilters();
+    }
 
-      // Toggle sort order
-      devicesTable.setAttribute(
-        "data-sort-order",
-        isAscending ? "desc" : "asc"
-      );
+    function applyFilters() {
+      const statusFilter = document.getElementById("status-filter").value;
+      const searchQuery = document
+        .getElementById("search-input")
+        .value.toLowerCase();
+
+      let visibleCount = 0;
+      const rows = document.querySelectorAll("table tbody tr");
+
+      rows.forEach((row) => {
+        const deviceStatus = row.getAttribute("data-status");
+        const rowText = row.textContent.toLowerCase();
+
+        // Apply status filter
+        const statusMatch =
+          statusFilter === "all" || deviceStatus === statusFilter;
+
+        // Apply search filter
+        const searchMatch = !searchQuery || rowText.includes(searchQuery);
+
+        // Show/hide the row based on combined filters
+        if (statusMatch && searchMatch) {
+          row.classList.remove("hidden");
+          visibleCount++;
+        } else {
+          row.classList.add("hidden");
+        }
+      });
+
+      // Show "no devices" message if all rows are filtered out
+      if (visibleCount === 0 && rows.length > 0) {
+        document.getElementById("no-devices").classList.remove("hidden");
+      } else {
+        document.getElementById("no-devices").classList.add("hidden");
+      }
+    }
+
+    function sortTable(columnIndex) {
+      const table = document.querySelector("table");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+
+      // Get current sort order and update for next click
+      let sortOrder = table.getAttribute("data-sort-order");
+      sortOrder = sortOrder === "asc" ? "desc" : "asc";
+      table.setAttribute("data-sort-order", sortOrder);
 
       // Update sort icons
-      const headers = devicesTable.querySelectorAll("th");
+      const headers = table.querySelectorAll("th");
       headers.forEach((header, index) => {
         const icon = header.querySelector(".sort-icon");
         if (icon) {
           icon.textContent =
-            index === columnIndex ? (isAscending ? "▼" : "▲") : "▲";
+            index === columnIndex ? (sortOrder === "asc" ? "▲" : "▼") : "▲";
         }
       });
-    }
 
-    window.exportToExcel = function () {
-      // Show loading spinner during export
-      loadingSpinner.style.display = "flex";
+      // Sort the rows
+      rows.sort((a, b) => {
+        const cellA = a.cells[columnIndex].textContent.trim();
+        const cellB = b.cells[columnIndex].textContent.trim();
 
-      // Create a new workbook and worksheet
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Devices");
+        // Special handling for energy values (remove "kWh" and parse as numbers)
+        if (columnIndex === 4) {
+          const numA = parseFloat(cellA.replace(/[^\d.-]/g, "")) || 0;
+          const numB = parseFloat(cellB.replace(/[^\d.-]/g, "")) || 0;
+          return sortOrder === "asc" ? numA - numB : numB - numA;
+        }
 
-      // Set column definitions and widths
-      worksheet.columns = [
-        { header: "Plant Name", key: "plant", width: 15 },
-        { header: "Device Alias", key: "alias", width: 15 },
-        { header: "Serial Number", key: "serial", width: 20 },
-        { header: "Status", key: "status", width: 10 },
-        { header: "Total Energy", key: "energy", width: 12 },
-        { header: "Last Update Time", key: "lastUpdate", width: 20 },
-      ];
+        // Special handling for dates in last column
+        if (columnIndex === 5) {
+          const dateA = new Date(cellA);
+          const dateB = new Date(cellB);
 
-      // Add title row and merge cells
-      worksheet.addRow([`Devices for Plant: {{ plant_name }}`]);
-      worksheet.mergeCells("A1:F1");
+          if (!isNaN(dateA) && !isNaN(dateB)) {
+            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+          }
+        }
 
-      // Style the title row
-      worksheet.getCell("A1").font = {
-        bold: true,
-        size: 16,
-        color: { argb: "FFFFFF" },
-      };
-      worksheet.getCell("A1").fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "9fc5e8" },
-      };
-      worksheet.getCell("A1").alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      worksheet.getRow(1).height = 30;
-
-      // Add an empty row for spacing
-      worksheet.addRow([]);
-
-      // Style the header row
-      const headerRow = worksheet.getRow(3);
-      headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: "FFFFFF" } };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "9fc5e8" },
-        };
-        cell.alignment = { horizontal: "center" };
-        cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
+        // Default string comparison
+        return sortOrder === "asc"
+          ? cellA.localeCompare(cellB)
+          : cellB.localeCompare(cellA);
       });
 
-      // Add column title row before header
-      worksheet.spliceRows(3, 0, ["DEVICE INFORMATION"]);
-      worksheet.mergeCells("A3:F3");
-      worksheet.getCell("A3").font = {
-        bold: true,
-        size: 14,
-        color: { argb: "FFFFFF" },
-      };
-      worksheet.getCell("A3").fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "9fc5e8" },
-      };
-      worksheet.getCell("A3").alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      worksheet.getRow(3).height = 24;
+      // Rearrange the rows in the tbody
+      rows.forEach((row) => tbody.appendChild(row));
+    }
 
-      // Add data rows
-      const rows = Array.from(devicesTable.querySelectorAll("tbody tr"));
+    function exportToCSV() {
+      // Get visible rows only
+      const rows = Array.from(
+        document.querySelectorAll("table tbody tr")
+      ).filter((row) => !row.classList.contains("hidden"));
+
+      if (rows.length === 0) {
+        showError("No data to export.");
+        return;
+      }
+
+      // Build CSV content
+      let csvContent = "data:text/csv;charset=utf-8,";
+
+      // Add headers
+      const headers = Array.from(document.querySelectorAll("table th")).map(
+        (th) => `"${th.textContent.replace(/▲|▼/g, "").trim()}"`
+      );
+      csvContent += headers.join(",") + "\n";
+
+      // Add rows
       rows.forEach((row) => {
-        const cells = Array.from(row.cells);
-        const rowData = cells.map((cell) => cell.textContent.trim());
-        worksheet.addRow(rowData);
+        const rowData = Array.from(row.cells).map(
+          (cell) => `"${cell.textContent.trim().replace(/"/g, '""')}"`
+        );
+        csvContent += rowData.join(",") + "\n";
       });
 
-      // Add borders to all data cells
-      const lastRowNum = rows.length + 4; // Title + Empty row + Column title + Header + Data rows
-      worksheet.eachRow({ includeEmpty: true }, function (row, rowNumber) {
-        if (rowNumber >= 4) {
-          // Only style data rows and header
-          row.eachCell({ includeEmpty: true }, function (cell) {
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-          });
-        }
-      });
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute(
+        "download",
+        `devices_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      document.body.appendChild(link);
 
-      // Generate timestamp for filename
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const fileName = `devices{{ plant_name }}-${timestamp}.xlsx`;
-
-      // Write to blob and trigger download
-      workbook.xlsx
-        .writeBuffer()
-        .then((buffer) => {
-          const blob = new Blob([buffer], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          a.click();
-          window.URL.revokeObjectURL(url);
-          loadingSpinner.style.display = "none";
-        })
-        .catch((err) => {
-          console.error("Error creating Excel file:", err);
-          loadingSpinner.style.display = "none";
-        });
-    };
-
-    // Load ExcelJS library dynamically
-    if (!window.ExcelJS) {
-      const script = document.createElement("script");
-      script.src =
-        "https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js";
-      script.async = true;
-      script.onload = () => {
-        console.log("ExcelJS loaded successfully");
-        exportButton.disabled = false;
-      };
-      script.onerror = () => {
-        console.error("Failed to load ExcelJS");
-        exportButton.disabled = true;
-      };
-      document.head.appendChild(script);
+      // Trigger download
+      link.click();
+      document.body.removeChild(link);
     }
 
-    // Expose sortTable to global scope for onclick handlers
-    window.sortTable = sortTable;
-    window.fetchDevices = fetchDevices;
+    function showError(message) {
+      const errorElement = document.getElementById("error-message");
+      document.getElementById("error-text").textContent = message;
+      errorElement.classList.remove("hidden");
+    }
 
-    // Initial data load
-    fetchDevices();
+    function dismissError() {
+      document.getElementById("error-message").classList.add("hidden");
+    }
+
+    // Handle responsive behavior on window resize
+    window.addEventListener("resize", () => {
+      if (window.innerWidth <= 640) {
+        // Mobile adjustments
+        document.querySelectorAll(".sort-icon").forEach((icon) => {
+          icon.style.display = "none";
+        });
+      } else {
+        // Desktop adjustments
+        document.querySelectorAll(".sort-icon").forEach((icon) => {
+          icon.style.display = "inline";
+        });
+      }
+    });
+
+    // Trigger resize handler on load
+    const resizeEvent = new Event("resize");
+    window.dispatchEvent(resizeEvent);
   });
 </script>
 {% endblock %}
