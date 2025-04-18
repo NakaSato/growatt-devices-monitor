@@ -1,0 +1,190 @@
+<header class="shadow-md mb-6 bg-gradient-to-r from-green-600 to-blue-600">
+  <nav class="p-4">
+    <div class="container mx-auto">
+      <!-- Mobile menu button -->
+      <div class="flex items-center justify-between md:hidden">
+        <a href="/" class="text-white font-bold text-xl">Growatt</a>
+        <button
+          id="mobile-menu-button"
+          class="text-white focus:outline-none transition-transform duration-300"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Desktop menu -->
+      <div class="hidden md:flex md:justify-center md:gap-6">
+        <a
+          href="/"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+          >Home</a
+        >
+        <a
+          href="/plants"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+          >Plants</a
+        >
+        <a
+          href="/devices"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+          >Status Devices</a
+        >
+        <a
+          href="/weather"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+          >Weather Status</a
+        >
+        {% if not authenticated %}
+        <a
+          href="/api/access"
+          id="api-access-link"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+        >
+          Get Access
+        </a>
+        {% endif %}
+        <a
+          href="javascript:void(0);"
+          @click="clearCacheAndLogout()"
+          class="text-white font-bold hover:underline transition duration-300 px-3 py-1 rounded hover:bg-white/20 transform hover:scale-105"
+        >
+          Sign Out
+        </a>
+      </div>
+
+      <!-- Mobile menu (hidden by default) -->
+      <div
+        id="mobile-menu"
+        class="hidden flex flex-col mt-4 space-y-2 md:hidden opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden"
+      >
+        <a
+          href="/"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Home</a
+        >
+        <a
+          href="/plants"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Plants</a
+        >
+        <a
+          href="/devices"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Status Devices</a
+        >
+        <a
+          href="/weather"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Weather Status</a
+        >
+        {% if not authenticated %}
+        <a
+          href="/api/access"
+          id="api-access-link"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Get Access</a
+        >
+        {% endif %}
+        <a
+          href="javascript:void(0);"
+          @click="clearCacheAndLogout()"
+          class="text-white font-bold hover:underline py-2 px-4 rounded hover:bg-white/20 transition-all duration-300"
+          >Sign Out</a
+        >
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const menuButton = document.getElementById("mobile-menu-button");
+    const menu = document.getElementById("mobile-menu");
+    let isMenuOpen = false;
+
+    menuButton.addEventListener("click", function () {
+      isMenuOpen = !isMenuOpen;
+
+      // Rotate menu button
+      menuButton.classList.toggle("rotate-90", isMenuOpen);
+
+      // Toggle visibility with animation
+      if (isMenuOpen) {
+        menu.classList.remove("hidden");
+
+        // Trigger animation after a small delay
+        setTimeout(function () {
+          menu.classList.remove("opacity-0");
+          menu.classList.add("opacity-100");
+          menu.style.maxHeight = menu.scrollHeight + "px";
+        }, 10);
+      } else {
+        menu.classList.remove("opacity-100");
+        menu.classList.add("opacity-0");
+        menu.style.maxHeight = "0";
+
+        // Hide completely after animation completes
+        setTimeout(function () {
+          menu.classList.add("hidden");
+        }, 500);
+      }
+    });
+
+    // Add hover animation for links
+    const navLinks = document.querySelectorAll("nav a");
+    navLinks.forEach((link) => {
+      link.addEventListener("mouseenter", function () {
+        this.classList.add("animate-pulse");
+      });
+      link.addEventListener("mouseleave", function () {
+        this.classList.remove("animate-pulse");
+      });
+    });
+  });
+
+  // Function to clear cache and session before logout
+  function clearCacheAndLogout() {
+    // Clear browser cache and storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Clear cookies by setting expiration to past date
+    document.cookie.split(";").forEach(function (c) {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Attempt to clear application cache if supported
+    if (window.caches) {
+      caches.keys().then(function (names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+
+    // Finally redirect to logout URL
+    window.location.href = "/api/logout";
+  }
+
+  // Make functions available to Alpine.js
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("app", () => ({
+      clearCacheAndLogout() {
+        clearCacheAndLogout();
+      },
+    }));
+  });
+</script>

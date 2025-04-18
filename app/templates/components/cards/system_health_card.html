@@ -1,0 +1,394 @@
+<div class="bg-white rounded-lg shadow p-4">
+  <h3 class="text-gray-700 font-medium mb-4">Overall System</h3>
+  <div class="space-y-4">
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm text-gray-600">Plant Performance</span>
+        <span class="text-xs font-medium text-green-600">Optimal</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-1">
+        <span>Capacity Factor: 24.8%</span>
+        <span class="flex items-center gap-1">
+          Performance Ratio: <span id="performance-ratio-value">0.92</span>
+          <span class="relative group">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-3.5 w-3.5 text-gray-500 cursor-help"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span
+              class="absolute bottom-full left-1/2 -translate-x-1/2 w-48 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+            >
+              Performance Ratio (PR) measures actual energy output vs
+              theoretical output. Values near 1.0 indicate optimal system
+              performance, with 0.8-0.9 being the typical PVsyst expected range.
+            </span>
+          </span>
+        </span>
+        <span>Daily Generation: 18.7kWh</span>
+        <span>Monthly Average: 567kWh</span>
+        <span>Peak Power: 5.3kW</span>
+        <span>CO₂ Savings: 12.4kg/day</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm text-gray-600">Inverter Performance</span>
+        <span class="text-xs font-medium text-green-600">Optimal</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-1">
+        <span>Temperature: 42°C</span>
+        <span>Efficiency: 98.2%</span>
+        <span>DC Input: 3.7kW</span>
+        <span>AC Output: 3.5kW</span>
+        <span>Conversion Loss: 0.2kW</span>
+        <span>Uptime: 127 days</span>
+        <span>Daily Operation: 12.4h</span>
+        <span>Peak Performance: 5.1kW</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm text-gray-600">Revenue Data</span>
+        <span class="text-xs font-medium text-blue-600">Positive</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-1">
+        <span>Today: $14.82</span>
+        <span>Weekly: $89.35</span>
+        <span>Monthly: $342.50</span>
+        <span>Annual: $3,754.20</span>
+        <span>ROI Progress: 75%</span>
+        <span>Payback Est: 3.2 years</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm text-gray-600">Solar Array</span>
+        <span class="text-xs font-medium text-yellow-600">Producing</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-yellow-500 h-2 rounded-full" style="width: 65%"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-1">
+        <span>Generation: 3.9kW</span>
+        <span>Efficiency: 21.3%</span>
+        <span>Panel Temp: 48°C</span>
+        <span>Daily Yield: 14.7kWh</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add JavaScript to randomize all data values -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Configurable time intervals (in milliseconds)
+    const config = {
+      initialDelay: 1000, // Initial delay before first update
+      standardInterval: 10000, // Standard update interval (10 seconds)
+      quickInterval: 5000, // Quick update interval (5 seconds)
+      slowInterval: 30000, // Slow update interval (30 seconds)
+      activeInterval: 10000, // Current active interval
+      enableRandomIntervals: true, // Whether to use random intervals
+      minRandomInterval: 8000, // Minimum random interval (8 seconds)
+      maxRandomInterval: 15000, // Maximum random interval (15 seconds),
+    };
+
+    let updateTimer = null;
+
+    // Function to generate random number between min and max (inclusive)
+    function randomNumber(min, max, decimals = 0) {
+      const num = Math.random() * (max - min) + min;
+      return Number(num.toFixed(decimals));
+    }
+
+    // Function to format values with appropriate units
+    function formatValue(value, unit, decimals = 1) {
+      return value.toFixed(decimals) + unit;
+    }
+
+    // Function to update a progress bar
+    function updateProgressBar(selector, percentage) {
+      const progressBar = document.querySelector(selector);
+      if (progressBar) {
+        progressBar.style.width = percentage + "%";
+      }
+    }
+
+    // Function to update text content
+    function updateText(selector, text) {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.textContent = text;
+      }
+    }
+
+    // Function to randomize all system health data
+    function randomizeSystemHealthData() {
+      // Plant Performance
+      const plantPerformance = randomNumber(75, 97, 0);
+      updateProgressBar(
+        ".space-y-4 > div:nth-child(1) .bg-green-500",
+        plantPerformance
+      );
+
+      const capacityFactor = randomNumber(18, 29, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(1) .grid span:nth-child(1)",
+        `Capacity Factor: ${capacityFactor}%`
+      );
+
+      const performanceRatio = randomNumber(0.75, 0.98, 2);
+      updateText("#performance-ratio-value", `${performanceRatio}`);
+
+      const dailyGeneration = randomNumber(12, 24, 1);
+      updateText(
+        ".grid span:nth-child(3)",
+        `Daily Generation: ${dailyGeneration}kWh`
+      );
+
+      const monthlyAverage = randomNumber(450, 650, 0);
+      updateText(
+        ".grid span:nth-child(4)",
+        `Monthly Average: ${monthlyAverage}kWh`
+      );
+
+      const peakPower = randomNumber(4.5, 6.2, 1);
+      updateText(".grid span:nth-child(5)", `Peak Power: ${peakPower}kW`);
+
+      const co2Savings = randomNumber(8, 15, 1);
+      updateText(".grid span:nth-child(6)", `CO₂ Savings: ${co2Savings}kg/day`);
+
+      // Inverter Performance
+      const inverterPerformance = randomNumber(85, 99, 0);
+      updateProgressBar(
+        ".space-y-4 > div:nth-child(2) .bg-green-500",
+        inverterPerformance
+      );
+
+      const inverterTemp = randomNumber(35, 55, 0);
+      updateText(
+        ".space-y-4 > div:nth-child(2) .grid span:nth-child(1)",
+        `Temperature: ${inverterTemp}°C`
+      );
+
+      const efficiency = randomNumber(95, 99, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(2) .grid span:nth-child(2)",
+        `Efficiency: ${efficiency}%`
+      );
+
+      const dcInput = randomNumber(2.5, 4.5, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(2) .grid span:nth-child(3)",
+        `DC Input: ${dcInput}kW`
+      );
+
+      const acOutput = ((dcInput * efficiency) / 100).toFixed(1);
+      updateText(
+        ".space-y-4 > div:nth-child(2) .grid span:nth-child(4)",
+        `AC Output: ${acOutput}kW`
+      );
+
+      const conversionLoss = (dcInput - acOutput).toFixed(1);
+      updateText(
+        ".space-y-4 > div:nth-child(2) .grid span:nth-child(5)",
+        `Conversion Loss: ${conversionLoss}kW`
+      );
+
+      // Revenue Data
+      const revenueProgress = randomNumber(65, 85, 0);
+      updateProgressBar(
+        ".space-y-4 > div:nth-child(3) .bg-blue-500",
+        revenueProgress
+      );
+
+      const dailyRevenue = randomNumber(10, 20, 2);
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(1)",
+        `Today: $${dailyRevenue}`
+      );
+
+      const weeklyRevenue = (
+        dailyRevenue *
+        7 *
+        randomNumber(0.9, 1.1, 2)
+      ).toFixed(2);
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(2)",
+        `Weekly: $${weeklyRevenue}`
+      );
+
+      const monthlyRevenue = (
+        dailyRevenue *
+        30 *
+        randomNumber(0.85, 1.1, 2)
+      ).toFixed(2);
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(3)",
+        `Monthly: $${monthlyRevenue}`
+      );
+
+      const annualRevenue = (
+        dailyRevenue *
+        365 *
+        randomNumber(0.8, 1.05, 2)
+      ).toFixed(2);
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(4)",
+        `Annual: $${annualRevenue}`
+      );
+
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(5)",
+        `ROI Progress: ${revenueProgress}%`
+      );
+
+      const paybackYears = randomNumber(3.0, 4.5, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(3) .grid span:nth-child(6)",
+        `Payback Est: ${paybackYears} years`
+      );
+
+      // Solar Array
+      const solarPerformance = randomNumber(45, 85, 0);
+      updateProgressBar(
+        ".space-y-4 > div:nth-child(4) .bg-yellow-500",
+        solarPerformance
+      );
+
+      const currentGeneration = randomNumber(2.7, 4.8, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(4) .grid span:nth-child(1)",
+        `Generation: ${currentGeneration}kW`
+      );
+
+      const panelEfficiency = randomNumber(18, 23, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(4) .grid span:nth-child(2)",
+        `Efficiency: ${panelEfficiency}%`
+      );
+
+      const panelTemp = randomNumber(40, 60, 0);
+      updateText(
+        ".space-y-4 > div:nth-child(4) .grid span:nth-child(3)",
+        `Panel Temp: ${panelTemp}°C`
+      );
+
+      const dailyYield = randomNumber(12, 18, 1);
+      updateText(
+        ".space-y-4 > div:nth-child(4) .grid span:nth-child(4)",
+        `Daily Yield: ${dailyYield}kWh`
+      );
+
+      // Update status indicators based on performance values
+      if (plantPerformance > 90) {
+        updateText(
+          ".space-y-4 > div:nth-child(1) .flex.justify-between.items-center.mb-1 > span.text-xs.font-medium.text-green-600",
+          "Optimal"
+        );
+      } else if (plantPerformance > 75) {
+        updateText(
+          ".space-y-4 > div:nth-child(1) .flex.justify-between.items-center.mb-1 > span.text-xs.font-medium.text-green-600",
+          "Good"
+        );
+      } else {
+        updateText(
+          ".space-y-4 > div:nth-child(1) .flex.justify-between.items-center.mb-1 > span.text-xs.font-medium.text-green-600",
+          "Average"
+        );
+      }
+
+      // Update solar array status based on generation
+      if (currentGeneration > 4.0) {
+        updateText(
+          ".space-y-4 > div:nth-child(4) .flex span.text-xs.font-medium.text-yellow-600",
+          "High Production"
+        );
+      } else if (currentGeneration > 3.0) {
+        updateText(
+          ".space-y-4 > div:nth-child(4) .flex span.text-xs.font-medium.text-yellow-600",
+          "Producing"
+        );
+      } else {
+        updateText(
+          ".space-y-4 > div:nth-child(4) .flex span.text-xs.font-medium.text-yellow-600",
+          "Low Production"
+        );
+      }
+    }
+
+    // Function to schedule the next update with either fixed or random interval
+    function scheduleNextUpdate() {
+      clearTimeout(updateTimer);
+
+      // Determine the next interval
+      let nextInterval = config.activeInterval;
+
+      if (config.enableRandomIntervals) {
+        nextInterval = randomNumber(
+          config.minRandomInterval,
+          config.maxRandomInterval,
+          0
+        );
+        console.log(`Next data update in ${nextInterval / 1000} seconds`);
+      }
+
+      // Schedule the next update
+      updateTimer = setTimeout(() => {
+        randomizeSystemHealthData();
+        scheduleNextUpdate();
+      }, nextInterval);
+    }
+
+    // Function to change the update frequency is kept for potential programmatic use
+    window.changeUpdateFrequency = function (intervalType) {
+      clearTimeout(updateTimer);
+
+      switch (intervalType) {
+        case "quick":
+          config.activeInterval = config.quickInterval;
+          break;
+        case "slow":
+          config.activeInterval = config.slowInterval;
+          break;
+        default:
+          config.activeInterval = config.standardInterval;
+      }
+
+      config.enableRandomIntervals = intervalType === "random";
+      console.log(`Update frequency changed to: ${intervalType}`);
+
+      // Trigger an immediate update
+      randomizeSystemHealthData();
+      scheduleNextUpdate();
+    };
+
+    // Initialize with random data after a short delay
+    setTimeout(() => {
+      randomizeSystemHealthData();
+      scheduleNextUpdate();
+    }, config.initialDelay);
+  });
+</script>

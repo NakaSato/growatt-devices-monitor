@@ -1,0 +1,127 @@
+<div
+  x-show="activeTab === 'alerts'"
+  x-transition:enter="transition ease-out duration-200"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+>
+  <div class="alerts-container bg-white rounded-lg shadow">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex justify-between items-center">
+        <h3 class="text-gray-700 font-medium">Active Alerts</h3>
+        <span
+          class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded"
+          >3 Critical</span
+        >
+      </div>
+    </div>
+    <ul class="divide-y divide-gray-200">
+      <li class="p-4 hover:bg-gray-50">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-red-500 rounded-full p-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <p class="text-sm font-medium text-gray-900">
+              Inverter Communication Error
+            </p>
+            <p class="mt-1 text-sm text-gray-500">
+              Inverter 02 has lost connection to monitoring system
+            </p>
+            <div class="mt-2 flex items-center justify-between">
+              <span class="text-xs text-gray-500">Today, 10:23 AM</span>
+              <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                Investigate
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li class="p-4 hover:bg-gray-50">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-red-500 rounded-full p-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <p class="text-sm font-medium text-gray-900">Battery Low Voltage</p>
+            <p class="mt-1 text-sm text-gray-500">
+              Battery system showing abnormal voltage levels
+            </p>
+            <div class="mt-2 flex items-center justify-between">
+              <span class="text-xs text-gray-500">Today, 11:42 AM</span>
+              <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                Investigate
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li class="p-4 hover:bg-gray-50">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-yellow-500 rounded-full p-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <p class="text-sm font-medium text-gray-900">
+              High Temperature Warning
+            </p>
+            <p class="mt-1 text-sm text-gray-500">
+              Inverter 01 temperature above optimal range (52°C)
+            </p>
+            <div class="mt-2 flex items-center justify-between">
+              <span class="text-xs text-gray-500">Today, 01:18 PM</span>
+              <button class="text-xs text-indigo-600 hover:text-indigo-800">
+                Investigate
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <div class="p-4 border-t border-gray-200">
+      <a
+        href="#"
+        class="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+        >View all alerts</a
+      >
+    </div>
+  </div>
+</div>

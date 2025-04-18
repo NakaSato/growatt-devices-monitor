@@ -14,7 +14,8 @@
       <div class="flex justify-between items-center">
         <h3 class="text-gray-700 font-medium">Total Energy Yield Today</h3>
         <span
-          class="status-indicator bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded"
+          class="status-indicator text-xs font-medium px-2 py-0.5 rounded"
+          :class="statusClass"
           x-text="status"
         ></span>
       </div>
@@ -231,6 +232,18 @@
       percentChange: 3.2,
       status: "Active",
 
+      get statusClass() {
+        const statusClasses = {
+          Active: "bg-green-100 text-green-800",
+          Standby: "bg-yellow-100 text-yellow-800",
+          Peak: "bg-blue-100 text-blue-800",
+          "Low Output": "bg-orange-100 text-orange-800",
+          Maintenance: "bg-gray-100 text-gray-800",
+          Offline: "bg-red-100 text-red-800 status-critical",
+        };
+        return statusClasses[this.status] || "bg-green-100 text-green-800";
+      },
+
       init() {
         // Could be replaced with real data fetching
         this.fetchPowerData();
@@ -242,6 +255,22 @@
           // Random fluctuation to simulate real-time data
           this.currentOutput = (8 + Math.random() * 2).toFixed(2);
           this.percentChange = (Math.random() * 8 - 2).toFixed(1);
+
+          // Randomly change status with weighted probabilities
+          const r = Math.random();
+          if (r < 0.6) {
+            this.status = "Active"; // 60% chance
+          } else if (r < 0.75) {
+            this.status = "Standby"; // 15% chance
+          } else if (r < 0.85) {
+            this.status = "Peak"; // 10% chance
+          } else if (r < 0.92) {
+            this.status = "Low Output"; // 7% chance
+          } else if (r < 0.98) {
+            this.status = "Maintenance"; // 6% chance
+          } else {
+            this.status = "Offline"; // 2% chance
+          }
         }, 15000);
       },
     }));

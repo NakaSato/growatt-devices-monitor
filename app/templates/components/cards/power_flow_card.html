@@ -1,0 +1,479 @@
+<div class="bg-white rounded-lg shadow p-4">
+  <h3 class="text-gray-700 font-medium mb-4">Current Power Flow</h3>
+  <div class="flex justify-center">
+    <div class="relative">
+      <!-- Animated power flow diagram -->
+      <div class="p-2 text-center" id="power-flow-container">
+        <svg
+          width="340"
+          height="360"
+          viewBox="0 0 340 360"
+          xmlns="http://www.w3.org/2000/svg"
+          id="power-flow-svg"
+        >
+          <!-- Filters for shadows and glows -->
+          <defs>
+            <!-- Drop shadow for components -->
+            <filter
+              id="drop-shadow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feDropShadow
+                dx="2"
+                dy="2"
+                stdDeviation="2"
+                flood-opacity="0.3"
+              />
+            </filter>
+
+            <!-- Glow effect for active components -->
+            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feFlood
+                flood-color="#10B981"
+                flood-opacity="0.8"
+                result="glow-color"
+              />
+              <feComposite
+                in="glow-color"
+                in2="blur"
+                operator="in"
+                result="glow-blur"
+              />
+              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
+            </filter>
+
+            <!-- Connection point glow -->
+            <filter
+              id="connection-glow"
+              x="-50%"
+              y="-50%"
+              width="200%"
+              height="200%"
+            >
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood
+                flood-color="#4ADE80"
+                flood-opacity="0.6"
+                result="glow-color"
+              />
+              <feComposite
+                in="glow-color"
+                in2="blur"
+                operator="in"
+                result="glow-blur"
+              />
+              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
+            </filter>
+
+            <!-- Power flow line glow -->
+            <filter id="flow-glow" x="-10%" y="-10%" width="120%" height="120%">
+              <feGaussianBlur stdDeviation="1" result="blur" />
+              <feFlood
+                flood-color="#60A5FA"
+                flood-opacity="0.7"
+                result="glow-color"
+              />
+              <feComposite
+                in="glow-color"
+                in2="blur"
+                operator="in"
+                result="glow-blur"
+              />
+              <feComposite in="SourceGraphic" in2="glow-blur" operator="over" />
+            </filter>
+
+            <!-- Gradients for power flow -->
+            <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3B82F6" />
+              <stop offset="100%" stop-color="#10B981" />
+            </linearGradient>
+
+            <linearGradient
+              id="greenGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stop-color="#10B981" />
+              <stop offset="100%" stop-color="#34D399" />
+            </linearGradient>
+
+            <radialGradient
+              id="connectionPointGradient"
+              cx="50%"
+              cy="50%"
+              r="50%"
+              fx="50%"
+              fy="50%"
+            >
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="100%" stop-color="#4ADE80" />
+            </radialGradient>
+          </defs>
+          <!-- Solar Panel Image centered with improved shadows and quality -->
+          <image
+            href="{{ url_for('static', filename='images/solar-panel.png') }}"
+            x="110"
+            y="-45"
+            width="125"
+            height="140"
+            filter="url(#drop-shadow)"
+            class="solar-panel"
+          />
+
+          <!-- Solar Panel Power Value with enhanced styling -->
+          <rect
+            x="220"
+            y="50"
+            width="60"
+            height="22"
+            rx="6"
+            fill="rgba(255,255,255,0.95)"
+            filter="url(#drop-shadow)"
+          />
+          <text
+            x="250"
+            y="65"
+            text-anchor="middle"
+            class="text-sm font-bold"
+            fill="#1e40af"
+          >
+            450 kW
+          </text>
+
+          <!-- Inverter and Battery System in the Middle with enhanced styling -->
+          <g class="inverter-system" transform="translate(150, 160)">
+            <!-- Battery percentage overlay with improved style -->
+            <rect
+              x="52"
+              y="18"
+              width="30"
+              height="18"
+              rx="4"
+              fill="rgba(16, 185, 129, 0.9)"
+            />
+            <text
+              x="67"
+              y="30"
+              text-anchor="middle"
+              fill="white"
+              font-weight="bold"
+              font-size="10"
+            >
+              82%
+            </text>
+
+            <!-- Inverter with enhanced styling -->
+            <image
+              href="{{ url_for('static', filename='images/inverter.png') }}"
+              x="75"
+              y="-45"
+              width="125"
+              height="125"
+              filter="url(#drop-shadow)"
+              class="inverter"
+            />
+
+            <!-- Inverter status indicator with glow effect -->
+            <circle cx="90" cy="5" r="6" fill="#10B981" filter="url(#glow)" />
+            <text
+              x="110"
+              y="25"
+              text-anchor="middle"
+              fill="#10B981"
+              font-size="8"
+              font-weight="bold"
+            >
+              ON
+            </text>
+
+            <!-- Grid with enhanced styling -->
+            <image
+              href="{{ url_for('static', filename='images/power-grid.png') }}"
+              x="-160"
+              y="-45"
+              width="125"
+              height="125"
+              filter="url(#drop-shadow)"
+              class="grid"
+            />
+
+            <!-- Grid power value with improved styling -->
+            <rect
+              x="-110"
+              y="35"
+              width="55"
+              height="22"
+              rx="6"
+              fill="rgba(255,255,255,0.95)"
+              filter="url(#drop-shadow)"
+            />
+            <text
+              x="-82"
+              y="50"
+              text-anchor="middle"
+              class="text-sm font-bold"
+              fill="#1e40af"
+            >
+              2312 W
+            </text>
+          </g>
+
+          <!-- Plant load with enhanced styling -->
+          <image
+            href="{{ url_for('static', filename='images/inverter.png') }}"
+            x="110"
+            y="250"
+            width="125"
+            height="125"
+            filter="url(#drop-shadow)"
+            class="ev"
+          />
+          <rect
+            x="235"
+            y="315"
+            width="50"
+            height="22"
+            rx="6"
+            fill="rgba(255,255,255,0.95)"
+            filter="url(#drop-shadow)"
+          />
+          <text
+            x="260"
+            y="330"
+            text-anchor="middle"
+            class="text-sm font-bold"
+            fill="#1e40af"
+          >
+            940 kW
+          </text>
+
+          <!-- Connection points with enhanced styling -->
+          <g class="connection-points">
+            <!-- Top connection points -->
+            <circle
+              class="connection-point"
+              cx="170"
+              cy="100"
+              r="4"
+              fill="url(#connectionPointGradient)"
+              filter="url(#connection-glow)"
+            >
+              <animate
+                attributeName="r"
+                values="4;5;4"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+
+            <!-- Bottom connection points -->
+            <circle
+              class="connection-point"
+              cx="170"
+              cy="230"
+              r="4"
+              fill="url(#connectionPointGradient)"
+              filter="url(#connection-glow)"
+            >
+              <animate
+                attributeName="r"
+                values="4;5;4"
+                dur="2.2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+
+            <!-- Bottom sparks -->
+            <circle
+              class="spark"
+              cx="172"
+              cy="227"
+              r="1.5"
+              fill="#ffffff"
+              opacity="0.7"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.7;0;0.7"
+                dur="1.6s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="r"
+                values="1;2;1"
+                dur="1.6s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </g>
+
+          <!-- Power flow lines between grid and inverter -->
+          <g class="power-flow-lines">
+            <!-- Grid to inverter power flow path -->
+            <path
+              d="M50 160 L170 160"
+              stroke="url(#flowGradient)"
+              stroke-width="4"
+              fill="none"
+              stroke-linecap="round"
+              filter="url(#flow-glow)"
+              class="power-flow-line grid-to-inverter"
+              stroke-dasharray="5,3"
+              opacity="0.9"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="40"
+                to="0"
+                dur="1.5s"
+                repeatCount="indefinite"
+                media="(prefers-reduced-motion: no-preference)"
+              />
+            </path>
+
+            <!-- Solar to inverter power flow -->
+            <!-- The 'd' attribute defines the path from the solar panel (170, 100) to the inverter (170, 160) -->
+            <path
+              d="M170 100 L170 160"
+              stroke="url(#greenGradient)"
+              stroke-width="4"
+              fill="none"
+              stroke-linecap="round"
+              filter="url(#flow-glow)"
+              class="power-flow-line solar-to-inverter"
+              stroke-dasharray="5,3"
+              opacity="0.9"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="40"
+                to="0"
+                dur="1.5s"
+                repeatCount="indefinite"
+                media="(prefers-reduced-motion: no-preference)"
+              />
+            </path>
+
+            <!-- Inverter to load connection path -->
+            <path
+              d="M170 160 L170 250"
+              stroke="url(#flowGradient)"
+              stroke-width="4"
+              fill="none"
+              stroke-linecap="round"
+              filter="url(#flow-glow)"
+              class="power-flow-line inverter-to-load"
+              stroke-dasharray="5,3"
+              opacity="0.9"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="80"
+                to="0"
+                dur="1.8s"
+                repeatCount="indefinite"
+              />
+            </path>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+    <div class="bg-blue-50 p-2 rounded-md">
+      <div class="text-xs text-gray-500">Solar</div>
+      <div class="font-bold text-blue-600">2.31 kW</div>
+    </div>
+    <div class="bg-green-50 p-2 rounded-md">
+      <div class="text-xs text-gray-500">Grid</div>
+      <div class="font-bold text-green-600">2.3 kW</div>
+    </div>
+    <div class="bg-green-50 p-2 rounded-md">
+      <div class="text-xs text-gray-500">Plant</div>
+      <div class="font-bold text-green-600">3.25 kW</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Anime.js for enhanced animations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add connection point pulse animations
+    const connectionPoints = document.querySelectorAll(".connection-point");
+
+    anime({
+      targets: connectionPoints,
+      scale: [1, 1.2, 1],
+      opacity: [0.8, 1, 0.8],
+      easing: "easeInOutSine",
+      duration: 2000,
+      delay: anime.stagger(200),
+      loop: true,
+    });
+
+    // Add spark animations with random movement
+    const sparks = document.querySelectorAll(".spark");
+
+    sparks.forEach((spark) => {
+      const originX = parseFloat(spark.getAttribute("cx"));
+      const originY = parseFloat(spark.getAttribute("cy"));
+
+      anime({
+        targets: spark,
+        cx: [
+          { value: originX - 2 + Math.random() * 4, duration: 700 },
+          { value: originX + 2 - Math.random() * 4, duration: 700 },
+          { value: originX, duration: 700 },
+        ],
+        cy: [
+          { value: originY - 2 + Math.random() * 4, duration: 700 },
+          { value: originY + 2 - Math.random() * 4, duration: 700 },
+          { value: originY, duration: 700 },
+        ],
+        easing: "easeInOutSine",
+        loop: true,
+      });
+    });
+
+    // Define coordinates for power flow lines
+    const gridToInverterPath = "M50 160 L170 160"; // Grid to inverter connection
+    const solarToInverterPath = "M170 100 L170 160"; // Solar to inverter connection
+    const inverterToLoadPath = "M170 160 L170 250"; // Inverter to load connection
+
+    // Animate power flow lines with optimized duration
+    anime({
+      targets: ".power-flow-line",
+      strokeDashoffset: [anime.setDashoffset, 0],
+      easing: "linear",
+      duration: 1500, // Matches the original duration
+      delay: function (el, i) {
+        return i * 250;
+      },
+      direction: "normal",
+      loop: true,
+    });
+
+    // Additional glow animation for power flow
+    anime({
+      targets: ".power-flow-line",
+      filter: [
+        { value: "url(#flow-glow) blur(0.5px)", duration: 1000 },
+        { value: "url(#flow-glow) blur(1px)", duration: 1000 },
+        { value: "url(#flow-glow) blur(0.5px)", duration: 1000 },
+      ],
+      opacity: [0.7, 1, 0.7],
+      easing: "easeInOutSine",
+      duration: 3000,
+      loop: true,
+    });
+  });
+</script>

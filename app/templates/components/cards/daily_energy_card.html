@@ -1,0 +1,78 @@
+<div class="bg-white rounded-lg shadow p-4">
+  <h3 class="text-gray-700 font-medium mb-4">Today's Energy</h3>
+  <div class="space-y-4">
+    <div class="flex items-center justify-center">
+      <div class="relative" style="height: 150px; width: 150px">
+        <canvas id="dailyEnergyDonut"></canvas>
+        <div
+          class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
+        >
+          <div class="text-2xl font-bold text-gray-700">36.5</div>
+          <div class="text-xs text-gray-500">kWh</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 text-center">
+      <div class="bg-green-50 p-2 rounded">
+        <div class="text-xs text-gray-600">Self-used</div>
+        <div class="text-lg font-semibold text-green-600">14.3 kWh</div>
+        <div class="text-xs text-gray-500">39%</div>
+      </div>
+      <div class="bg-blue-50 p-2 rounded">
+        <div class="text-xs text-gray-600">Grid Export</div>
+        <div class="text-lg font-semibold text-blue-600">22.2 kWh</div>
+        <div class="text-xs text-gray-500">61%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById("dailyEnergyDonut").getContext("2d");
+
+    // Data for the chart
+    const selfUsed = 14.3;
+    const gridExport = 22.2;
+
+    new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Self-used", "Grid Export"],
+        datasets: [
+          {
+            data: [selfUsed, gridExport],
+            backgroundColor: [
+              "rgba(52, 211, 153, 0.8)", // green for self-used
+              "rgba(59, 130, 246, 0.8)", // blue for grid export
+            ],
+            borderColor: ["rgba(52, 211, 153, 1)", "rgba(59, 130, 246, 1)"],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "70%",
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const label = context.label || "";
+                const value = context.raw || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((value / total) * 100);
+                return `${label}: ${value} kWh (${percentage}%)`;
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+</script>
