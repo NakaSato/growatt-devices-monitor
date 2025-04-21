@@ -1,0 +1,28 @@
+<footer
+  class="container mx-auto max-w-7xl py-3 sm:py-4 bg-green-600 text-white"
+>
+  <div class="px-3 sm:px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-center">
+      <div class="hidden sm:flex items-center mb-2 sm:mb-0 sm:mr-4 text-white">
+        <img
+          src="{{ url_for('static', filename='svg/logo.svg') }}"
+          alt="Logo"
+          class="h-5 w-auto mr-2 sm:h-6 sm:mr-3"
+        />
+      </div>
+      <p
+        class="text-sm text-center sm:text-left lg:mb-2 sm:mb-0 max-w-xs sm:max-w-none"
+      >
+        &copy; {{ now.year if now else "2025" }} Growatt Monitoring System - All
+        rights reserved
+      </p>
+
+      <div class="hidden sm:flex items-center text-xs mb-1 sm:mb-0">
+        <div class="flex items-center">
+          <i class="fas fa-solar-panel mr-1.5"></i>
+          <span>Powering a sustainable future</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
