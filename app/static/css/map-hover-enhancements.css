@@ -1,0 +1,51 @@
+/* This file can be removed after conversion to Tailwind CSS */
+/* All styles can be applied directly in the HTML template using Tailwind classes */
+
+/* Only keeping custom animations that aren't available in Tailwind by default */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Heat map colors - these could be custom colors not in the Tailwind palette */
+.capacity-level-1 {
+  @apply bg-blue-100 dark:bg-blue-900;
+}
+.capacity-level-2 {
+  @apply bg-blue-300 dark:bg-blue-700;
+}
+.capacity-level-3 {
+  @apply bg-blue-500 dark:bg-blue-600;
+}
+.capacity-level-4 {
+  @apply bg-blue-600 dark:bg-blue-500;
+}
+.capacity-level-5 {
+  @apply bg-blue-700 dark:bg-blue-400;
+}
+
+/* Animation classes */
+.tooltip-animation {
+  animation: tooltipFadeIn 0.2s ease forwards;
+}
+
+.panel-animation {
+  animation: panelSlideIn 0.3s ease forwards;
+}

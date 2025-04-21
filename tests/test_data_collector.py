@@ -1,11 +1,11 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import sys
 import os
 import tempfile
 import shutil
 import json
-from datetime import datetime, date
+from datetime import date
 
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -697,6 +697,421 @@ class TestDataCollector(unittest.TestCase):
         self.assertTrue(result['success'])
         self.assertEqual(mock_api.get_energy_stats_daily.call_count, 5 * len(self.sample_devices['obj']['mix']))
         mock_save.assert_called()
+
+    @patch('app.core.growatt.Growatt')
+    def test_authenticate_success(self, mock_growatt_class):
+        """Test successful authentication with proper error handling"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.login.return_value = True
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        # Act
+        result = collector.authenticate()
+        
+        # Assert
+        self.assertTrue(result)
+        self.assertTrue(collector.authenticated)
+        mock_api.login.assert_called_once_with(username=self.test_username, password=self.test_password)
+    
+    @patch('app.core.growatt.Growatt')
+    def test_authenticate_failure(self, mock_growatt_class):
+        """Test authentication failure with retry logic"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.login.return_value = False
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        collector.retry_count = 2  # Set to 2 for faster test
+        
+        # Act
+        with patch('time.sleep') as mock_sleep:  # Patch sleep to avoid waiting
+            result = collector.authenticate()
+        
+        # Assert
+        self.assertFalse(result)
+        self.assertFalse(collector.authenticated)
+        self.assertEqual(mock_api.login.call_count, 2)  # Should retry once
+        mock_sleep.assert_called_once()  # Should sleep between retries
+    
+    @patch('app.core.growatt.Growatt')
+    def test_authenticate_exception(self, mock_growatt_class):
+        """Test authentication with exception handling"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.login.side_effect = Exception("API connection error")
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        collector.retry_count = 2  # Set to 2 for faster test
+        
+        # Act
+        with patch('time.sleep') as mock_sleep:  # Patch sleep to avoid waiting
+            result = collector.authenticate()
+        
+        # Assert
+        self.assertFalse(result)
+        self.assertFalse(collector.authenticated)
+        self.assertEqual(mock_api.login.call_count, 2)  # Should retry once
+        mock_sleep.assert_called_once()  # Should sleep between retries
+
+    @patch('app.core.growatt.Growatt')
+    def test_safe_api_call_success(self, mock_growatt_class):
+        """Test the _safe_api_call method with successful execution"""
+        # Arrange
+        mock_api = MagicMock()
+        test_result = {"data": "test_value"}
+        mock_api.get_plants = MagicMock(return_value=test_result)
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        # Act
+        result = collector._safe_api_call(mock_api.get_plants)
+        
+        # Assert
+        self.assertEqual(result, test_result)
+        mock_api.get_plants.assert_called_once()
+    
+    @patch('app.core.growatt.Growatt')
+    def test_safe_api_call_with_args(self, mock_growatt_class):
+        """Test the _safe_api_call method with arguments"""
+        # Arrange
+        mock_api = MagicMock()
+        test_result = {"device_data": "value"}
+        mock_api.get_device_list = MagicMock(return_value=test_result)
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        
+        # Act
+        result = collector._safe_api_call(mock_api.get_device_list, plant_id)
+        
+        # Assert
+        self.assertEqual(result, test_result)
+        mock_api.get_device_list.assert_called_once_with(plant_id)
+    
+    @patch('app.core.growatt.Growatt')
+    def test_safe_api_call_with_kwargs(self, mock_growatt_class):
+        """Test the _safe_api_call method with keyword arguments"""
+        # Arrange
+        mock_api = MagicMock()
+        test_result = {"energy_data": "test_value"}
+        mock_api.get_energy_stats = MagicMock(return_value=test_result)
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        # Act
+        result = collector._safe_api_call(
+            mock_api.get_energy_stats,
+            plant_id="12345",
+            device_sn="SN123",
+            start_date="2024-01-01",
+            end_date="2024-01-31"
+        )
+        
+        # Assert
+        self.assertEqual(result, test_result)
+        mock_api.get_energy_stats.assert_called_once_with(
+            plant_id="12345", 
+            device_sn="SN123", 
+            start_date="2024-01-01", 
+            end_date="2024-01-31"
+        )
+    
+    @patch('app.core.growatt.Growatt')
+    def test_safe_api_call_exception_with_retry(self, mock_growatt_class):
+        """Test the _safe_api_call method with exception and retry"""
+        # Arrange
+        mock_api = MagicMock()
+        side_effects = [
+            Exception("First attempt fails"),
+            {"data": "success on retry"}
+        ]
+        mock_api.get_plants = MagicMock(side_effect=side_effects)
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        collector.retry_count = 2  # Set to 2 for faster test
+        
+        # Act
+        with patch('time.sleep') as mock_sleep:  # Patch sleep to avoid waiting
+            result = collector._safe_api_call(mock_api.get_plants)
+        
+        # Assert
+        self.assertEqual(result, {"data": "success on retry"})
+        self.assertEqual(mock_api.get_plants.call_count, 2)
+        mock_sleep.assert_called_once()  # Should sleep between retries
+    
+    @patch('app.core.growatt.Growatt')
+    def test_safe_api_call_session_expired(self, mock_growatt_class):
+        """Test the _safe_api_call method with session expired error"""
+        # Arrange
+        mock_api = MagicMock()
+        # First call returns session expired, second call succeeds after re-auth
+        side_effects = [
+            {"error": True, "msg": "session expired"},
+            {"data": "success after re-auth"}
+        ]
+        mock_api.get_plants = MagicMock(side_effect=side_effects)
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        # Act
+        with patch.object(collector, 'authenticate') as mock_auth:
+            mock_auth.return_value = True
+            result = collector._safe_api_call(mock_api.get_plants)
+        
+        # Assert
+        self.assertEqual(result, {"data": "success after re-auth"})
+        self.assertEqual(mock_api.get_plants.call_count, 2)
+        mock_auth.assert_called_once()  # Should try to re-authenticate
+
+    @patch('app.core.growatt.Growatt')
+    def test_collect_device_energy_data(self, mock_growatt_class):
+        """Test collecting energy data for a specific device"""
+        # Arrange
+        mock_api = MagicMock()
+        energy_data = {
+            "data": [
+                {"date": "2024-04-01", "energy": 5.6, "peak_power": 2.1},
+                {"date": "2024-04-02", "energy": 4.8, "peak_power": 1.9},
+                {"date": "2024-04-03", "energy": 6.2, "peak_power": 2.3}
+            ]
+        }
+        mock_api.get_energy_stats.return_value = energy_data
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        device_sn = "DEVICE001"
+        results = {"energy_stats": 0, "errors": []}
+        days_back = 3
+        
+        # Act
+        with patch.object(collector.db, 'save_energy_data_batch') as mock_save_batch:
+            mock_save_batch.return_value = 3  # 3 records saved
+            collector._collect_device_energy_data(plant_id, device_sn, results, days_back)
+        
+        # Assert
+        self.assertEqual(results["energy_stats"], 3)
+        self.assertEqual(len(results["errors"]), 0)
+        mock_api.get_energy_stats.assert_called_once()
+        # Verify correct date range parameters were passed
+        args, kwargs = mock_api.get_energy_stats.call_args
+        self.assertEqual(kwargs["plant_id"], plant_id)
+        self.assertEqual(kwargs["device_sn"], device_sn)
+        # Dates should be formatted as strings in YYYY-MM-DD format
+        self.assertIsInstance(kwargs["start_date"], str)
+        self.assertIsInstance(kwargs["end_date"], str)
+        
+        expected_batch_data = [
+            {'plant_id': plant_id, 'mix_sn': device_sn, 'date': '2024-04-01', 'daily_energy': 5.6, 'peak_power': 2.1},
+            {'plant_id': plant_id, 'mix_sn': device_sn, 'date': '2024-04-02', 'daily_energy': 4.8, 'peak_power': 1.9},
+            {'plant_id': plant_id, 'mix_sn': device_sn, 'date': '2024-04-03', 'daily_energy': 6.2, 'peak_power': 2.3}
+        ]
+        mock_save_batch.assert_called_once_with(expected_batch_data)
+    
+    @patch('app.core.growatt.Growatt')
+    def test_collect_device_energy_data_no_data(self, mock_growatt_class):
+        """Test collecting energy data when no data is returned"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.get_energy_stats.return_value = {"data": []}
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        device_sn = "DEVICE001"
+        results = {"energy_stats": 0, "errors": []}
+        
+        # Act
+        with patch.object(collector.db, 'save_energy_data_batch') as mock_save_batch:
+            collector._collect_device_energy_data(plant_id, device_sn, results)
+        
+        # Assert
+        self.assertEqual(results["energy_stats"], 0)
+        mock_api.get_energy_stats.assert_called_once()
+        mock_save_batch.assert_not_called()
+    
+    @patch('app.core.growatt.Growatt')
+    def test_collect_device_energy_data_api_error(self, mock_growatt_class):
+        """Test collecting energy data when API returns an error"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.get_energy_stats.side_effect = Exception("API Error")
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        device_sn = "DEVICE001"
+        results = {"energy_stats": 0, "errors": []}
+        
+        # Act
+        collector._collect_device_energy_data(plant_id, device_sn, results)
+        
+        # Assert
+        self.assertEqual(results["energy_stats"], 0)
+        self.assertEqual(len(results["errors"]), 1)
+        self.assertIn(f"Device {device_sn}: API Error", results["errors"][0])
+        mock_api.get_energy_stats.assert_called_once()
+
+    @patch('app.core.growatt.Growatt')
+    def test_collect_weather_data(self, mock_growatt_class):
+        """Test collecting weather data for a plant"""
+        # Arrange
+        mock_api = MagicMock()
+        weather_data = {
+            "temperature": 25.6,
+            "weather": "Sunny",
+            "humidity": 45
+        }
+        mock_api.get_weather.return_value = weather_data
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        results = {"weather": 0, "errors": []}
+        
+        # Act
+        with patch.object(collector.db, 'save_weather_data') as mock_save_weather:
+            mock_save_weather.return_value = True
+            collector._collect_weather_data(plant_id, results)
+        
+        # Assert
+        self.assertEqual(results["weather"], 1)
+        self.assertEqual(len(results["errors"]), 0)
+        mock_api.get_weather.assert_called_once_with(plant_id)
+        
+        # Verify correct data was passed to save_weather_data
+        args, kwargs = mock_save_weather.call_args
+        self.assertEqual(kwargs["plant_id"], plant_id)
+        self.assertEqual(kwargs["temperature"], 25.6)
+        self.assertEqual(kwargs["condition"], "Sunny")
+        
+    @patch('app.core.growatt.Growatt')
+    def test_collect_weather_data_no_data(self, mock_growatt_class):
+        """Test collecting weather data when no data is returned"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.get_weather.return_value = {}
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        results = {"weather": 0, "errors": []}
+        
+        # Act
+        with patch.object(collector.db, 'save_weather_data') as mock_save_weather:
+            collector._collect_weather_data(plant_id, results)
+        
+        # Assert
+        self.assertEqual(results["weather"], 0)
+        mock_api.get_weather.assert_called_once_with(plant_id)
+        mock_save_weather.assert_not_called()
+        
+    @patch('app.core.growatt.Growatt')
+    def test_collect_weather_data_with_error(self, mock_growatt_class):
+        """Test collecting weather data with API error"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.get_weather.side_effect = Exception("Weather API error")
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        plant_id = "12345"
+        results = {"weather": 0, "errors": []}
+        
+        # Act
+        collector._collect_weather_data(plant_id, results)
+        
+        # Assert
+        self.assertEqual(results["weather"], 0)
+        self.assertEqual(len(results["errors"]), 1)
+        self.assertTrue(any("Weather for plant" in error for error in results["errors"]))
+        mock_api.get_weather.assert_called_once_with(plant_id)
+    
+    @patch('app.core.growatt.Growatt')
+    def test_collect_plants_data(self, mock_growatt_class):
+        """Test collecting plants data method"""
+        # Arrange
+        mock_api = MagicMock()
+        mock_api.get_plants.return_value = self.sample_plants
+        mock_growatt_class.return_value = mock_api
+        
+        collector = GrowattDataCollector(
+            username=self.test_username,
+            password=self.test_password
+        )
+        
+        results = {"plants": 0, "errors": []}
+        
+        # Act
+        with patch.object(collector.db, 'save_plant_data') as mock_save_plants:
+            mock_save_plants.return_value = True
+            plants = collector._collect_plants_data(results)
+        
+        # Assert
+        self.assertEqual(len(plants), 2)
+        self.assertEqual(results["plants"], 2)
+        self.assertEqual(len(results["errors"]), 0)
+        mock_api.get_plants.assert_called_once()
+        mock_save_plants.assert_called_once_with(self.sample_plants)
 
 
 if __name__ == '__main__':

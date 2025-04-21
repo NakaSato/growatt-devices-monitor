@@ -1,0 +1,55 @@
+/* Custom animations */
+
+@keyframes tooltipFadeIn {
+  to {
+    opacity: 0.98;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    fill-opacity: 0.7;
+  }
+  50% {
+    fill-opacity: 0.9;
+  }
+  100% {
+    fill-opacity: 0.7;
+  }
+}
+
+@keyframes markerPulse {
+  0% {
+    r: 12;
+    opacity: 0.8;
+  }
+  50% {
+    r: 18;
+    opacity: 0.4;
+  }
+  100% {
+    r: 12;
+    opacity: 0.8;
+  }
+}
+
+@keyframes enhancedPulse {
+  0% {
+    r: 8;
+    opacity: 0.9;
+    stroke-width: 1;
+  }
+  50% {
+    r: 20;
+    opacity: 0.3;
+    stroke-width: 0;
+  }
+  100% {
+    r: 8;
+    opacity: 0.9;
+    stroke-width: 1;
+  }
+}
+
+/* The rest of the styles can be applied with Tailwind utility classes directly in the HTML */

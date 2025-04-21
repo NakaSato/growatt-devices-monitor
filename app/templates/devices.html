@@ -1,22 +1,29 @@
-{% extends "base.html" %} 
-{% block title %}Devices - Growatt API{% endblock %}
+{% extends "base.html" %} {% block title %}Devices - Growatt API{% endblock %}
 {% block content %}
 <div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6 max-w-7xl">
-  <div class="bg-gradient-mint rounded-xl shadow-md p-4 sm:p-6">
+  <div
+    class="bg-gradient-mint rounded-xl shadow-md p-4 sm:p-6"
+    x-data="devicesApp()"
+  >
     <div
       class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"
     >
-      <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-deep-forest font-headings">
+      <h1
+        class="text-xl sm:text-2xl md:text-3xl font-bold text-deep-forest font-headings"
+      >
         Device Status
       </h1>
       <div class="flex flex-wrap gap-2">
         <button
           id="refresh-btn"
-          class="btn-primary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded transition-all duration-300"
+          @click="fetchDevices(true)"
+          :disabled="isLoading"
+          class="flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded bg-eco-green text-snow-white transition-all duration-300 hover:bg-deep-forest focus:outline-none focus:ring-2 focus:ring-eco-green disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-4 w-4"
+            :class="{'animate-spin': isLoading}"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -32,7 +39,9 @@
         </button>
         <button
           id="export-btn"
-          class="btn-secondary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded transition-all duration-300"
+          @click="exportToCSV()"
+          :disabled="isLoading || devices.length === 0"
+          class="flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded bg-white text-deep-forest transition-all duration-300 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-light-gray disabled:opacity-50 disabled:cursor-not-allowed border border-light-gray shadow-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -53,13 +62,15 @@
       </div>
     </div>
 
-    <div id="loading" class="flex justify-center py-8 hidden">
-      <div class="spinner border-4 border-t-4 border-light-gray border-t-eco-green rounded-full w-10 h-10 animate-spin"></div>
+    <div x-show="isLoading" class="flex justify-center py-8">
+      <div
+        class="spinner border-4 border-t-4 border-light-gray border-t-eco-green rounded-full w-10 h-10 animate-spin"
+      ></div>
     </div>
 
     <div
-      id="error-message"
-      class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20 hidden"
+      x-show="errorMessage"
+      class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20"
     >
       <div class="flex items-center">
         <svg
@@ -73,25 +84,33 @@
             clip-rule="evenodd"
           ></path>
         </svg>
-        <span id="error-text" class="text-sm sm:text-base"></span>
+        <span x-text="errorMessage" class="text-sm sm:text-base"></span>
       </div>
       <button
-        id="dismiss-error"
+        @click="errorMessage = ''"
         class="text-sm text-danger hover:text-danger mt-2 ml-7 focus:outline-none focus:underline"
       >
         Dismiss
       </button>
     </div>
 
-    <div id="filters-section" class="mb-6 bg-snow-white p-4 sm:p-5 rounded-lg shadow-sm border border-light-gray">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+    <div
+      class="mb-6 bg-snow-white p-4 sm:p-5 rounded-lg shadow-sm border border-light-gray transition-all duration-300"
+      :class="{'border-eco-green bg-eco-green-5': statusFilter !== 'all' || searchQuery}"
+    >
+      <div
+        class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
+      >
         <div class="flex flex-grow items-center">
           <label
             for="status-filter"
             class="text-sm font-medium text-charcoal mr-3 whitespace-nowrap"
-          >Status:</label>
+            >Status:</label
+          >
           <select
             id="status-filter"
+            x-model="statusFilter"
+            @change="applyFilters()"
             class="flex-grow form-control text-sm rounded-md border-light-gray focus:border-fresh-mint"
           >
             <option value="all">All Statuses</option>
@@ -104,80 +123,269 @@
           <label
             for="search-input"
             class="text-sm font-medium text-charcoal mr-3 whitespace-nowrap"
-          >Search:</label>
+            >Search:</label
+          >
           <div class="relative flex-grow">
             <input
               type="text"
               id="search-input"
+              x-model="searchQuery"
+              @input="debounceSearch()"
               placeholder="Search devices..."
               class="w-full form-control text-sm rounded-md pr-8 border-light-gray focus:border-fresh-mint"
             />
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              class="h-4 w-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-gray" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-gray"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-snow-white rounded-lg shadow-md overflow-hidden border border-light-gray">
+    <div
+      class="bg-snow-white rounded-lg shadow-md overflow-hidden border border-light-gray"
+    >
       <div class="table-responsive overflow-x-auto">
-        <table class="w-full" data-sort-order="asc">
+        <table class="w-full table-auto" x-ref="deviceTable">
           <thead class="bg-eco-green">
             <tr>
-              <th
-                onclick="sortTable(0)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Plant Name <span class="sort-icon">▲</span>
-              </th>
-              <th
-                onclick="sortTable(1)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Device Alias <span class="sort-icon">▲</span>
-              </th>
-              <th
-                onclick="sortTable(2)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Serial Number <span class="sort-icon">▲</span>
-              </th>
-              <th
-                onclick="sortTable(3)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Status <span class="sort-icon">▲</span>
-              </th>
-              <th
-                onclick="sortTable(4)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Total Energy <span class="sort-icon">▲</span>
-              </th>
-              <th
-                onclick="sortTable(5)"
-                class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors"
-              >
-                Last Update <span class="sort-icon">▲</span>
-              </th>
+              <template x-for="(column, index) in columns" :key="index">
+                <th
+                  @click="sortTable(index)"
+                  class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors relative"
+                  :class="{'bg-deep-forest': sortColumn === index}"
+                >
+                  <div class="flex items-center">
+                    <span x-text="column.label" class="mr-4"></span>
+                    <span
+                      class="sort-icon opacity-60"
+                      x-text="sortColumn === index ? (sortDirection === 'asc' ? '▲' : '▼') : ''"
+                    ></span>
+                  </div>
+                </th>
+              </template>
             </tr>
           </thead>
-          <tbody>
-            <!-- Data will be dynamically inserted here -->
+          <tbody class="divide-y divide-light-gray">
+            <template x-for="(device, index) in paginatedDevices" :key="index">
+              <tr
+                class="hover:bg-eco-green-10 transition-colors"
+                :class="index % 2 === 0 ? 'bg-white' : 'bg-slate-50'"
+              >
+                <td class="px-4 py-3 device-cell">
+                  <span
+                    class="text-charcoal font-medium text-sm"
+                    x-text="device.plant_name || 'N/A'"
+                  ></span>
+                </td>
+                <td class="px-4 py-3 device-cell">
+                  <span
+                    class="text-charcoal text-sm"
+                    x-text="device.alias || 'N/A'"
+                  ></span>
+                </td>
+                <td class="px-4 py-3 device-cell">
+                  <span
+                    class="text-slate-gray font-mono text-xs bg-slate-50 px-2 py-1 rounded"
+                    x-text="device.serial_number || 'N/A'"
+                  ></span>
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="status-indicator"
+                    :class="getStatusClass(device.status)"
+                    x-text="device.status || 'Unknown'"
+                  ></span>
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="energy-value font-medium text-eco-green"
+                    x-text="device.total_energy || '0 kWh'"
+                  ></span>
+                </td>
+                <td
+                  class="px-4 py-3 text-slate-gray text-sm"
+                  x-text="formatDate(device.last_update_time)"
+                ></td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
-      <div id="no-devices" class="p-8 text-center bg-snow-white hidden">
+
+      <!-- Pagination Controls -->
+      <div
+        x-show="!isLoading && filteredDevices.length > 0"
+        class="px-4 py-3 flex items-center justify-between border-t border-light-gray"
+      >
+        <div
+          class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="text-sm text-slate-gray">
+              Showing
+              <span
+                class="font-medium text-charcoal"
+                x-text="(currentPage - 1) * pageSize + 1"
+              ></span>
+              to
+              <span
+                class="font-medium text-charcoal"
+                x-text="Math.min(currentPage * pageSize, filteredDevices.length)"
+              ></span>
+              of
+              <span
+                class="font-medium text-charcoal"
+                x-text="filteredDevices.length"
+              ></span>
+              results
+            </p>
+          </div>
+          <div>
+            <nav
+              class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+              aria-label="Pagination"
+            >
+              <button
+                @click="goToFirstPage()"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">First</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+              <button
+                @click="previousPage()"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Previous</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              <!-- Page Numbers -->
+              <template x-for="pageNumber in paginationRange" :key="pageNumber">
+                <button
+                  @click="goToPage(pageNumber)"
+                  :class="{'bg-eco-green-10 text-eco-green': currentPage === pageNumber, 'bg-white text-slate-gray': currentPage !== pageNumber}"
+                  class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium hover:bg-eco-green-5"
+                >
+                  <span x-text="pageNumber"></span>
+                </button>
+              </template>
+
+              <button
+                @click="nextPage()"
+                :disabled="currentPage >= totalPages"
+                class="relative inline-flex items-center px-2 py-2 border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Next</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+              <button
+                @click="goToLastPage()"
+                :disabled="currentPage >= totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Last</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Mobile Pagination Controls -->
+        <div class="flex justify-between w-full sm:hidden">
+          <button
+            @click="previousPage()"
+            :disabled="currentPage === 1"
+            class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium rounded-md text-slate-gray bg-white hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span class="text-sm text-slate-gray">
+            Page
+            <span class="font-medium text-charcoal" x-text="currentPage"></span>
+            of
+            <span class="font-medium text-charcoal" x-text="totalPages"></span>
+          </span>
+          <button
+            @click="nextPage()"
+            :disabled="currentPage >= totalPages"
+            class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium rounded-md text-slate-gray bg-white hover:bg-eco-green-5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      <!-- No Results Message -->
+      <div
+        x-show="!isLoading && filteredDevices.length === 0"
+        class="p-8 text-center bg-snow-white"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-12 w-12 mx-auto text-slate-gray mb-4"
+          class="h-12 w-12 mx-auto text-slate-gray mb-4 opacity-80"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -189,10 +397,12 @@
             d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
           />
         </svg>
-        <h3 class="text-lg font-medium text-deep-forest mb-2 font-headings">No Devices Found</h3>
+        <h3 class="text-lg font-medium text-deep-forest mb-2 font-headings">
+          No Devices Found
+        </h3>
         <p class="text-slate-gray max-w-sm mx-auto">
-          No devices match the current filter criteria or no devices are available
-          for this account.
+          No devices match the current filter criteria or no devices are
+          available for this account.
         </p>
       </div>
     </div>
@@ -209,6 +419,20 @@
 
   .animate-spin {
     animation: spin 1s linear infinite;
+  }
+
+  /* Background color variable */
+  .bg-eco-green-5 {
+    background-color: rgba(76, 175, 80, 0.05);
+  }
+
+  .bg-eco-green-10 {
+    background-color: rgba(76, 175, 80, 0.1);
+  }
+
+  /* Form controls styling */
+  .form-control {
+    @apply px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-eco-green transition-all duration-200;
   }
 
   /* Mobile optimizations */
@@ -251,7 +475,7 @@
     background-color: var(--light-gray);
     border-radius: 3px;
   }
-  
+
   .table-responsive::-webkit-scrollbar-thumb:hover {
     background-color: var(--slate-gray);
   }
@@ -264,380 +488,578 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .status-online {
-    background-color: rgba(76, 175, 80, 0.1);
+    background-color: rgba(76, 175, 80, 0.15);
     color: var(--eco-green);
-    border: 1px solid rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+
+  .status-online::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background-color: var(--eco-green);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
   }
 
   .status-offline {
-    background-color: rgba(244, 67, 54, 0.1);
+    background-color: rgba(244, 67, 54, 0.15);
     color: var(--danger);
-    border: 1px solid rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+  }
+
+  .status-offline::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background-color: var(--danger);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
   }
 
   .status-waiting {
-    background-color: rgba(255, 214, 0, 0.1);
+    background-color: rgba(255, 214, 0, 0.15);
     color: var(--sunshine-yellow);
-    border: 1px solid rgba(255, 214, 0, 0.2);
+    border: 1px solid rgba(255, 214, 0, 0.3);
   }
-  
+
+  .status-waiting::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background-color: var(--sunshine-yellow);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   /* Table row styling */
   tbody tr {
     transition: all 0.2s ease;
   }
-  
+
   tbody tr:hover {
     background-color: var(--eco-green-10) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
-  
-  /* Table alternating rows */
-  tbody tr:nth-child(even) {
-    background-color: rgba(207, 216, 220, 0.1);
-  }
-  
+
   /* Sorting indicators */
   th {
     position: relative;
+    transition: all 0.2s ease;
   }
-  
-  th .sort-icon {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 10px;
+
+  th:hover {
+    background-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   /* Energy value highlighting */
   .energy-value {
     font-weight: 500;
     color: var(--eco-green);
+    position: relative;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: rgba(76, 175, 80, 0.08);
   }
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const plantId = "{{ plant_id }}";
-    fetchDevices();
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("devicesApp", () => ({
+      devices: [],
+      filteredDevices: [],
+      isLoading: true,
+      errorMessage: "",
+      statusFilter: "all",
+      searchQuery: "",
+      retryCount: 0,
+      maxRetries: 3,
+      searchTimeout: null,
+      sortColumn: 0,
+      sortDirection: "asc",
+      // Pagination variables
+      currentPage: 1,
+      pageSize: 10,
+      paginationRange: [],
+      columns: [
+        { label: "Plant Name", key: "plant_name" },
+        { label: "Device Alias", key: "alias" },
+        { label: "Serial Number", key: "serial_number" },
+        { label: "Status", key: "status" },
+        { label: "Total Energy", key: "total_energy" },
+        { label: "Last Update", key: "last_update_time" },
+      ],
 
-    // Setup event listeners
-    document
-      .getElementById("refresh-btn")
-      .addEventListener("click", fetchDevices);
-    document
-      .getElementById("export-btn")
-      .addEventListener("click", exportToCSV);
-    document
-      .getElementById("dismiss-error")
-      .addEventListener("click", dismissError);
-    document
-      .getElementById("status-filter")
-      .addEventListener("change", applyFilters);
-    document
-      .getElementById("search-input")
-      .addEventListener("input", applyFilters);
+      init() {
+        this.fetchDevices();
+        this.handleResponsiveLayout();
+        window.addEventListener("resize", () => this.handleResponsiveLayout());
+        // Initialize pagination
+        this.calculatePaginationRange();
+      },
 
-    // Use debounce for search input to prevent excessive filtering
-    let searchTimeout;
-    const searchInput = document.getElementById("search-input");
-    searchInput.addEventListener("input", () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(applyFilters, 300);
-    });
+      // Get paginated devices
+      get paginatedDevices() {
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        return this.filteredDevices.slice(startIndex, endIndex);
+      },
 
-    function fetchDevices() {
-      // Show loading spinner
-      document.getElementById("loading").classList.remove("hidden");
-      document.getElementById("no-devices").classList.add("hidden");
-      
-      // Add loading animation to refresh button
-      const refreshBtn = document.getElementById("refresh-btn");
-      const refreshIcon = refreshBtn.querySelector("svg");
-      refreshIcon.classList.add("animate-spin");
-      refreshBtn.disabled = true;
+      // Calculate total pages
+      get totalPages() {
+        return Math.ceil(this.filteredDevices.length / this.pageSize);
+      },
 
-      // Fetch the data
-      fetch(`/api/devices${plantId ? "?plant_id=" + plantId : ""}`)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          renderDevicesTable(data);
-        })
-        .catch((error) => {
-          showError(`Failed to load devices: ${error.message}`);
-          console.error("Error fetching devices:", error);
-        })
-        .finally(() => {
-          document.getElementById("loading").classList.add("hidden");
-          refreshIcon.classList.remove("animate-spin");
-          refreshBtn.disabled = false;
-        });
-    }
+      // Pagination methods
+      goToPage(page) {
+        this.currentPage = page;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
 
-    function renderDevicesTable(devices) {
-      const tableBody = document.querySelector("table tbody");
-      tableBody.innerHTML = "";
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      },
 
-      if (!devices || devices.length === 0) {
-        document.getElementById("no-devices").classList.remove("hidden");
-        return;
-      }
+      previousPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      },
 
-      // Populate the table
-      devices.forEach((device) => {
-        const row = document.createElement("tr");
-        row.className =
-          "border-b border-light-gray hover:bg-eco-green-10 transition-colors";
-        row.setAttribute("data-status", device.status.toLowerCase());
+      goToFirstPage() {
+        this.currentPage = 1;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
 
-        // Create status indicator class based on device status
-        let statusClass = "status-waiting";
-        if (device.status.toLowerCase() === "online") {
-          statusClass = "status-online";
-        } else if (device.status.toLowerCase() === "offline") {
-          statusClass = "status-offline";
+      goToLastPage() {
+        this.currentPage = this.totalPages;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+
+      // Calculate pagination range (which page numbers to show)
+      calculatePaginationRange() {
+        const maxVisiblePages = 5;
+        const totalPages = this.totalPages;
+
+        if (totalPages <= maxVisiblePages) {
+          // If we have few pages, show all of them
+          this.paginationRange = Array.from(
+            { length: totalPages },
+            (_, i) => i + 1
+          );
+          return;
         }
 
-        // Format the last update time
-        const lastUpdateDate = device.last_update_time
-          ? new Date(device.last_update_time)
-          : null;
-        const formattedDate = lastUpdateDate
-          ? lastUpdateDate.toLocaleDateString() +
+        // Always include first and last page
+        let startPage = Math.max(
+          1,
+          this.currentPage - Math.floor(maxVisiblePages / 2)
+        );
+        let endPage = startPage + maxVisiblePages - 1;
+
+        // Adjust if we're near the end
+        if (endPage > totalPages) {
+          endPage = totalPages;
+          startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        this.paginationRange = Array.from(
+          { length: endPage - startPage + 1 },
+          (_, i) => startPage + i
+        );
+      },
+
+      fetchDevices(forceRefresh = false) {
+        this.isLoading = true;
+        this.errorMessage = "";
+
+        // Add cache mechanism with timestamp
+        const cacheKey = "growatt_devices_data";
+        const cacheExpiration = 5 * 60 * 1000; // 5 minutes
+
+        if (!forceRefresh) {
+          const cachedData = localStorage.getItem(cacheKey);
+          if (cachedData) {
+            try {
+              const parsed = JSON.parse(cachedData);
+              if (Date.now() - parsed.timestamp < cacheExpiration) {
+                this.devices = parsed.data;
+                this.applyFilters();
+                this.isLoading = false;
+                return;
+              }
+            } catch (err) {
+              console.warn("Invalid cache data", err);
+              // Continue with fetch if cache parsing fails
+            }
+          }
+        }
+
+        const apiUrl = "/api/devices"; // Use relative URL for better portability
+        console.log(`Fetching devices from: ${apiUrl}`);
+
+        fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                `Server responded with status: ${response.status}`
+              );
+            }
+            return response.text();
+          })
+          .then((text) => {
+            console.log("Raw response:", text.substring(0, 500) + "...");
+
+            try {
+              // Clean up the response text
+              let processedText = text.trim();
+
+              // Add array brackets if not present
+              if (!processedText.startsWith("[")) {
+                processedText = "[" + processedText;
+              }
+              if (!processedText.endsWith("]")) {
+                processedText = processedText + "]";
+              }
+
+              // Fix trailing commas
+              processedText = processedText.replace(/,\s*]/g, "]");
+
+              // Parse the processed JSON
+              const devices = JSON.parse(processedText);
+              console.log(`Successfully parsed ${devices.length} devices`);
+
+              this.devices = devices;
+
+              // Cache the result with timestamp
+              localStorage.setItem(
+                cacheKey,
+                JSON.stringify({
+                  timestamp: Date.now(),
+                  data: devices,
+                })
+              );
+
+              // Reset retry counter
+              this.retryCount = 0;
+            } catch (error) {
+              console.error("Error parsing response:", error);
+
+              // Fallback method for specific format
+              try {
+                const objectStrings = text.split("},");
+                const processedObjects = objectStrings.map(
+                  (str, index, arr) => {
+                    if (index < arr.length - 1) {
+                      return str + "}";
+                    }
+                    return str;
+                  }
+                );
+
+                const devices = [];
+                for (let objStr of processedObjects) {
+                  try {
+                    let cleanObjStr = objStr.trim();
+                    if (!cleanObjStr.startsWith("{")) {
+                      cleanObjStr = "{" + cleanObjStr;
+                    }
+                    if (!cleanObjStr.endsWith("}")) {
+                      cleanObjStr = cleanObjStr + "}";
+                    }
+                    // Fix any trailing commas inside the object
+                    cleanObjStr = cleanObjStr.replace(/,\s*}/g, "}");
+
+                    const device = JSON.parse(cleanObjStr);
+                    devices.push(device);
+                  } catch (parseErr) {
+                    console.warn(
+                      "Skipping malformed object:",
+                      objStr,
+                      parseErr
+                    );
+                  }
+                }
+
+                console.log(
+                  `Fallback parsing successful: ${devices.length} devices`
+                );
+
+                if (devices.length > 0) {
+                  this.devices = devices;
+
+                  // Cache the result
+                  localStorage.setItem(
+                    cacheKey,
+                    JSON.stringify({
+                      timestamp: Date.now(),
+                      data: devices,
+                    })
+                  );
+
+                  this.retryCount = 0;
+                } else {
+                  throw new Error("No valid devices found in the response");
+                }
+              } catch (fallbackError) {
+                console.error("Fallback parsing also failed:", fallbackError);
+                throw new Error(`Failed to parse response: ${error.message}`);
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching devices:", error);
+
+            if (this.retryCount < this.maxRetries) {
+              this.retryCount++;
+              const retryDelay = 1000 * this.retryCount;
+
+              this.errorMessage = `Failed to load devices: ${
+                error.message
+              }. Retrying in ${retryDelay / 1000} seconds...`;
+
+              setTimeout(() => {
+                console.log(
+                  `Retry attempt ${this.retryCount} of ${this.maxRetries}`
+                );
+                this.fetchDevices();
+              }, retryDelay);
+            } else {
+              this.errorMessage = `Failed to load devices after ${this.maxRetries} attempts: ${error.message}. Please check your connection and try again.`;
+            }
+          })
+          .finally(() => {
+            if (this.retryCount === 0 || this.retryCount >= this.maxRetries) {
+              this.isLoading = false;
+              this.applyFilters();
+            }
+          });
+      },
+
+      applyFilters() {
+        const statusFilter = this.statusFilter;
+        const searchQuery = this.searchQuery.toLowerCase().trim();
+
+        this.filteredDevices = this.devices.filter((device) => {
+          const deviceStatus = (device.status || "unknown").toLowerCase();
+          const deviceText = JSON.stringify(device).toLowerCase();
+
+          // Status filter
+          let statusMatch = statusFilter === "all";
+          if (statusFilter === "online" && deviceStatus.includes("online")) {
+            statusMatch = true;
+          } else if (
+            statusFilter === "offline" &&
+            deviceStatus.includes("offline")
+          ) {
+            statusMatch = true;
+          } else if (
+            statusFilter === "waiting" &&
+            (deviceStatus.includes("wait") || deviceStatus === "unknown")
+          ) {
+            statusMatch = true;
+          }
+
+          // Search filter
+          const searchMatch = !searchQuery || deviceText.includes(searchQuery);
+
+          return statusMatch && searchMatch;
+        });
+
+        // Apply sorting
+        this.sortDevices();
+
+        // Reset to first page when filters change
+        this.currentPage = 1;
+
+        // After filtering, calculate pagination
+        this.calculatePaginationRange();
+      },
+
+      debounceSearch() {
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => this.applyFilters(), 300);
+      },
+
+      sortTable(columnIndex) {
+        if (this.sortColumn === columnIndex) {
+          // Toggle direction if same column
+          this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          // Default to ascending for new column
+          this.sortColumn = columnIndex;
+          this.sortDirection = "asc";
+        }
+
+        this.sortDevices();
+      },
+
+      sortDevices() {
+        const columnIndex = this.sortColumn;
+        const direction = this.sortDirection;
+        const columnKey = this.columns[columnIndex].key;
+
+        this.filteredDevices.sort((a, b) => {
+          let valueA = a[columnKey] || "";
+          let valueB = b[columnKey] || "";
+
+          // Handle energy values (remove "kWh" and parse as numbers)
+          if (columnKey === "total_energy") {
+            valueA = parseFloat((valueA + "").replace(/[^\d.-]/g, "")) || 0;
+            valueB = parseFloat((valueB + "").replace(/[^\d.-]/g, "")) || 0;
+            return direction === "asc" ? valueA - valueB : valueB - valueA;
+          }
+
+          // Handle dates
+          if (columnKey === "last_update_time") {
+            const dateA = new Date(valueA);
+            const dateB = new Date(valueB);
+
+            if (!isNaN(dateA) && !isNaN(dateB)) {
+              return direction === "asc" ? dateA - dateB : dateB - dateA;
+            }
+          }
+
+          // Default string comparison
+          valueA = valueA.toString().toLowerCase();
+          valueB = valueB.toString().toLowerCase();
+          return direction === "asc"
+            ? valueA.localeCompare(valueB)
+            : valueB.localeCompare(valueA);
+        });
+
+        // After sorting, calculate pagination
+        this.calculatePaginationRange();
+      },
+
+      formatDate(dateString) {
+        if (!dateString) return "N/A";
+
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date)) return dateString;
+
+          return (
+            date.toLocaleDateString() +
             " " +
-            lastUpdateDate.toLocaleTimeString([], {
+            date.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })
-          : "N/A";
-          
-        // Format energy value
-        const energyValue = device.total_energy || "0 kWh";
+          );
+        } catch (e) {
+          console.error("Error formatting date:", e);
+          return dateString;
+        }
+      },
 
-        // Build the row
-        row.innerHTML = `
-          <td class="px-4 py-3 device-cell">
-            <span class="text-charcoal font-medium">${device.plant_name || "N/A"}</span>
-          </td>
-          <td class="px-4 py-3 device-cell">
-            <span class="text-charcoal">${device.alias || "N/A"}</span>
-          </td>
-          <td class="px-4 py-3 device-cell">
-            <span class="text-slate-gray font-mono text-xs">${
-              device.serial_number || "N/A"
-            }</span>
-          </td>
-          <td class="px-4 py-3">
-            <span class="${statusClass} status-indicator">
-              ${device.status || "Unknown"}
-            </span>
-          </td>
-          <td class="px-4 py-3">
-            <span class="energy-value">${energyValue}</span>
-          </td>
-          <td class="px-4 py-3 text-slate-gray text-sm">${formattedDate}</td>
-        `;
+      getStatusClass(status) {
+        if (!status) return "status-waiting";
 
-        tableBody.appendChild(row);
-      });
-
-      // Apply any active filters after rendering
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const statusFilter = document.getElementById("status-filter").value;
-      const searchQuery = document
-        .getElementById("search-input")
-        .value.toLowerCase();
-
-      let visibleCount = 0;
-      const rows = document.querySelectorAll("table tbody tr");
-
-      rows.forEach((row) => {
-        const deviceStatus = row.getAttribute("data-status");
-        const rowText = row.textContent.toLowerCase();
-
-        // Apply status filter
-        const statusMatch =
-          statusFilter === "all" || deviceStatus === statusFilter;
-
-        // Apply search filter
-        const searchMatch = !searchQuery || rowText.includes(searchQuery);
-
-        // Show/hide the row based on combined filters
-        if (statusMatch && searchMatch) {
-          row.classList.remove("hidden");
-          visibleCount++;
+        const statusLower = status.toLowerCase();
+        if (statusLower.includes("online")) {
+          return "status-online";
+        } else if (statusLower.includes("offline")) {
+          return "status-offline";
         } else {
-          row.classList.add("hidden");
+          return "status-waiting";
         }
-      });
+      },
 
-      // Show "no devices" message if all rows are filtered out
-      if (visibleCount === 0 && rows.length > 0) {
-        document.getElementById("no-devices").classList.remove("hidden");
-      } else {
-        document.getElementById("no-devices").classList.add("hidden");
-      
-      // Update the filters section to indicate active filters
-      const filtersSection = document.getElementById("filters-section");
-      if (statusFilter !== "all" || searchQuery) {
-        filtersSection.classList.add("border-eco-green");
-      } else {
-        filtersSection.classList.remove("border-eco-green");
-      }
-    }
-
-    function sortTable(columnIndex) {
-      const table = document.querySelector("table");
-      const tbody = table.querySelector("tbody");
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-
-      // Get current sort order and update for next click
-      let sortOrder = table.getAttribute("data-sort-order");
-      sortOrder = sortOrder === "asc" ? "desc" : "asc";
-      table.setAttribute("data-sort-order", sortOrder);
-
-      // Update sort icons
-      const headers = table.querySelectorAll("th");
-      headers.forEach((header, index) => {
-        const icon = header.querySelector(".sort-icon");
-        if (icon) {
-          icon.textContent =
-            index === columnIndex ? (sortOrder === "asc" ? "▲" : "▼") : "▲";
-        }
-      });
-
-      // Sort the rows
-      rows.sort((a, b) => {
-        const cellA = a.cells[columnIndex].textContent.trim();
-        const cellB = b.cells[columnIndex].textContent.trim();
-
-        // Special handling for energy values (remove "kWh" and parse as numbers)
-        if (columnIndex === 4) {
-          const numA = parseFloat(cellA.replace(/[^\d.-]/g, "")) || 0;
-          const numB = parseFloat(cellB.replace(/[^\d.-]/g, "")) || 0;
-          return sortOrder === "asc" ? numA - numB : numB - numA;
+      exportToCSV() {
+        if (this.filteredDevices.length === 0) {
+          this.errorMessage = "No data to export.";
+          return;
         }
 
-        // Special handling for dates in last column
-        if (columnIndex === 5) {
-          const dateA = new Date(cellA);
-          const dateB = new Date(cellB);
+        // Create CSV content with BOM for UTF-8 (helps Excel recognize UTF-8)
+        let csvContent = "\uFEFF"; // BOM character
 
-          if (!isNaN(dateA) && !isNaN(dateB)) {
-            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-          }
-        }
+        // Add headers
+        csvContent +=
+          this.columns.map((col) => `"${col.label}"`).join(",") + "\n";
 
-        // Default string comparison
-        return sortOrder === "asc"
-          ? cellA.localeCompare(cellB)
-          : cellB.localeCompare(cellA);
-      });
+        // Add rows
+        this.filteredDevices.forEach((device) => {
+          const row = this.columns.map((column) => {
+            let value = device[column.key] || "";
+            if (column.key === "last_update_time") {
+              value = this.formatDate(value);
+            }
+            return `"${value.toString().replace(/"/g, '""')}"`;
+          });
+          csvContent += row.join(",") + "\n";
+        });
 
-      // Rearrange the rows in the tbody
-      rows.forEach((row) => tbody.appendChild(row));
-      
-      // Highlight sorted column
-      headers.forEach((header, index) => {
-        if (index === columnIndex) {
-          header.classList.add("bg-deep-forest");
-        } else {
-          header.classList.remove("bg-deep-forest");
-        }
-      });
-    }
-
-    function exportToCSV() {
-      // Get visible rows only
-      const rows = Array.from(
-        document.querySelectorAll("table tbody tr")
-      ).filter((row) => !row.classList.contains("hidden"));
-
-      if (rows.length === 0) {
-        showError("No data to export.");
-        return;
-      }
-      
-      // Show visual feedback when exporting
-      const exportBtn = document.getElementById("export-btn");
-      const originalText = exportBtn.innerHTML;
-      exportBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg><span>Exporting...</span>';
-      exportBtn.disabled = true;
-
-      // Build CSV content
-      let csvContent = "data:text/csv;charset=utf-8,";
-
-      // Add headers
-      const headers = Array.from(document.querySelectorAll("table th")).map(
-        (th) => `"${th.textContent.replace(/▲|▼/g, "").trim()}"`
-      );
-      csvContent += headers.join(",") + "\n";
-
-      // Add rows
-      rows.forEach((row) => {
-        const rowData = Array.from(row.cells).map(
-          (cell) => `"${cell.textContent.trim().replace(/"/g, '""')}"`
+        // Create download link with proper encoding
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `devices_${new Date().toISOString().slice(0, 10)}.csv`
         );
-        csvContent += rowData.join(",") + "\n";
-      });
+        document.body.appendChild(link);
 
-      // Create download link
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute(
-        "download",
-        `devices_${new Date().toISOString().slice(0, 10)}.csv`
-      );
-      document.body.appendChild(link);
-
-      // Trigger download
-      setTimeout(() => {
+        // Trigger download
         link.click();
-        document.body.removeChild(link);
-        exportBtn.innerHTML = originalText;
-        exportBtn.disabled = false;
-      }, 500);
-    }
 
-    function showError(message) {
-      const errorElement = document.getElementById("error-message");
-      document.getElementById("error-text").textContent = message;
-      errorElement.classList.remove("hidden");
-    }
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      },
 
-    function dismissError() {
-      document.getElementById("error-message").classList.add("hidden");
-    }
-
-    // Handle responsive behavior on window resize
-    window.addEventListener("resize", () => {
-      if (window.innerWidth <= 640) {
-        // Mobile adjustments
-        document.querySelectorAll(".sort-icon").forEach((icon) => {
-          icon.style.display = "none";
-        });
-      } else {
-        // Desktop adjustments
-        document.querySelectorAll(".sort-icon").forEach((icon) => {
-          icon.style.display = "inline";
-        });
-      }
-    });
-
-    // Trigger resize handler on load
-    const resizeEvent = new Event("resize");
-    window.dispatchEvent(resizeEvent);
+      handleResponsiveLayout() {
+        if (window.innerWidth <= 640) {
+          // Mobile adjustments
+          document.querySelectorAll(".sort-icon").forEach((icon) => {
+            icon.style.display = "none";
+          });
+        } else {
+          // Desktop adjustments
+          document.querySelectorAll(".sort-icon").forEach((icon) => {
+            icon.style.display = "inline";
+          });
+        }
+      },
+    }));
   });
 </script>
 {% endblock %}

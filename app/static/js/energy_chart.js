@@ -6,8 +6,30 @@
 
 // Register Chart.js plugins if available
 document.addEventListener("DOMContentLoaded", function () {
-  if (typeof Chart !== "undefined" && typeof ChartDataLabels !== "undefined") {
-    Chart.register(ChartDataLabels);
+  if (typeof Chart !== "undefined") {
+    // Only register if not already registered
+    if (typeof ChartDataLabels !== "undefined") {
+      // Make sure Chart is fully initialized before registering plugins
+      if (!Chart.helpers.getRelativePosition) {
+        console.warn(
+          "Chart.js not fully initialized. Waiting before registering plugins."
+        );
+        setTimeout(() => {
+          Chart.register(ChartDataLabels);
+          console.log("ChartDataLabels plugin registered (delayed)");
+        }, 500);
+      } else {
+        Chart.register(ChartDataLabels);
+        console.log("ChartDataLabels plugin registered immediately");
+      }
+
+      // Set default configuration to disable datalabels
+      if (Chart.defaults && Chart.defaults.plugins) {
+        Chart.defaults.plugins.datalabels = {
+          display: false,
+        };
+      }
+    }
   }
 });
 

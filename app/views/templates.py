@@ -75,6 +75,30 @@ def render_weather(plant_id: str = '', plant_name: str = '') -> str:
     """
     return render_template('weather.html', plant_id=plant_id, plant_name=plant_name)
 
+def render_maps() -> Tuple[str, int]:
+    """
+    Render the 404 error template.
+    
+    Returns:
+        Tuple[str, int]: Rendered HTML template for the 404 page and status code
+    """
+    return render_template('maps.html', 
+                               error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+                               error_code="404", 
+                               error_title="Not Found"), 404
+
+def render_analytics() -> Tuple[str, int]:
+    """
+    Render the 404 error template.
+    
+    Returns:
+        Tuple[str, int]: Rendered HTML template for the 404 page and status code
+    """
+    return render_template('analytics.html', 
+                               error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
+                               error_code="404", 
+                               error_title="Not Found"), 404
+
 def render_error_404() -> Tuple[str, int]:
     """
     Render the 404 error template.
@@ -86,3 +110,5 @@ def render_error_404() -> Tuple[str, int]:
                                error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
                                error_code="404", 
                                error_title="Not Found"), 404
+
+

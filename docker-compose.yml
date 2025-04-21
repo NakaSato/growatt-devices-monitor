@@ -1,34 +1,66 @@
 services:
   # Flask application service
-  growatt-api:
+  growatt-app:
     build: .
-    container_name: growatt-api
+    container_name: growatt-app
     restart: unless-stopped
     environment:
       - SECRET_KEY=change_this_to_a_random_secret_string
       - DEBUG=False
     volumes:
       - ./app:/app/app
+      - growatt-data:/app/app/data # Persistent volume for database
     networks:
       - growatt-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Nginx reverse proxy
   nginx:
-    image: nginx:1.21-alpine
+    image: nginx:1.23-alpine # Updated to newer version
     container_name: growatt-nginx
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443" # Uncomment when SSL is set up
+      - "443:443"
     volumes:
       - ./nginx/growatt-api.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro # Uncomment when SSL is set up
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./app/static:/app/static:ro
     depends_on:
-      - growatt-api
+      growatt-app:
+        condition: service_healthy # Only start when API is healthy
     networks:
       - growatt-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
+volumes:
+  growatt-data: # Define persistent volume for database
+    driver: local
 
 networks:
   growatt-network:
     driver: bridge
+    # Enhanced network configuration
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
