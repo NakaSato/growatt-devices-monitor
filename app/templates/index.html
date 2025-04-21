@@ -40,38 +40,81 @@ block content %}
 
     // Function to initialize the power distribution chart
     function initPowerDistributionChart() {
-      const chartElement = document.getElementById("powerDistributionChart");
-      if (!chartElement) return;
+      try {
+        let chartElement = document.getElementById("powerDistributionChart");
 
-      const chartData = generatePowerDistributionData();
+        // If chart element doesn't exist, try to find the container and create the canvas
+        if (!chartElement) {
+          console.log(
+            "Power distribution chart element not found, checking for parent container..."
+          );
 
-      // Create the chart using Chart.js
-      if (typeof Chart !== "undefined") {
-        new Chart(chartElement, {
-          type: "doughnut",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "bottom",
-              },
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    return context.label + ": " + context.raw + "%";
+          // Look for a container where we might add the chart
+          const container = document.querySelector(
+            ".dashboard-charts-container"
+          );
+          if (container) {
+            console.log("Creating power distribution chart canvas element");
+            chartElement = document.createElement("canvas");
+            chartElement.id = "powerDistributionChart";
+            chartElement.style.height = "300px";
+            chartElement.style.width = "100%";
+            container.appendChild(chartElement);
+          } else {
+            console.warn("No container found to add power distribution chart");
+            return null;
+          }
+        }
+
+        if (!chartElement.getContext) {
+          console.warn(
+            "Element #powerDistributionChart exists but is not a canvas"
+          );
+          return null;
+        }
+
+        const chartData = generatePowerDistributionData();
+        let chartInstance = null;
+
+        // Create the chart using Chart.js
+        if (typeof Chart !== "undefined") {
+          chartInstance = new Chart(chartElement, {
+            type: "doughnut",
+            data: chartData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      return context.label + ": " + context.raw + "%";
+                    },
                   },
                 },
               },
             },
-          },
-        });
-      } else if (window.EnergyCharts) {
-        window.EnergyCharts.createDoughnutChart(
-          "powerDistributionChart",
-          chartData
-        );
+          });
+          console.log("Power distribution chart created with Chart.js");
+        } else if (window.EnergyCharts) {
+          chartInstance = window.EnergyCharts.createDoughnutChart(
+            "powerDistributionChart",
+            chartData
+          );
+          console.log("Power distribution chart created with EnergyCharts");
+        } else {
+          console.warn(
+            "No chart library available to create power distribution chart"
+          );
+        }
+
+        return chartInstance;
+      } catch (error) {
+        console.error("Error initializing power distribution chart:", error);
+        return null;
       }
     }
 
@@ -79,7 +122,10 @@ block content %}
     function initAllCharts() {
       try {
         // Initialize power distribution chart
-        initPowerDistributionChart();
+        const powerDistChart = initPowerDistributionChart();
+        if (!powerDistChart) {
+          console.warn("Failed to initialize power distribution chart");
+        }
 
         // Other chart initializations can be added here
       } catch (error) {

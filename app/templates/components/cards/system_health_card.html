@@ -9,10 +9,17 @@
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-1">
+      <div
+        class="grid xs:grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-500 mt-1"
+      >
         <span>Capacity Factor: 24.8%</span>
-        <span class="flex items-center gap-1">
-          Performance Ratio: <span id="performance-ratio-value">0.92</span>
+        <div class="flex flex-wrap items-center gap-1">
+          <span class="whitespace-nowrap">Performance Ratio:</span>
+          <span
+            id="performance-ratio-value"
+            class="font-medium text-primary-600"
+            >0.92</span
+          >
           <span class="relative group">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -29,14 +36,14 @@
               />
             </svg>
             <span
-              class="absolute bottom-full left-1/2 -translate-x-1/2 w-48 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+              class="absolute z-10 bottom-full md:left-1/2 md:-translate-x-1/2 xs:left-0 sm:left-auto w-48 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
             >
               Performance Ratio (PR) measures actual energy output vs
               theoretical output. Values near 1.0 indicate optimal system
               performance, with 0.8-0.9 being the typical PVsyst expected range.
             </span>
           </span>
-        </span>
+        </div>
         <span>Daily Generation: 18.7kWh</span>
         <span>Monthly Average: 567kWh</span>
         <span>Peak Power: 5.3kW</span>
@@ -141,6 +148,36 @@
       const element = document.querySelector(selector);
       if (element) {
         element.textContent = text;
+
+        // Add special handling for performance ratio to add appropriate styling
+        if (selector === "#performance-ratio-value") {
+          const ratio = parseFloat(text);
+          // Reset classes first
+          element.classList.remove(
+            "text-green-600",
+            "text-yellow-600",
+            "text-red-600"
+          );
+
+          // Apply appropriate color based on value
+          if (ratio >= 0.9) {
+            element.classList.add("text-green-600");
+          } else if (ratio >= 0.75) {
+            element.classList.add("text-yellow-600");
+          } else {
+            element.classList.add("text-red-600");
+          }
+
+          // Add animation for value changes
+          element.classList.add("transition-all", "duration-300");
+          element.animate(
+            [
+              { opacity: 0.6, transform: "scale(1.1)" },
+              { opacity: 1, transform: "scale(1)" },
+            ],
+            { duration: 300, easing: "ease-out" }
+          );
+        }
       }
     }
 
@@ -392,3 +429,19 @@
     }, config.initialDelay);
   });
 </script>
+
+<style>
+  /* Make tooltips more readable on small screens */
+  @media (max-width: 640px) {
+    .group:hover .group-hover\:opacity-100 {
+      max-width: 80vw;
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+  }
+
+  /* Smooth transition for performance ratio value */
+  #performance-ratio-value {
+    transition: color 0.3s ease;
+  }
+</style>

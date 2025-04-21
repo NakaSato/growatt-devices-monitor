@@ -35,6 +35,7 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const ctx = document.getElementById("dailyEnergyDonut").getContext("2d");
+    let dailyEnergyChart = null;
 
     // Set chart responsiveness
     function resizeChart() {
@@ -55,7 +56,13 @@
     const selfUsed = 14.3;
     const gridExport = 22.2;
 
-    new Chart(ctx, {
+    // Check if Chart already exists and destroy it to prevent duplicates
+    if (window.Chart && Chart.getChart("dailyEnergyDonut")) {
+      Chart.getChart("dailyEnergyDonut").destroy();
+    }
+
+    // Create chart with proper configuration
+    dailyEnergyChart = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: ["Self-used", "Grid Export"],
@@ -68,6 +75,7 @@
             ],
             borderColor: ["rgba(52, 211, 153, 1)", "rgba(59, 130, 246, 1)"],
             borderWidth: 1,
+            hoverOffset: 4,
           },
         ],
       },
@@ -91,35 +99,28 @@
             },
           },
         },
-        // Add animation for better visual appeal
         animation: {
           animateScale: true,
           animateRotate: true,
           duration: 1000,
         },
-        // Optimize performance on mobile
         responsiveAnimationDuration: 500,
       },
     });
 
-    // Function to update chart size when container changes
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        // Trigger chart resize
-        if (window.Chart && Chart.instances) {
-          Object.values(Chart.instances).forEach((chart) => {
-            if (chart.canvas.id === "dailyEnergyDonut") {
-              chart.resize();
-            }
-          });
+    // Use ResizeObserver to handle chart resize properly
+    if (window.ResizeObserver) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        if (dailyEnergyChart) {
+          dailyEnergyChart.resize();
         }
-      }
-    });
+      });
 
-    // Observe the chart container
-    const chartContainer = document.querySelector(".aspect-square");
-    if (chartContainer) {
-      resizeObserver.observe(chartContainer);
+      // Observe the chart container
+      const chartContainer = document.querySelector(".aspect-square");
+      if (chartContainer) {
+        resizeObserver.observe(chartContainer);
+      }
     }
   });
 </script>

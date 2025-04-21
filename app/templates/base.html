@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no"
+    />
     <meta
       name="description"
       content="Growatt API - Monitor your solar energy production and devices"
@@ -14,6 +17,10 @@
     <meta name="author" content="Growatt API" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="{{ request.url }}" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
 
     <!-- Google Fonts - Noto Sans Thai -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,8 +36,69 @@
       src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
 
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          screens: {
+            xs: "320px",
+            sm: "640px",
+            md: "768px",
+            lg: "1024px",
+            xl: "1280px",
+            "2xl": "1536px",
+          },
+          extend: {
+            colors: {
+              primary: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                200: "#bae6fd",
+                300: "#7dd3fc",
+                400: "#38bdf8",
+                500: "#0ea5e9",
+                600: "#0284c7",
+                700: "#0369a1",
+                800: "#075985",
+                900: "#0c4a6e",
+              },
+            },
+            fontFamily: {
+              sans: ['"Noto Sans Thai"', "sans-serif"],
+            },
+            spacing: {
+              72: "18rem",
+              84: "21rem",
+              96: "24rem",
+            },
+            maxWidth: {
+              "1/4": "25%",
+              "1/2": "50%",
+              "3/4": "75%",
+              xs: "20rem",
+            },
+            minHeight: {
+              "screen-75": "75vh",
+              "screen-50": "50vh",
+            },
+          },
+        },
+        variants: {
+          extend: {
+            display: ["responsive", "hover", "focus", "group-hover"],
+            opacity: ["responsive", "hover", "focus", "group-hover"],
+            scale: ["responsive", "hover", "focus", "active"],
+          },
+        },
+      };
+    </script>
 
     <!-- Custom CSS -->
     <link
@@ -49,21 +117,73 @@
     />
     <meta property="og:url" content="{{ request.url }}" />
     <meta property="og:type" content="website" />
+
+    <!-- Page-specific styles -->
+    {% block styles %}{% endblock %}
+
     <!-- Custom JavaScript block -->
-    {% block head_scripts %}{% endblock %}
+    {% block head_scripts %}{% endblock %} {% if
+    config.get('LIVE_RELOAD_ENABLED', False) %}
+    <!-- Live Reload Script for Development -->
+    <script>
+      (function () {
+        // Check for file changes every 1000ms
+        const checkInterval = 1000;
+        let lastModified = {};
+
+        // Files to monitor (add more as needed)
+        const filesToMonitor = [
+          '{{ url_for("static", filename="css/style.css") }}',
+          // Add more static files here as needed
+        ];
+
+        function checkForChanges() {
+          filesToMonitor.forEach((file) => {
+            // Add cache-busting parameter to prevent browser caching
+            const url = file + "?check=" + new Date().getTime();
+
+            fetch(url, { method: "HEAD" })
+              .then((response) => {
+                const modified = response.headers.get("Last-Modified");
+                if (lastModified[file] && lastModified[file] !== modified) {
+                  console.log(`File changed: ${file}, reloading...`);
+                  window.location.reload();
+                }
+                lastModified[file] = modified;
+              })
+              .catch((err) => console.error("Error checking file:", err));
+          });
+        }
+
+        // Initialize by getting current timestamps
+        filesToMonitor.forEach((file) => {
+          fetch(file + "?init=" + new Date().getTime(), { method: "HEAD" })
+            .then((response) => {
+              lastModified[file] = response.headers.get("Last-Modified");
+            })
+            .catch((err) =>
+              console.error("Error initializing file check:", err)
+            );
+        });
+
+        // Start periodic checking
+        setInterval(checkForChanges, checkInterval);
+
+        console.log("Live reload for static files enabled");
+      })();
+    </script>
+    {% endif %}
   </head>
 
-  <body class="min-h-screen flex flex-col" x-data="{}">
+  <body class="min-h-screen">
     <!-- Header and Navigation -->
     {% include 'components/navbar.html' %}
 
-    <main class="container mx-auto flex-grow px-4">
+    <main class="bg-gradient-to-b from-white to-blue-50 min-h-screen">
       {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-white text-center p-4 mt-8">
-      <p>&copy; 2023 Growatt API. All rights reserved.</p>
-    </footer>
+    {% include 'components/footer.html' %}
 
     <!-- Custom JavaScript at end of body -->
     {% block scripts %}{% endblock %}
@@ -167,13 +287,20 @@
         window.location.href = "/api/logout";
       }
 
-      // Make functions available to Alpine.js
-      document.addEventListener("alpine:init", () => {
-        Alpine.data("app", () => ({
-          clearCacheAndLogout() {
-            clearCacheAndLogout();
-          },
-        }));
+      // Add responsive screen detection
+      window.isSmallScreen = window.matchMedia("(max-width: 640px)").matches;
+      window.isMediumScreen = window.matchMedia(
+        "(min-width: 641px) and (max-width: 1024px)"
+      ).matches;
+      window.isLargeScreen = window.matchMedia("(min-width: 1025px)").matches;
+
+      // Update on resize
+      window.addEventListener("resize", () => {
+        window.isSmallScreen = window.matchMedia("(max-width: 640px)").matches;
+        window.isMediumScreen = window.matchMedia(
+          "(min-width: 641px) and (max-width: 1024px)"
+        ).matches;
+        window.isLargeScreen = window.matchMedia("(min-width: 1025px)").matches;
       });
     </script>
   </body>

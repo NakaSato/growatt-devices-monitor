@@ -1,79 +1,146 @@
 {% extends "base.html" %} {% block title %}Weather Status - Growatt API{%
 endblock %} {% block content %}
-<div id="weather-app" v-cloak>
+<div id="weather-app" x-data="weatherApp()" x-cloak>
   <h1>Weather Status for Plant: {{ plant_name }}</h1>
 
-  <!-- Loading spinner -->
-  <div
-    :class="{'spinner': true}"
-    :style="{ display: isLoading ? 'block' : 'none' }"
-  ></div>
-
-  <!-- Export Button -->
-  <button class="btn btn-primary" @click="exportToExcel">
-    Export to Excel
-  </button>
-
-  <!-- Weather Chart Visualization -->
-  <div class="weather-chart-container">
-    <h2>Weather Trends</h2>
-    <div class="chart-controls">
-      <select v-model="chartMetric" @change="updateChart">
-        <option value="temperature">Temperature</option>
-        <option value="humidity">Humidity</option>
-        <option value="weather">Weather Conditions</option>
-      </select>
-      <select v-model="chartPeriod" @change="updateChart">
+  <div class="weather-chart-container mb-4 bg-white p-4 rounded-lg shadow">
+    <div class="chart-controls flex justify-between items-center mb-3">
+      <h3 class="text-gray-700 font-medium text-lg">Weather Conditions</h3>
+      <select
+        x-model="chartPeriod"
+        @change="updateChart()"
+        class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+      >
         <option value="day">Today</option>
         <option value="week">This Week</option>
         <option value="month">This Month</option>
       </select>
     </div>
-    <canvas id="weatherChart" ref="weatherChart"></canvas>
+    <div class="relative" style="min-height: 250px">
+      <canvas id="weatherChart" x-ref="weatherChart" class="w-full"></canvas>
+      <div
+        x-show="isLoading"
+        class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75"
+      >
+        <div
+          class="spinner border-4 border-t-4 border-gray-200 border-t-primary-500 rounded-full w-10 h-10 animate-spin"
+        ></div>
+      </div>
+    </div>
   </div>
 
-  <table id="weather-table" border="1" :data-sort-order="sortOrder">
-    <thead>
-      <tr>
-        <th @click="sortTable(0)">
-          Plant Name <span class="sort-icon" v-text="getSortIcon(0)"></span>
-        </th>
-        <th @click="sortTable(1)">
-          Location <span class="sort-icon" v-text="getSortIcon(1)"></span>
-        </th>
-        <th @click="sortTable(2)">
-          Temperature <span class="sort-icon" v-text="getSortIcon(2)"></span>
-        </th>
-        <th @click="sortTable(3)">
-          Weather <span class="sort-icon" v-text="getSortIcon(3)"></span>
-        </th>
-        <th @click="sortTable(4)">
-          Humidity <span class="sort-icon" v-text="getSortIcon(4)"></span>
-        </th>
-        <th @click="sortTable(5)">
-          Last Update Time
-          <span class="sort-icon" v-text="getSortIcon(5)"></span>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr
-        v-for="(item, index) in weatherData"
-        :key="index"
-        :class="{ 'offline-row': item.status === 'Offline' }"
-      >
-        <td v-text="item.plant_name"></td>
-        <td v-text="item.location"></td>
-        <td v-text="item.temperature"></td>
-        <td v-text="item.weather"></td>
-        <td v-text="item.humidity"></td>
-        <td v-text="item.last_update_time"></td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-responsive overflow-x-auto bg-white rounded-lg shadow">
+    <table id="weather-table" class="w-full" :data-sort-order="sortOrder">
+      <thead class="bg-gray-100">
+        <tr>
+          <th
+            @click="sortTable(0)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Plant Name <span class="sort-icon" x-text="getSortIcon(0)"></span>
+          </th>
+          <th
+            @click="sortTable(1)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Location <span class="sort-icon" x-text="getSortIcon(1)"></span>
+          </th>
+          <th
+            @click="sortTable(2)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Temperature <span class="sort-icon" x-text="getSortIcon(2)"></span>
+          </th>
+          <th
+            @click="sortTable(3)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Weather <span class="sort-icon" x-text="getSortIcon(3)"></span>
+          </th>
+          <th
+            @click="sortTable(4)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Humidity <span class="sort-icon" x-text="getSortIcon(4)"></span>
+          </th>
+          <th
+            @click="sortTable(5)"
+            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+          >
+            Last Update <span class="sort-icon" x-text="getSortIcon(5)"></span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="(item, index) in weatherData" :key="index">
+          <tr :class="{ 'offline-row': item.status === 'Offline' }">
+            <td x-text="item.plant_name"></td>
+            <td x-text="item.location"></td>
+            <td x-text="item.temperature"></td>
+            <td x-text="item.weather"></td>
+            <td x-text="item.humidity"></td>
+            <td x-text="item.last_update_time"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- Load Chart.js before our Vue app -->
+<style>
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    #weather-table th,
+    #weather-table td {
+      padding: 8px 12px;
+      font-size: 0.75rem;
+    }
+
+    .sort-icon {
+      display: none;
+    }
+
+    .weather-chart-container {
+      padding: 0.75rem;
+    }
+  }
+
+  /* Custom loading spinner animation */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Improve scroll experience for mobile */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .table-responsive::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .table-responsive::-webkit-scrolling-track {
+    background: #f1f1f1;
+  }
+
+  .table-responsive::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+</style>
+
+<!-- Alpine.js and Chart.js -->
+<script
+  src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+  defer
+></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -82,23 +149,37 @@ endblock %} {% block content %}
     const cacheKey = `weather_${plantId}`;
     const cacheExpiration = 15 * 60 * 1000; // Cache expiration time in milliseconds (e.g., 15 minutes)
 
-    const WeatherApp = {
-      delimiters: ["${", "}"], // Use different delimiters to avoid conflict with Jinja2
-      data() {
-        return {
-          weatherData: [],
-          sortOrder: "asc",
-          currentSortColumn: 0,
-          isLoading: false,
-          chartMetric: "temperature",
-          chartPeriod: "day",
-          weatherChart: null,
-        };
-      },
-      mounted() {
-        this.checkCacheAndFetchData();
-      },
-      methods: {
+    // Define the Alpine.js component
+    window.weatherApp = function () {
+      return {
+        weatherData: [],
+        sortOrder: "asc",
+        currentSortColumn: 0,
+        isLoading: false,
+        chartMetric: "temperature",
+        chartPeriod: "day",
+        weatherChart: null,
+
+        // Lifecycle methods
+        init() {
+          this.checkCacheAndFetchData();
+
+          // Add table row hover effect for better touch feedback
+          const tableBody = document.querySelector("#weather-table tbody");
+          if (tableBody) {
+            const observer = new MutationObserver(() => {
+              document
+                .querySelectorAll("#weather-table tbody tr")
+                .forEach((row) => {
+                  row.classList.add("hover:bg-gray-50", "transition-colors");
+                });
+            });
+
+            observer.observe(tableBody, { childList: true });
+          }
+        },
+
+        // Data methods
         checkCacheAndFetchData() {
           const cachedData = localStorage.getItem(cacheKey);
 
@@ -148,6 +229,7 @@ endblock %} {% block content %}
             });
         },
 
+        // Chart methods
         initializeChart() {
           if (!this.weatherData.length) return;
 
@@ -227,7 +309,6 @@ endblock %} {% block content %}
           let values = [];
 
           // Implement the data processing logic based on chartMetric and chartPeriod
-          // This is a simplified example
           data.forEach((item) => {
             let value = null;
 
@@ -253,6 +334,7 @@ endblock %} {% block content %}
           return { labels, values };
         },
 
+        // Utility methods
         extractNumericValue(str) {
           if (!str) return null;
           const matches = str.toString().match(/[-+]?\d*\.?\d+/);
@@ -332,6 +414,7 @@ endblock %} {% block content %}
           return "Stormy";
         },
 
+        // Table sorting methods
         sortTable(columnIndex) {
           if (this.currentSortColumn === columnIndex) {
             // Toggle sort order if clicking on the same column
@@ -385,6 +468,7 @@ endblock %} {% block content %}
           return this.sortOrder === "asc" ? "▲" : "▼";
         },
 
+        // Export functionality
         exportToExcel() {
           if (!this.weatherData.length) {
             alert("No data to export!");
@@ -435,10 +519,8 @@ endblock %} {% block content %}
             alert("Failed to export data. See console for details.");
           }
         },
-      },
+      };
     };
-
-    const app = Vue.createApp(WeatherApp).mount("#weather-app");
   });
 </script>
 {% endblock %}

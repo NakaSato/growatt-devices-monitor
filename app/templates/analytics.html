@@ -1,0 +1,592 @@
+{% extends "base.html" %} {% block title %}Analytics - Growatt API{% endblock %}
+{% block content %}
+<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6 max-w-7xl">
+  <div class="bg-gradient-mint rounded-xl shadow-md p-4 sm:p-6">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"
+    >
+      <h1
+        class="text-xl sm:text-2xl md:text-3xl font-bold text-deep-forest font-headings"
+      >
+        Energy Analytics
+      </h1>
+      <div class="flex flex-wrap gap-2">
+        <button
+          id="refresh-btn"
+          class="btn-primary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded transition-all duration-300"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>Refresh</span>
+        </button>
+        <button
+          id="export-btn"
+          class="btn-secondary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded transition-all duration-300"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          <span>Export</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="loading" class="flex justify-center py-8 hidden">
+      <div
+        class="spinner border-4 border-t-4 border-light-gray border-t-eco-green rounded-full w-10 h-10 animate-spin"
+      ></div>
+    </div>
+
+    <div
+      id="error-message"
+      class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20 hidden"
+    >
+      <div class="flex items-center">
+        <svg
+          class="h-5 w-5 mr-2 flex-shrink-0 text-danger"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+        <span id="error-text" class="text-sm sm:text-base"></span>
+      </div>
+      <button
+        id="dismiss-error"
+        class="text-sm text-danger hover:text-danger mt-2 ml-7 focus:outline-none focus:underline"
+      >
+        Dismiss
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <!-- Energy summary cards -->
+      <div
+        class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+      >
+        <h3 class="text-lg font-semibold text-deep-forest mb-2">
+          Total Energy Generated
+        </h3>
+        <div class="flex items-end gap-2">
+          <span id="total-energy" class="text-3xl font-bold text-eco-green"
+            >0</span
+          >
+          <span class="text-slate-gray text-sm mb-1">kWh</span>
+        </div>
+        <div class="text-xs text-slate-gray mt-2">Lifetime generation</div>
+      </div>
+
+      <div
+        class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+      >
+        <h3 class="text-lg font-semibold text-deep-forest mb-2">
+          Today's Energy
+        </h3>
+        <div class="flex items-end gap-2">
+          <span id="today-energy" class="text-3xl font-bold text-eco-green"
+            >0</span
+          >
+          <span class="text-slate-gray text-sm mb-1">kWh</span>
+        </div>
+        <div class="text-xs text-slate-gray mt-2">Generated since midnight</div>
+      </div>
+
+      <div
+        class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+      >
+        <h3 class="text-lg font-semibold text-deep-forest mb-2">
+          Current Power
+        </h3>
+        <div class="flex items-end gap-2">
+          <span id="current-power" class="text-3xl font-bold text-eco-green"
+            >0</span
+          >
+          <span class="text-slate-gray text-sm mb-1">kW</span>
+        </div>
+        <div class="text-xs text-slate-gray mt-2">Real-time generation</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Chart containers -->
+      <div
+        class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-deep-forest">Daily Energy</h3>
+          <select
+            id="daily-timeframe"
+            class="form-control text-sm rounded-md border-light-gray focus:border-fresh-mint"
+          >
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </div>
+        <div id="daily-chart" class="h-64 w-full"></div>
+      </div>
+
+      <div
+        class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-deep-forest">Monthly Energy</h3>
+          <select
+            id="monthly-timeframe"
+            class="form-control text-sm rounded-md border-light-gray focus:border-fresh-mint"
+          >
+            <option value="6">Last 6 months</option>
+            <option value="12">Last 12 months</option>
+          </select>
+        </div>
+        <div id="monthly-chart" class="h-64 w-full"></div>
+      </div>
+    </div>
+
+    <div
+      class="bg-snow-white p-4 rounded-lg shadow-sm border border-light-gray"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-deep-forest">
+          Hourly Power Output
+        </h3>
+        <input
+          type="date"
+          id="date-selector"
+          class="form-control text-sm rounded-md border-light-gray focus:border-fresh-mint"
+        />
+      </div>
+      <div id="hourly-chart" class="h-72 w-full"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Animation for the loading spinner */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Chart tooltip styling */
+  .chart-tooltip {
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  /* Responsive chart containers */
+  @media (max-width: 768px) {
+    #daily-chart,
+    #monthly-chart,
+    #hourly-chart {
+      height: 250px;
+    }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Initialize date selector with today's date
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("date-selector").value = today;
+
+    // Initialize charts and data
+    const plantId = "{{ plant_id }}";
+
+    // Setup event listeners
+    document
+      .getElementById("refresh-btn")
+      .addEventListener("click", fetchAllData);
+    document.getElementById("export-btn").addEventListener("click", exportData);
+    document
+      .getElementById("dismiss-error")
+      .addEventListener("click", dismissError);
+    document
+      .getElementById("daily-timeframe")
+      .addEventListener("change", () => fetchDailyData());
+    document
+      .getElementById("monthly-timeframe")
+      .addEventListener("change", () => fetchMonthlyData());
+    document
+      .getElementById("date-selector")
+      .addEventListener("change", () => fetchHourlyData());
+
+    // Chart instances
+    let dailyChart, monthlyChart, hourlyChart;
+
+    // Fetch all data on initial load
+    fetchAllData();
+
+    function fetchAllData() {
+      showLoading(true);
+
+      // Fetch summary data
+      fetchSummaryData();
+
+      // Fetch chart data
+      fetchDailyData();
+      fetchMonthlyData();
+      fetchHourlyData();
+    }
+
+    function fetchSummaryData() {
+      fetch(`/api/analytics/summary${plantId ? "?plant_id=" + plantId : ""}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          document.getElementById("total-energy").textContent = formatNumber(
+            data.total_energy || 0
+          );
+          document.getElementById("today-energy").textContent = formatNumber(
+            data.today_energy || 0
+          );
+          document.getElementById("current-power").textContent = formatNumber(
+            data.current_power || 0
+          );
+        })
+        .catch((error) => {
+          showError(`Failed to load summary data: ${error.message}`);
+          console.error("Error fetching summary data:", error);
+        })
+        .finally(() => showLoading(false));
+    }
+
+    function fetchDailyData() {
+      const days = document.getElementById("daily-timeframe").value;
+
+      fetch(
+        `/api/analytics/daily?days=${days}${
+          plantId ? "&plant_id=" + plantId : ""
+        }`
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          renderDailyChart(data);
+        })
+        .catch((error) => {
+          showError(`Failed to load daily data: ${error.message}`);
+          console.error("Error fetching daily data:", error);
+        })
+        .finally(() => showLoading(false));
+    }
+
+    function fetchMonthlyData() {
+      const months = document.getElementById("monthly-timeframe").value;
+
+      fetch(
+        `/api/analytics/monthly?months=${months}${
+          plantId ? "&plant_id=" + plantId : ""
+        }`
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          renderMonthlyChart(data);
+        })
+        .catch((error) => {
+          showError(`Failed to load monthly data: ${error.message}`);
+          console.error("Error fetching monthly data:", error);
+        })
+        .finally(() => showLoading(false));
+    }
+
+    function fetchHourlyData() {
+      const date = document.getElementById("date-selector").value;
+
+      fetch(
+        `/api/analytics/hourly?date=${date}${
+          plantId ? "&plant_id=" + plantId : ""
+        }`
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          renderHourlyChart(data);
+        })
+        .catch((error) => {
+          showError(`Failed to load hourly data: ${error.message}`);
+          console.error("Error fetching hourly data:", error);
+        })
+        .finally(() => showLoading(false));
+    }
+
+    function renderDailyChart(data) {
+      const ctx = document.getElementById("daily-chart").getContext("2d");
+
+      // Destroy existing chart if it exists
+      if (dailyChart) {
+        dailyChart.destroy();
+      }
+
+      dailyChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: data.map((item) => item.date),
+          datasets: [
+            {
+              label: "Daily Energy (kWh)",
+              data: data.map((item) => item.energy),
+              backgroundColor: "rgba(76, 175, 80, 0.7)",
+              borderColor: "rgba(76, 175, 80, 1)",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Energy (kWh)",
+              },
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Date",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function renderMonthlyChart(data) {
+      const ctx = document.getElementById("monthly-chart").getContext("2d");
+
+      // Destroy existing chart if it exists
+      if (monthlyChart) {
+        monthlyChart.destroy();
+      }
+
+      monthlyChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: data.map((item) => item.month),
+          datasets: [
+            {
+              label: "Monthly Energy (kWh)",
+              data: data.map((item) => item.energy),
+              backgroundColor: "rgba(33, 150, 243, 0.7)",
+              borderColor: "rgba(33, 150, 243, 1)",
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Energy (kWh)",
+              },
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Month",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function renderHourlyChart(data) {
+      const ctx = document.getElementById("hourly-chart").getContext("2d");
+
+      // Destroy existing chart if it exists
+      if (hourlyChart) {
+        hourlyChart.destroy();
+      }
+
+      hourlyChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: data.map((item) => item.hour),
+          datasets: [
+            {
+              label: "Power Output (kW)",
+              data: data.map((item) => item.power),
+              backgroundColor: "rgba(255, 193, 7, 0.2)",
+              borderColor: "rgba(255, 193, 7, 1)",
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Power (kW)",
+              },
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Hour of Day",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function exportData() {
+      // Show visual feedback when exporting
+      const exportBtn = document.getElementById("export-btn");
+      const originalText = exportBtn.innerHTML;
+      exportBtn.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg><span>Exporting...</span>';
+      exportBtn.disabled = true;
+
+      // Get the date for the export filename
+      const date = document.getElementById("date-selector").value;
+
+      // Fetch data for export
+      fetch(
+        `/api/analytics/export?date=${date}${
+          plantId ? "&plant_id=" + plantId : ""
+        }`
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Convert data to CSV
+          let csvContent = "data:text/csv;charset=utf-8,";
+
+          // Add headers
+          csvContent += "Date,Hour,Power (kW),Energy (kWh)\n";
+
+          // Add data rows
+          data.forEach((row) => {
+            csvContent += `${row.date},${row.hour},${row.power},${row.energy}\n`;
+          });
+
+          // Create download link
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", `energy_data_${date}.csv`);
+          document.body.appendChild(link);
+
+          // Trigger download
+          link.click();
+          document.body.removeChild(link);
+        })
+        .catch((error) => {
+          showError(`Failed to export data: ${error.message}`);
+          console.error("Error exporting data:", error);
+        })
+        .finally(() => {
+          exportBtn.innerHTML = originalText;
+          exportBtn.disabled = false;
+        });
+    }
+
+    function showLoading(isLoading) {
+      const loadingElement = document.getElementById("loading");
+      if (isLoading) {
+        loadingElement.classList.remove("hidden");
+      } else {
+        loadingElement.classList.add("hidden");
+      }
+
+      // Add loading animation to refresh button
+      const refreshBtn = document.getElementById("refresh-btn");
+      const refreshIcon = refreshBtn.querySelector("svg");
+      if (isLoading) {
+        refreshIcon.classList.add("animate-spin");
+        refreshBtn.disabled = true;
+      } else {
+        refreshIcon.classList.remove("animate-spin");
+        refreshBtn.disabled = false;
+      }
+    }
+
+    function showError(message) {
+      const errorElement = document.getElementById("error-message");
+      document.getElementById("error-text").textContent = message;
+      errorElement.classList.remove("hidden");
+    }
+
+    function dismissError() {
+      document.getElementById("error-message").classList.add("hidden");
+    }
+
+    function formatNumber(value) {
+      return parseFloat(value).toFixed(2);
+    }
+  });
+</script>
+{% endblock %}
