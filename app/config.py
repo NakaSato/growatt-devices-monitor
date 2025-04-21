@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import timedelta
+from typing import Dict, Any
 
 class Config:
     """Application configuration settings"""
@@ -24,9 +24,12 @@ class Config:
     GROWATT_BASE_URL = os.getenv('GROWATT_BASE_URL', 'https://server.growatt.com')
     
     # Cache configuration
-    CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple')
+    CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')  # Use SimpleCache instead of deprecated 'simple'
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))
     CACHE_THRESHOLD = int(os.getenv('CACHE_THRESHOLD', '1000'))
+    
+    # CORS configuration
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*')
     
     # Logging settings
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
@@ -36,7 +39,20 @@ class Config:
     API_RETRY_COUNT = int(os.getenv('API_RETRY_COUNT', '3'))
     API_RETRY_DELAY = int(os.getenv('API_RETRY_DELAY', '2'))
     
+    # Live reload for development
+    LIVE_RELOAD_ENABLED = os.getenv('LIVE_RELOAD_ENABLED', 'True').lower() in ('true', '1', 't')
+    
     @classmethod
-    def get_db_uri(cls):
+    def get_db_uri(cls) -> str:
         """Get the database URI based on configuration"""
         return f"sqlite:///{cls.DATABASE_PATH}"
+    
+    @classmethod
+    def get_cache_config(cls) -> Dict[str, Any]:
+        """Get cache configuration dictionary for Flask-Caching"""
+        return {
+            'DEBUG': cls.DEBUG,
+            'CACHE_TYPE': cls.CACHE_TYPE,
+            'CACHE_DEFAULT_TIMEOUT': cls.CACHE_DEFAULT_TIMEOUT,
+            'CACHE_THRESHOLD': cls.CACHE_THRESHOLD,
+        }

@@ -9,7 +9,7 @@ from app.core.growatt import Growatt
 
 from app.routes.api_helpers import get_plants, initialize
 from app.views.templates import (
-    render_devices, render_index, render_error_404, render_plants, render_weather
+    render_analytics, render_devices, render_index, render_error_404, render_maps, render_plants, render_weather
 )
 # Import the prediction routes
 from app.routes.prediction_routes import prediction_routes
@@ -177,6 +177,34 @@ def weather_page() -> Union[str, Tuple[str, int]]:
     """
     try:
         return render_weather()
+    except Exception as e:
+        logging.error(f"Error in weather_page: {str(e)}")
+        return render_error_404()
+    
+@api_blueprint.route('/maps', methods=['GET'])
+def maps_page() -> Union[str, Tuple[str, int]]:
+    """
+    Render the weather page for a specific plant.
+    
+    Returns:
+        Union[str, Tuple[str, int]]: Rendered HTML template or error response
+    """
+    try:
+        return render_maps()
+    except Exception as e:
+        logging.error(f"Error in weather_page: {str(e)}")
+        return render_error_404()
+    
+@api_blueprint.route('/analytics', methods=['GET'])
+def analytics_page() -> Union[str, Tuple[str, int]]:
+    """
+    Render the weather page for a specific plant.
+    
+    Returns:
+        Union[str, Tuple[str, int]]: Rendered HTML template or error response
+    """
+    try:
+        return render_analytics()
     except Exception as e:
         logging.error(f"Error in weather_page: {str(e)}")
         return render_error_404()

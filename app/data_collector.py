@@ -1,7 +1,7 @@
 import logging
 import os
 import json
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, Tuple
 from datetime import datetime, timedelta, date
 import time
 
@@ -124,7 +124,7 @@ class GrowattDataCollector:
         logger.error(f"Authentication failed after {self.retry_count} attempts")
         return False
     
-    def _safe_api_call(self, func, *args, **kwargs):
+    def _safe_api_call(self, func, *args, **kwargs) -> Any:
         """
         Safely call API functions with retry logic
         
@@ -134,10 +134,7 @@ class GrowattDataCollector:
             **kwargs: Keyword arguments to pass to the function
             
         Returns:
-            The result of the function call
-            
-        Raises:
-            Exception: If all retry attempts fail
+            The result of the function call or None if all retry attempts fail
         """
         func_name = getattr(func, '__name__', str(func))
         logger.debug(f"Calling API function: {func_name} with args: {args} and kwargs: {kwargs}")
@@ -676,68 +673,3 @@ class GrowattDataCollector:
                             )
         
         return results
-    
-    def collect_and_store_all_data(self):
-        """Collect and store all data from Growatt API"""
-        results = {
-            'success': True,
-            'plants': [],
-            'devices': {},
-            'energy_stats': {}
-        }
-        
-        try:
-            # Login and collect plants
-            self.api.login(self.username, self.password)
-            plants = self.api.get_plants()
-            results['plants'] = plants
-            
-            # Process each plant
-            for plant in plants:
-                plant_id = plant['id']
-                
-                # Get devices for this plant
-                devices = self.api.get_devices_by_plant_list(plant_id)
-                results['devices'][plant_id] = devices
-                
-                # Process devices
-                if devices.get('result') == 1 and 'obj' in devices and 'mix' in devices['obj']:
-                    for mix_device in devices['obj']['mix']:
-                        mix_sn = mix_device[0]
-                        
-                        # Get energy stats (daily, monthly, yearly)
-                        today = date.today().strftime("%Y-%m-%d")
-                        current_month = date.today().strftime("%Y-%m")
-                        current_year = date.today().strftime("%Y")
-                        
-                        # Daily stats
-                        daily_stats = self.api.get_energy_stats_daily(today, plant_id, mix_sn)
-                        
-                        # Monthly stats
-                        monthly_stats = self.api.get_energy_stats_monthly(current_month, plant_id, mix_sn)
-                        
-                        # Yearly stats
-                        yearly_stats = self.api.get_energy_stats_yearly(current_year, plant_id, mix_sn)
-                        
-                        # Save to file if requested
-                        if self.save_to_file:
-                            self._save_to_json(
-                                daily_stats,
-                                f"energy_daily_{plant_id}_{mix_sn}_{today}.json"
-                            )
-                            self._save_to_json(
-                                monthly_stats,
-                                f"energy_monthly_{plant_id}_{mix_sn}_{current_month}.json"
-                            )
-                            self._save_to_json(
-                                yearly_stats,
-                                f"energy_yearly_{plant_id}_{mix_sn}_{current_year}.json"
-                            )
-            
-            return results
-            
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }

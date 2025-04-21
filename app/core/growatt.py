@@ -40,30 +40,44 @@ class Growatt:
         self.username = username
         self.password = password
 
-        res = self.session.post(
-            f"{self.BASE_URL}/login",
-            data={
-                "account": username,
-                "password": "",
-                "validateCode": "",
-                "isReadPact": 1,
-                "passwordCrc": self._hash_password(self.password)
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
-        )
-        res.raise_for_status()
-
         try:
-            json_res = res.json()
-            if json_res.get("result") == 1:  # Assuming result=1 indicates success
-                self.is_logged_in = True
-                return True
-            else:
+            res = self.session.post(
+                f"{self.BASE_URL}/login",
+                data={
+                    "account": username,
+                    "password": "",
+                    "validateCode": "",
+                    "isReadPact": 1,
+                    "passwordCrc": self._hash_password(self.password)
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+                timeout=30  # Add a timeout to prevent hanging requests
+            )
+            
+            # Raise for HTTP errors to be caught below
+            res.raise_for_status()
+
+            try:
+                json_res = res.json()
+                # Log the response for debugging
+                print(f"Login response: {json_res}")
+                
+                if json_res.get("result") == 1:  # Assuming result=1 indicates success
+                    self.is_logged_in = True
+                    return True
+                else:
+                    self.is_logged_in = False
+                    error_msg = json_res.get("msg", "Unknown error")
+                    print(f"Login failed with error: {error_msg}")
+                    return False
+            except re.exceptions.JSONDecodeError as e:
                 self.is_logged_in = False
-                return False
-        except re.exceptions.JSONDecodeError:
+                print(f"JSON decode error during login: {str(e)}, Response: {res.text[:200]}")
+                raise ValueError(f"Invalid response received during login: {res.text[:200]}")
+        except re.exceptions.RequestException as e:
             self.is_logged_in = False
-            raise ValueError("Invalid response received during login.")
+            print(f"Request error during login: {str(e)}")
+            raise ValueError(f"Request failed during login: {str(e)}")
 
     def logout(self):
         """

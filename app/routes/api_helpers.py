@@ -71,34 +71,47 @@ def get_access_api() -> Dict[str, Any]:
         password = current_app.config.get("GROWATT_PASSWORD")
         
         if not username or not password:
+            current_app.logger.error("Missing API credentials: Username or password not configured")
             return {"success": False, "message": "Missing API credentials", "authenticated": False}
-            
-        # Perform login
-        login_result = growatt_api.login(username, password)
         
-        if login_result:
-            # Update last login time
-            last_login_time = time.time()
-            # Store authentication state in session
-            session['growatt_authenticated'] = True
-            session['growatt_login_time'] = time.time()
-            current_app.logger.info("Successfully logged in to Growatt API")
-            return {"success": True, "message": "Successfully logged in", "authenticated": True}
-        else:
-            # Clear session on failed login
-            if 'growatt_authenticated' in session:
-                session.pop('growatt_authenticated')
-            if 'growatt_login_time' in session:
-                session.pop('growatt_login_time')
-            current_app.logger.warning("Login failed with invalid credentials")
-            return {
-                "success": False, 
-                "message": "Authentication failed: Invalid credentials",
-                "authenticated": False
-            }
+        current_app.logger.info(f"Attempting to login with username: {username}")
+            
+        # Perform login with detailed error handling
+        try:
+            login_result = growatt_api.login(username, password)
+            
+            # Check login result
+            if login_result:
+                # Update last login time
+                last_login_time = time.time()
+                # Store authentication state in session
+                session['growatt_authenticated'] = True
+                session['growatt_login_time'] = time.time()
+                current_app.logger.info("Successfully logged in to Growatt API")
+                return {"success": True, "message": "Successfully logged in", "authenticated": True}
+            else:
+                # Clear session on failed login
+                if 'growatt_authenticated' in session:
+                    session.pop('growatt_authenticated')
+                if 'growatt_login_time' in session:
+                    session.pop('growatt_login_time')
+                current_app.logger.warning("Login failed with invalid credentials")
+                return {
+                    "success": False, 
+                    "message": "Authentication failed: Invalid username or password",
+                    "authenticated": False
+                }
+        except ValueError as ve:
+            # Handle specific ValueError exceptions from growatt_api.login
+            current_app.logger.error(f"API login ValueError: {str(ve)}")
+            return {"success": False, "message": f"API Error: {str(ve)}", "authenticated": False}
+        except Exception as le:
+            # Handle other login exceptions
+            current_app.logger.error(f"Login error: {str(le)}")
+            return {"success": False, "message": f"Login failed: {str(le)}", "authenticated": False}
     except Exception as e:
         current_app.logger.error(f"Access error: {str(e)}")
-        return {"success": False, "message": str(e), "authenticated": False}
+        return {"success": False, "message": f"Authentication failed: {str(e)}", "authenticated": False}
 
 def get_plants() -> List[Dict[str, Any]]:
     """

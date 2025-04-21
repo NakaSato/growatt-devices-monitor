@@ -8,6 +8,8 @@ from flask import (
 )
 from werkzeug.wrappers import Response as WerkzeugResponse
 
+from app.services.plant_service import get_maps_plants
+
 from .api_helpers import (
     get_plant_fault_logs, get_plants, get_devices_for_plant, get_weather_list,
     get_access_api, get_logout
@@ -118,8 +120,32 @@ def api_weather() -> Tuple[Response, int]:
         logging.error(f"Error in api_weather: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_blueprint.route('/maps')
+def get_plants_data():
+    """API endpoint to get all plants data for the map"""
+    plants = get_maps_plants()
+    
+    # Format data for the map
+    plants_data = [{
+        'id': plant.id,
+        'name': plant.name,
+        'status': plant.status,
+        'latitude': plant.latitude,
+        'longitude': plant.longitude,
+        'capacity': plant.capacity,
+        'currentOutput': plant.current_output,
+        'todayEnergy': plant.today_energy,
+        'peakOutput': plant.peak_output,
+        'installDate': plant.install_date.strftime('%Y-%m-%d') if plant.install_date else 'N/A',
+        'location': plant.location
+    } for plant in plants]
+    
+    return jsonify({
+        'plants': plants_data
+    })
+
 # ===== Authentication Routes =====
-@api_blueprint.route('/access', methods=['GET', 'POST'])
+@api_blueprint.route('/access', methods=['GET', 'POST', 'HEAD'])
 def access_api() -> Union[Response, WerkzeugResponse]:
     """ 
     Authenticate and get access to the Growatt API.
@@ -131,15 +157,16 @@ def access_api() -> Union[Response, WerkzeugResponse]:
         result = get_access_api()
         logging.info("Access credentials retrieved successfully")
         
-        if result["success"]:
+        if result.get("success", False):
+            # Create success response
             response = make_response(jsonify({
                 "status": "success", 
                 "message": "Authentication successful"
             }))
             
-            # Set secure cookie (enable secure=True in production)
+            # Use consistent cookie name: GROWATT_API_ACCESS
             response.set_cookie(
-                'ACCESS_GROWATT', 
+                'GROWATT_API_ACCESS', 
                 json.dumps(result),
                 max_age=3600,  # 1 hour expiry
                 httponly=True,
@@ -150,7 +177,16 @@ def access_api() -> Union[Response, WerkzeugResponse]:
                 return make_response(jsonify({"status": "success"}), 302, {"Location": "/plants"})
             return response
         else:
-            return jsonify({"status": "error", "message": "Failed to authenticate"}), 401
+            # Log the detailed authentication failure
+            error_msg = result.get("message", "Failed to authenticate")
+            logging.warning(f"Authentication failed: {error_msg}")
+            
+            # Return 401 Unauthorized with error message when authentication fails
+            return jsonify({
+                "status": "error", 
+                "message": error_msg,
+                "authenticated": False
+            }), 401
             
     except Exception as e:
         logging.error(f"Access error: {str(e)}")
