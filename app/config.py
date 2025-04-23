@@ -23,8 +23,8 @@ class Config:
     GROWATT_PASSWORD = os.getenv('GROWATT_PASSWORD')
     GROWATT_BASE_URL = os.getenv('GROWATT_BASE_URL', 'https://server.growatt.com')
     
-    # Cache configuration
-    CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')  # Use SimpleCache instead of deprecated 'simple'
+    # Cache configuration - Updated to work without cachelib
+    CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))
     CACHE_THRESHOLD = int(os.getenv('CACHE_THRESHOLD', '1000'))
     
