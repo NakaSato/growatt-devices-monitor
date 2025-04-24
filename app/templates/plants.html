@@ -21,8 +21,8 @@ block content %}
         >
           <button
             @click="viewMode = 'table'"
-            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5"
-            :class="viewMode === 'table' ? 'bg-eco-green text-white' : 'text-slate-gray hover:bg-snow-white'"
+            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-eco-green/50"
+            :class="viewMode === 'table' ? 'bg-eco-green text-white font-medium shadow-sm transform scale-105' : 'text-slate-gray hover:bg-snow-white'"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -38,12 +38,12 @@ block content %}
                 d="M3 10h18M3 14h18M3 18h18M3 6h18"
               />
             </svg>
-            Table
+            <span>Table</span>
           </button>
           <button
             @click="viewMode = 'cards'"
-            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5"
-            :class="viewMode === 'cards' ? 'bg-eco-green text-white' : 'text-slate-gray hover:bg-snow-white'"
+            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-eco-green/50"
+            :class="viewMode === 'cards' ? 'bg-eco-green text-white font-medium shadow-sm transform scale-105' : 'text-slate-gray hover:bg-snow-white'"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -59,12 +59,12 @@ block content %}
                 d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
               />
             </svg>
-            Cards
+            <span>Cards</span>
           </button>
         </div>
         <button
           id="refresh-button"
-          class="btn-primary flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
           @click="fetchPlants()"
           :disabled="isLoading"
         >
@@ -83,164 +83,32 @@ block content %}
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
-          <span x-text="isLoading ? 'Loading...' : 'Refresh'"></span>
+          <span
+            x-text="isLoading ? 'Loading...' : 'Refresh'"
+            class="font-medium"
+          ></span>
         </button>
       </div>
     </div>
 
     <!-- Search and filter toolbar (visible only when we have plants) -->
-    <div
-      x-show="!isLoading && plants.length > 0"
-      class="mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-light-gray space-y-3"
-      x-transition
-    >
-      <div class="flex flex-col sm:flex-row justify-between gap-4">
-        <!-- Search input -->
-        <div class="relative flex-1">
-          <div
-            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-          >
-            <svg
-              class="h-5 w-5 text-slate-gray"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            x-model="searchQuery"
-            @input="filterPlants()"
-            placeholder="Search plants by name or ID..."
-            class="block w-full pl-10 pr-4 py-2 border border-light-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green text-sm sm:text-base"
-          />
-        </div>
-
-        <!-- Filter options -->
-        <div class="flex gap-3 items-center">
-          <label class="text-sm font-medium text-deep-forest whitespace-nowrap"
-            >Status:</label
-          >
-          <select
-            x-model="statusFilter"
-            @change="filterPlants()"
-            class="rounded-lg border border-light-gray py-2 pl-3 pr-8 text-deep-forest focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green text-sm"
-          >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-
-          <!-- Mobile view toggle - only visible on small screens -->
-          <div class="sm:hidden flex items-center ml-2">
-            <button
-              @click="viewMode = viewMode === 'table' ? 'cards' : 'table'"
-              class="p-2 rounded-lg border border-light-gray bg-white text-slate-gray"
-            >
-              <svg
-                x-show="viewMode === 'cards'"
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 10h18M3 14h18M3 18h18M3 6h18"
-                />
-              </svg>
-              <svg
-                x-show="viewMode === 'table'"
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+    <div x-show="!isLoading && plants.length > 0">
+      {% include 'components/plants/search_filter.html' %}
     </div>
 
-    <div id="loading" class="flex justify-center py-8" x-show="isLoading">
-      <div
-        class="spinner border-4 border-t-4 border-light-gray border-t-eco-green rounded-full w-10 h-10 animate-spin"
-      ></div>
+    <!-- Loading Spinner -->
+    <div id="loading" x-show="isLoading">
+      {% include 'components/plants/loading_spinner.html' %}
     </div>
 
-    <div
-      id="error-message"
-      class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20"
-      x-show="errorMessage"
-      x-transition
-    >
-      <div class="flex items-center">
-        <svg
-          class="h-5 w-5 mr-2 flex-shrink-0 text-danger"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-            clip-rule="evenodd"
-          ></path>
-        </svg>
-        <span class="text-sm sm:text-base" x-text="errorMessage"></span>
-      </div>
-      <button
-        @click="errorMessage = ''"
-        class="text-sm text-danger hover:text-danger mt-2 ml-7 focus:outline-none focus:underline"
-      >
-        Dismiss
-      </button>
+    <!-- Error Message -->
+    <div id="error-message" x-show="errorMessage">
+      {% include 'components/plants/error_message.html' %}
     </div>
 
-    <div
-      x-show="!isLoading && plants.length === 0"
-      class="p-6 text-center bg-snow-white rounded-lg shadow-sm border border-light-gray"
-      x-transition
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-12 w-12 mx-auto text-slate-gray mb-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="1.5"
-          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-        />
-      </svg>
-      <h3 class="text-lg font-medium text-deep-forest mb-2 font-headings">
-        No Plants Found
-      </h3>
-      <p class="text-slate-gray max-w-sm mx-auto">
-        You don't have any solar plants registered. Please contact your
-        administrator if you believe this is an error.
-      </p>
+    <!-- Empty State -->
+    <div x-show="!isLoading && plants.length === 0">
+      {% include 'components/plants/empty_state.html' %}
     </div>
 
     <!-- Card view (optimized for mobile) -->
@@ -250,420 +118,26 @@ block content %}
       x-transition
     >
       <template x-for="plant in paginatedPlants" :key="plant.id">
-        <div
-          :class="'card rounded-lg shadow-md overflow-hidden border border-light-gray transition-all duration-300 bg-white hover:shadow-lg ' + (plant.status === 'active' ? 'plant-active' : '')"
-        >
-          <div
-            class="p-4 border-b border-light-gray bg-snow-white flex justify-between items-center"
-          >
-            <h3
-              class="font-medium text-deep-forest truncate"
-              x-text="plant.plantName"
-            ></h3>
-            <span
-              class="px-2 py-0.5 text-xs leading-5 font-semibold rounded-full"
-              :class="getStatusClass(plant.status || 'active')"
-              x-text="getStatusText(plant.status || 'active')"
-            ></span>
-          </div>
-          <div class="p-4 space-y-3">
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-slate-gray">Plant ID:</span>
-              <span
-                class="text-sm font-mono text-deep-forest"
-                x-text="plant.id"
-              ></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-slate-gray">Total Power:</span>
-              <span
-                class="text-sm font-semibold text-eco-green"
-                x-text="formatPower(plant.totalPower)"
-              ></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-slate-gray">Energy Today:</span>
-              <span
-                class="text-sm font-semibold text-eco-green"
-                x-text="formatEnergy(plant.todayEnergy)"
-              ></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-slate-gray">Timezone:</span>
-              <span
-                class="text-sm text-deep-forest"
-                x-text="formatTimezone(plant.timezone)"
-              ></span>
-            </div>
-          </div>
-          <div class="p-4 bg-snow-white border-t border-light-gray text-right">
-            <a
-              :href="'/plant/' + plant.id"
-              class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-eco-green hover:bg-deep-forest transition-colors"
-            >
-              View Details
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="ml-1 h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </a>
-          </div>
-        </div>
+        {% include 'components/plants/plant_card.html' %}
       </template>
     </div>
 
     <!-- Table view -->
     <div
       x-show="!isLoading && plants.length > 0 && viewMode === 'table'"
-      class="overflow-x-auto bg-white rounded-lg shadow-md"
       x-transition
     >
-      <table class="min-w-full divide-y divide-light-gray">
-        <thead class="bg-snow-white">
-          <tr>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
-              @click="sortBy('id')"
-            >
-              <div class="flex items-center">
-                <span class="whitespace-nowrap">Plant ID</span>
-                <svg
-                  x-show="sortField === 'id'"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="ml-1 h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  :class="{'rotate-180': !sortAsc}"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </div>
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
-              @click="sortBy('plantName')"
-            >
-              <div class="flex items-center">
-                <span class="whitespace-nowrap">Plant Name</span>
-                <svg
-                  x-show="sortField === 'plantName'"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="ml-1 h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  :class="{'rotate-180': !sortAsc}"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </div>
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider hidden md:table-cell"
-            >
-              <div class="flex items-center">Timezone</div>
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
-              @click="sortBy('totalPower')"
-            >
-              <div class="flex items-center">
-                <span class="whitespace-nowrap">Power</span>
-                <svg
-                  x-show="sortField === 'totalPower'"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="ml-1 h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  :class="{'rotate-180': !sortAsc}"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </div>
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer hidden sm:table-cell"
-              @click="sortBy('todayEnergy')"
-            >
-              <div class="flex items-center">
-                <span class="whitespace-nowrap">Energy Today</span>
-                <svg
-                  x-show="sortField === 'todayEnergy'"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="ml-1 h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  :class="{'rotate-180': !sortAsc}"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </div>
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider"
-            >
-              Status
-            </th>
-            <th
-              scope="col"
-              class="px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-gray uppercase tracking-wider"
-            >
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-light-gray">
-          <template x-for="(plant, index) in paginatedPlants" :key="plant.id">
-            <tr class="hover:bg-snow-white">
-              <td
-                class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-mono text-slate-gray"
-              >
-                <span x-text="plant.id"></span>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                <div
-                  class="text-xs sm:text-sm font-medium text-deep-forest"
-                  x-text="plant.plantName"
-                ></div>
-              </td>
-              <td
-                class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-gray hidden md:table-cell"
-              >
-                <span x-text="formatTimezone(plant.timezone)"></span>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                <span
-                  class="text-xs sm:text-sm font-semibold text-eco-green"
-                  x-text="formatPower(plant.totalPower)"
-                ></span>
-              </td>
-              <td
-                class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell"
-              >
-                <span
-                  class="text-xs sm:text-sm font-semibold text-eco-green"
-                  x-text="formatEnergy(plant.todayEnergy)"
-                ></span>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                <span
-                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                  :class="getStatusClass(plant.status || 'active')"
-                  x-text="getStatusText(plant.status || 'active')"
-                ></span>
-              </td>
-              <td
-                class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium"
-              >
-                <a
-                  :href="'/plant/' + plant.id"
-                  class="text-eco-green hover:text-deep-forest transition-colors px-2 py-1"
-                >
-                  View
-                </a>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+      {% include 'components/plants/plant_table.html' %}
 
-      <!-- Pagination controls -->
-      <div
-        class="px-3 sm:px-6 py-3 border-t border-light-gray flex items-center justify-between bg-snow-white"
-      >
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button
-            @click="prevPage()"
-            :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium rounded-md text-slate-gray bg-white hover:bg-light-gray"
-            :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-          >
-            Previous
-          </button>
-          <span class="mx-2 self-center text-xs text-slate-gray">
-            Page <span x-text="currentPage"></span> of
-            <span x-text="totalPages"></span>
-          </span>
-          <button
-            @click="nextPage()"
-            :disabled="currentPage >= totalPages"
-            class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium rounded-md text-slate-gray bg-white hover:bg-light-gray"
-            :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
-          >
-            Next
-          </button>
-        </div>
-        <div
-          class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"
-        >
-          <div>
-            <p class="text-sm text-slate-gray">
-              Showing
-              <span
-                class="font-medium"
-                x-text="(currentPage - 1) * pageSize + 1"
-              ></span>
-              to
-              <span
-                class="font-medium"
-                x-text="Math.min(currentPage * pageSize, filteredPlants.length)"
-              ></span>
-              of
-              <span class="font-medium" x-text="filteredPlants.length"></span>
-              results
-            </p>
-          </div>
-          <div>
-            <nav
-              class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-              aria-label="Pagination"
-            >
-              <button
-                @click="prevPage()"
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-light-gray"
-                :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-              >
-                <span class="sr-only">Previous</span>
-                <svg
-                  class="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-              <template x-for="page in pageNumbers">
-                <button
-                  @click="goToPage(page)"
-                  :class="{'bg-eco-green text-white': page === currentPage, 'bg-white text-slate-gray hover:bg-light-gray': page !== currentPage}"
-                  class="relative inline-flex items-center px-4 py-2 border border-light-gray text-sm font-medium"
-                  x-text="page"
-                ></button>
-              </template>
-              <button
-                @click="nextPage()"
-                :disabled="currentPage >= totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-light-gray bg-white text-sm font-medium text-slate-gray hover:bg-light-gray"
-                :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
-              >
-                <span class="sr-only">Next</span>
-                <svg
-                  class="h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-            </nav>
-          </div>
-        </div>
-      </div>
+      <!-- Table Pagination -->
+      {% include 'components/common/pagination.html' %}
     </div>
 
     <!-- Card view pagination (appears at the bottom of card view) -->
     <div
       x-show="!isLoading && plants.length > 0 && viewMode === 'cards' && totalPages > 1"
-      class="mt-6 bg-white rounded-lg shadow-md flex justify-center p-4 border border-light-gray"
     >
-      <div class="flex items-center space-x-2">
-        <button
-          @click="prevPage()"
-          :disabled="currentPage === 1"
-          class="p-2 rounded-md border border-light-gray bg-white hover:bg-light-gray"
-          :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-        >
-          <svg
-            class="h-5 w-5 text-slate-gray"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </button>
-
-        <div class="text-sm text-deep-forest">
-          Page <span class="font-medium" x-text="currentPage"></span> of
-          <span class="font-medium" x-text="totalPages"></span>
-        </div>
-
-        <button
-          @click="nextPage()"
-          :disabled="currentPage >= totalPages"
-          class="p-2 rounded-md border border-light-gray bg-white hover:bg-light-gray"
-          :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
-        >
-          <svg
-            class="h-5 w-5 text-slate-gray"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </button>
-      </div>
+      {% include 'components/plants/card_pagination.html' %}
     </div>
   </div>
 </div>

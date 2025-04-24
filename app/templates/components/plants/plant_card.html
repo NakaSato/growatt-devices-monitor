@@ -1,0 +1,66 @@
+<div
+  :class="'card rounded-lg shadow-md overflow-hidden border border-light-gray transition-all duration-300 bg-white hover:shadow-lg ' + (plant.status === 'active' ? 'plant-active' : '')"
+>
+  <div
+    class="p-4 border-b border-light-gray bg-snow-white flex justify-between items-center"
+  >
+    <h3
+      class="font-medium text-deep-forest truncate"
+      x-text="plant.plantName"
+    ></h3>
+    <span
+      class="px-2 py-0.5 text-xs leading-5 font-semibold rounded-full"
+      :class="getStatusClass(plant.status || 'active')"
+      x-text="getStatusText(plant.status || 'active')"
+    ></span>
+  </div>
+  <div class="p-4 space-y-3">
+    <div class="flex justify-between items-center">
+      <span class="text-sm text-slate-gray">Plant ID:</span>
+      <span class="text-sm font-mono text-deep-forest" x-text="plant.id"></span>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-sm text-slate-gray">Total Power:</span>
+      <span
+        class="text-sm font-semibold text-eco-green"
+        x-text="formatPower(plant.totalPower)"
+      ></span>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-sm text-slate-gray">Energy Today:</span>
+      <span
+        class="text-sm font-semibold text-eco-green"
+        x-text="formatEnergy(plant.todayEnergy)"
+      ></span>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-sm text-slate-gray">Timezone:</span>
+      <span
+        class="text-sm text-deep-forest"
+        x-text="formatTimezone(plant.timezone)"
+      ></span>
+    </div>
+  </div>
+  <div class="p-4 bg-snow-white border-t border-light-gray text-right">
+    <a
+      :href="'/plant/' + plant.id"
+      class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-eco-green hover:bg-deep-forest transition-colors"
+    >
+      View Details
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="ml-1 h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+    </a>
+  </div>
+</div>

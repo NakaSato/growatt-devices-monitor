@@ -1,0 +1,50 @@
+<div
+  class="mt-6 bg-white rounded-lg shadow-md flex justify-center p-4 border border-light-gray"
+>
+  <div class="flex items-center space-x-2">
+    <button
+      @click="prevPage()"
+      :disabled="currentPage === 1"
+      class="p-2 rounded-md border border-light-gray bg-white hover:bg-light-gray"
+      :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
+    >
+      <svg
+        class="h-5 w-5 text-slate-gray"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+
+    <div class="text-sm text-deep-forest">
+      Page <span class="font-medium" x-text="currentPage"></span> of
+      <span class="font-medium" x-text="totalPages"></span>
+    </div>
+
+    <button
+      @click="nextPage()"
+      :disabled="currentPage >= totalPages"
+      class="p-2 rounded-md border border-light-gray bg-white hover:bg-light-gray"
+      :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
+    >
+      <svg
+        class="h-5 w-5 text-slate-gray"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+  </div>
+</div>

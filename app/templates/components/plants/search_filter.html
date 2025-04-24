@@ -1,0 +1,90 @@
+<div
+  class="mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-light-gray space-y-3"
+  x-transition
+>
+  <div class="flex flex-col sm:flex-row justify-between gap-4">
+    <!-- Search input -->
+    <div class="relative flex-1">
+      <div
+        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+      >
+        <svg
+          class="h-5 w-5 text-slate-gray"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+      </div>
+      <input
+        type="text"
+        x-model="searchQuery"
+        @input="filterPlants()"
+        placeholder="Search plants by name or ID..."
+        class="block w-full pl-10 pr-4 py-2 border border-light-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green text-sm sm:text-base"
+      />
+    </div>
+
+    <!-- Filter options -->
+    <div class="flex gap-3 items-center">
+      <label class="text-sm font-medium text-deep-forest whitespace-nowrap"
+        >Status:</label
+      >
+      <select
+        x-model="statusFilter"
+        @change="filterPlants()"
+        class="rounded-lg border border-light-gray py-2 pl-3 pr-8 text-deep-forest focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green text-sm"
+      >
+        <option value="all">All</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+
+      <!-- Mobile view toggle - only visible on small screens -->
+      <div class="sm:hidden flex items-center ml-2">
+        <button
+          @click="viewMode = viewMode === 'table' ? 'cards' : 'table'"
+          class="p-2 rounded-lg border border-light-gray bg-white text-slate-gray"
+        >
+          <svg
+            x-show="viewMode === 'cards'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h18M3 14h18M3 18h18M3 6h18"
+            />
+          </svg>
+          <svg
+            x-show="viewMode === 'table'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -30,11 +30,24 @@
       rel="stylesheet"
     />
 
-    <!-- Alpine.js -->
+    <!-- Alpine.js Plugins -->
+    <script
+      defer
+      src="https://unpkg.com/@alpinejs/intersect@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script
+      defer
+      src="https://unpkg.com/@alpinejs/persist@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <!-- Alpine.js Core -->
     <script
       defer
       src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
+
+    <!-- Component Loader -->
+    <script src="{{ url_for('static', filename='js/component-loader.js') }}"></script>
 
     <!-- Font Awesome -->
     <link
@@ -122,8 +135,46 @@
     {% block styles %}{% endblock %}
 
     <!-- Custom JavaScript block -->
-    {% block head_scripts %}{% endblock %} {% if
-    config.get('LIVE_RELOAD_ENABLED', False) %}
+    {% block head_scripts %}{% endblock %}
+
+    <!-- Component Registration -->
+    <script>
+      document.addEventListener("alpine:init", () => {
+        // Register global components
+        Alpine.data("componentRegistry", () => ({
+          components: {},
+
+          registerComponent(name, callback) {
+            this.components[name] = callback;
+            return this;
+          },
+
+          getComponent(name) {
+            return this.components[name] || (() => ({}));
+          },
+        }));
+
+        // Add useful directives
+        Alpine.directive("lazy-load", (el, { expression }, { evaluate }) => {
+          const src = evaluate(expression);
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                if (el.tagName === "IMG") {
+                  el.src = src;
+                } else {
+                  el.style.backgroundImage = `url(${src})`;
+                }
+                observer.disconnect();
+              }
+            });
+          });
+          observer.observe(el);
+        });
+      });
+    </script>
+
+    {% if config.get('LIVE_RELOAD_ENABLED', False) %}
     <!-- Live Reload Script for Development -->
     <script>
       (function () {
@@ -194,6 +245,15 @@
         const apiAccessLink = document.getElementById("api-access-link");
         if (apiAccessLink) {
           apiAccessLink.addEventListener("click", requestApiAccess);
+        }
+
+        // Initialize component loader
+        if (window.ComponentLoader) {
+          window.componentLoader = new ComponentLoader({
+            templatePath: "/templates/components/",
+            cacheDuration: 3600, // 1 hour cache
+            onError: (err) => console.error("Component loading error:", err),
+          });
         }
       });
 

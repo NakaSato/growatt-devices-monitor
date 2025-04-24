@@ -11,33 +11,27 @@ Monitor{% endblock %} {% block styles %}
 />
 {% endblock %} {% block content %}
 <div class="container mx-auto px-4 py-6">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-      Solar Plants Map
-    </h1>
-  </div>
-
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
     <!-- Map Container -->
     <div
-      class="lg:col-span-3 shadow-md p-2 md:p-4 h-[500px] sm:h-[600px] md:h-[650px] bg-white dark:bg-gray-800 rounded-lg relative"
+      class="lg:col-span-3 shadow-md p-2 md:p-4 h-[500px] sm:h-[600px] md:h-[650px] bg-white rounded-lg relative"
     >
       {% include 'components/maps/thailand_solar_map.html' %}
 
       <!-- Region Stats Panel (Initially hidden) -->
       <div
         id="region-stats"
-        class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 absolute top-5 right-5 w-72 z-10 panel-animation"
+        class="hidden bg-white rounded-lg shadow-md p-4 absolute top-5 right-5 w-72 z-10 panel-animation"
       ></div>
     </div>
 
     <!-- Plant Details Sidebar -->
     <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-700"
+      class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100"
       x-data="{ selectedPlant: null, selectedRegion: null }"
     >
       <!-- Tabs for Plants and Regions -->
-      <div class="flex border-b border-gray-200 dark:border-gray-700">
+      <div class="flex border-b border-gray-200">
         <button
           class="px-4 py-3 text-sm font-medium flex-1 text-center"
           :class="{'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400': !selectedRegion, 'text-gray-500 dark:text-gray-400': selectedRegion}"
@@ -76,12 +70,10 @@ Monitor{% endblock %} {% block styles %}
             class="text-xl font-bold text-gray-800 dark:text-white"
           ></div>
           <div
-            class="inline-block px-3 py-1 rounded-full text-sm mt-2 font-medium"
             :class="{
-              'bg-green-100 text-green-800 dark:bg-green-900 dark:bg-opacity-50 dark:text-green-300': selectedPlant?.status === 'active',
-              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:bg-opacity-50 dark:text-yellow-300': selectedPlant?.status === 'warning',
-              'bg-red-100 text-red-800 dark:bg-red-900 dark:bg-opacity-50 dark:text-red-300': selectedPlant?.status === 'error',
-              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': selectedPlant?.status === 'offline'
+              'bg-yellow-100 text-yellow-800': selectedPlant?.status === 'warning',
+              'bg-red-100 text-red-800': selectedPlant?.status === 'error',
+              'bg-gray-100 text-gray-800': selectedPlant?.status === 'offline'
             }"
           >
             <span
@@ -93,19 +85,15 @@ Monitor{% endblock %} {% block styles %}
         <div class="space-y-4">
           <!-- Current Output -->
           <div
-            class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-600"
+            class="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-100"
           >
-            <div class="text-gray-500 dark:text-gray-400 text-sm font-medium">
-              Current Output
-            </div>
+            <div class="text-gray-500 text-sm font-medium">Current Output</div>
             <div class="flex items-end">
               <span
                 x-text="selectedPlant?.currentOutput"
-                class="text-2xl font-bold text-gray-800 dark:text-white"
+                class="text-2xl font-bold text-gray-800"
               ></span>
-              <span class="text-gray-600 dark:text-gray-400 ml-1 mb-0.5"
-                >kW</span
-              >
+              <span class="text-gray-600 ml-1 mb-0.5">kW</span>
             </div>
           </div>
 

@@ -1,0 +1,65 @@
+<div class="table-responsive overflow-x-auto bg-white rounded-lg shadow">
+  <table id="weather-table" class="w-full" :data-sort-order="sortOrder">
+    <thead class="bg-gray-100">
+      <tr>
+        <th
+          @click="sortTable(0)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Plant Name <span class="sort-icon" x-text="getSortIcon(0)"></span>
+        </th>
+        <th
+          @click="sortTable(1)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Location <span class="sort-icon" x-text="getSortIcon(1)"></span>
+        </th>
+        <th
+          @click="sortTable(2)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Temperature <span class="sort-icon" x-text="getSortIcon(2)"></span>
+        </th>
+        <th
+          @click="sortTable(3)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Weather <span class="sort-icon" x-text="getSortIcon(3)"></span>
+        </th>
+        <th
+          @click="sortTable(4)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Humidity <span class="sort-icon" x-text="getSortIcon(4)"></span>
+        </th>
+        <th
+          @click="sortTable(5)"
+          class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+        >
+          Last Update <span class="sort-icon" x-text="getSortIcon(5)"></span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <template x-for="(item, index) in weatherData" :key="index">
+        <tr :class="{ 'offline-row': item.status === 'Offline' }">
+          <td x-text="item.plant_name"></td>
+          <td x-text="item.location"></td>
+          <td x-text="item.temperature"></td>
+          <td x-text="item.weather"></td>
+          <td x-text="item.humidity"></td>
+          <td x-text="item.last_update_time"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+
+  <div class="p-3 flex justify-end border-t border-gray-200">
+    <button
+      @click="exportToExcel()"
+      class="px-3 py-1.5 bg-primary-500 text-white rounded text-sm hover:bg-primary-600 transition-colors"
+    >
+      Export Data
+    </button>
+  </div>
+</div>

@@ -5,7 +5,17 @@
       <div
         class="relative w-full max-w-[200px] sm:max-w-[220px] md:max-w-[250px] mx-auto aspect-square"
       >
-        <canvas id="dailyEnergyDonut" class="w-full h-full"></canvas>
+        <!-- Added id to the container for better targeting -->
+        <div id="chartContainer" class="w-full h-full">
+          <canvas id="dailyEnergyDonut" width="250" height="250"></canvas>
+        </div>
+        <!-- Added a fallback message that will show if chart fails to load -->
+        <div
+          id="chartFallback"
+          class="hidden absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-50 bg-opacity-90 rounded-full"
+        >
+          <span class="text-gray-500 text-sm">Chart unavailable</span>
+        </div>
         <div
           class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
         >
@@ -34,93 +44,119 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const ctx = document.getElementById("dailyEnergyDonut").getContext("2d");
+    // Check if Chart.js is available
+    if (typeof Chart === "undefined") {
+      console.error("Chart.js is not loaded. Please include Chart.js library.");
+      document.getElementById("chartFallback").classList.remove("hidden");
+      return;
+    }
+
+    const canvas = document.getElementById("dailyEnergyDonut");
+    if (!canvas) {
+      console.error("Canvas element not found");
+      document.getElementById("chartFallback").classList.remove("hidden");
+      return;
+    }
+
+    // Make sure we have a valid canvas context
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      console.error("Could not get canvas context");
+      document.getElementById("chartFallback").classList.remove("hidden");
+      return;
+    }
+
     let dailyEnergyChart = null;
 
-    // Set chart responsiveness
-    function resizeChart() {
-      const container = document.querySelector(".aspect-square");
-      if (container) {
-        // Ensure chart canvas fills its container
-        const dailyEnergyDonut = document.getElementById("dailyEnergyDonut");
-        dailyEnergyDonut.style.width = "100%";
-        dailyEnergyDonut.style.height = "100%";
+    // Improved chart initialization with error handling
+    try {
+      // Set chart responsiveness
+      function resizeChart() {
+        const container = document.querySelector(".aspect-square");
+        if (container) {
+          // Ensure chart canvas fills its container
+          canvas.style.width = "100%";
+          canvas.style.height = "100%";
+        }
       }
-    }
 
-    // Call on load and on window resize
-    resizeChart();
-    window.addEventListener("resize", resizeChart);
+      // Call on load and on window resize
+      resizeChart();
+      window.addEventListener("resize", resizeChart);
 
-    // Data for the chart
-    const selfUsed = 14.3;
-    const gridExport = 22.2;
+      // Data for the chart
+      const selfUsed = 14.3;
+      const gridExport = 22.2;
 
-    // Check if Chart already exists and destroy it to prevent duplicates
-    if (window.Chart && Chart.getChart("dailyEnergyDonut")) {
-      Chart.getChart("dailyEnergyDonut").destroy();
-    }
+      // Check if Chart already exists and destroy it to prevent duplicates
+      if (Chart.getChart("dailyEnergyDonut")) {
+        Chart.getChart("dailyEnergyDonut").destroy();
+      }
 
-    // Create chart with proper configuration
-    dailyEnergyChart = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: ["Self-used", "Grid Export"],
-        datasets: [
-          {
-            data: [selfUsed, gridExport],
-            backgroundColor: [
-              "rgba(52, 211, 153, 0.8)", // green for self-used
-              "rgba(59, 130, 246, 0.8)", // blue for grid export
-            ],
-            borderColor: ["rgba(52, 211, 153, 1)", "rgba(59, 130, 246, 1)"],
-            borderWidth: 1,
-            hoverOffset: 4,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: "70%",
-        plugins: {
-          legend: {
-            display: false,
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const label = context.label || "";
-                const value = context.raw || 0;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = Math.round((value / total) * 100);
-                return `${label}: ${value} kWh (${percentage}%)`;
+      // Create chart with proper configuration
+      dailyEnergyChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Self-used", "Grid Export"],
+          datasets: [
+            {
+              data: [selfUsed, gridExport],
+              backgroundColor: [
+                "rgba(52, 211, 153, 0.8)", // green for self-used
+                "rgba(59, 130, 246, 0.8)", // blue for grid export
+              ],
+              borderColor: ["rgba(52, 211, 153, 1)", "rgba(59, 130, 246, 1)"],
+              borderWidth: 1,
+              hoverOffset: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "70%",
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const label = context.label || "";
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} kWh (${percentage}%)`;
+                },
               },
             },
           },
+          animation: {
+            animateScale: true,
+            animateRotate: true,
+            duration: 1000,
+          },
+          responsiveAnimationDuration: 500,
         },
-        animation: {
-          animateScale: true,
-          animateRotate: true,
-          duration: 1000,
-        },
-        responsiveAnimationDuration: 500,
-      },
-    });
-
-    // Use ResizeObserver to handle chart resize properly
-    if (window.ResizeObserver) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        if (dailyEnergyChart) {
-          dailyEnergyChart.resize();
-        }
       });
 
-      // Observe the chart container
-      const chartContainer = document.querySelector(".aspect-square");
-      if (chartContainer) {
-        resizeObserver.observe(chartContainer);
+      // Use ResizeObserver to handle chart resize properly if available
+      if (window.ResizeObserver) {
+        const resizeObserver = new ResizeObserver((entries) => {
+          if (dailyEnergyChart) {
+            dailyEnergyChart.resize();
+          }
+        });
+
+        // Observe the chart container
+        const chartContainer = document.querySelector(".aspect-square");
+        if (chartContainer) {
+          resizeObserver.observe(chartContainer);
+        }
       }
+    } catch (error) {
+      console.error("Error initializing chart:", error);
+      document.getElementById("chartFallback").classList.remove("hidden");
     }
   });
 </script>

@@ -1,90 +1,10 @@
 {% extends "base.html" %} {% block title %}Weather Status - Growatt API{%
 endblock %} {% block content %}
 <div id="weather-app" x-data="weatherApp()" x-cloak>
-  <h1>Weather Status for Plant: {{ plant_name }}</h1>
+  <h1>Weather Status {{ plant_name }}</h1>
 
-  <div class="weather-chart-container mb-4 bg-white p-4 rounded-lg shadow">
-    <div class="chart-controls flex justify-between items-center mb-3">
-      <h3 class="text-gray-700 font-medium text-lg">Weather Conditions</h3>
-      <select
-        x-model="chartPeriod"
-        @change="updateChart()"
-        class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-      >
-        <option value="day">Today</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-      </select>
-    </div>
-    <div class="relative" style="min-height: 250px">
-      <canvas id="weatherChart" x-ref="weatherChart" class="w-full"></canvas>
-      <div
-        x-show="isLoading"
-        class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75"
-      >
-        <div
-          class="spinner border-4 border-t-4 border-gray-200 border-t-primary-500 rounded-full w-10 h-10 animate-spin"
-        ></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="table-responsive overflow-x-auto bg-white rounded-lg shadow">
-    <table id="weather-table" class="w-full" :data-sort-order="sortOrder">
-      <thead class="bg-gray-100">
-        <tr>
-          <th
-            @click="sortTable(0)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Plant Name <span class="sort-icon" x-text="getSortIcon(0)"></span>
-          </th>
-          <th
-            @click="sortTable(1)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Location <span class="sort-icon" x-text="getSortIcon(1)"></span>
-          </th>
-          <th
-            @click="sortTable(2)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Temperature <span class="sort-icon" x-text="getSortIcon(2)"></span>
-          </th>
-          <th
-            @click="sortTable(3)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Weather <span class="sort-icon" x-text="getSortIcon(3)"></span>
-          </th>
-          <th
-            @click="sortTable(4)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Humidity <span class="sort-icon" x-text="getSortIcon(4)"></span>
-          </th>
-          <th
-            @click="sortTable(5)"
-            class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-          >
-            Last Update <span class="sort-icon" x-text="getSortIcon(5)"></span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="(item, index) in weatherData" :key="index">
-          <tr :class="{ 'offline-row': item.status === 'Offline' }">
-            <td x-text="item.plant_name"></td>
-            <td x-text="item.location"></td>
-            <td x-text="item.temperature"></td>
-            <td x-text="item.weather"></td>
-            <td x-text="item.humidity"></td>
-            <td x-text="item.last_update_time"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-  </div>
+  {% include "components/weather/weather_chart.html" %} {% include
+  "components/weather/weather_table.html" %}
 </div>
 
 <style>
@@ -143,11 +63,12 @@ endblock %} {% block content %}
 ></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- Import weather data service -->
+<script src="{{ url_for('static', filename='js/services/weather-data-service.js') }}"></script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const plantId = "{{ plant_id }}"; // Pass the plant ID from the server-side
-    const cacheKey = `weather_${plantId}`;
-    const cacheExpiration = 15 * 60 * 1000; // Cache expiration time in milliseconds (e.g., 15 minutes)
 
     // Define the Alpine.js component
     window.weatherApp = function () {
@@ -162,6 +83,8 @@ endblock %} {% block content %}
 
         // Lifecycle methods
         init() {
+          // Initialize with weather data service
+          window.WeatherDataService.init(plantId);
           this.checkCacheAndFetchData();
 
           // Add table row hover effect for better touch feedback
@@ -181,18 +104,12 @@ endblock %} {% block content %}
 
         // Data methods
         checkCacheAndFetchData() {
-          const cachedData = localStorage.getItem(cacheKey);
+          const cachedData = window.WeatherDataService.getCachedData();
 
           if (cachedData) {
-            const parsedCache = JSON.parse(cachedData);
-            const isCacheValid =
-              Date.now() - parsedCache.timestamp < cacheExpiration;
-
-            if (isCacheValid) {
-              this.weatherData = parsedCache.data;
-              this.initializeChart();
-              return;
-            }
+            this.weatherData = cachedData;
+            this.initializeChart();
+            return;
           }
 
           this.fetchWeatherData(); // Cache expired or no cache, fetch new data
@@ -201,23 +118,9 @@ endblock %} {% block content %}
         fetchWeatherData() {
           this.isLoading = true;
 
-          fetch(`/api/weather?plantId=${plantId}`)
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-              }
-              return response.json();
-            })
+          window.WeatherDataService.fetchWeatherData()
             .then((data) => {
-              this.weatherData = Array.isArray(data) ? data : [];
-
-              // Cache the data with timestamp
-              const cacheData = {
-                timestamp: Date.now(),
-                data: this.weatherData,
-              };
-              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
+              this.weatherData = data;
               this.initializeChart();
             })
             .catch((error) => {

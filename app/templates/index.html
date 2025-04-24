@@ -11,11 +11,13 @@ block content %}
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       // No need for Alpine.js loading code since it's in base.html
-      initAllCharts();
+      console.log("DOM fully loaded, initializing charts...");
+      setTimeout(initAllCharts, 100); // Small delay to ensure DOM is ready
     });
 
-    // Missing function that's causing the error
+    // Function to generate power distribution data
     function generatePowerDistributionData() {
+      console.log("Generating power distribution data");
       // Generate simulated power distribution data
       return {
         labels: ["Self-consumption", "Grid Export", "Battery Charging"],
@@ -40,77 +42,56 @@ block content %}
 
     // Function to initialize the power distribution chart
     function initPowerDistributionChart() {
+      console.log("Initializing power distribution chart");
       try {
         let chartElement = document.getElementById("powerDistributionChart");
 
-        // If chart element doesn't exist, try to find the container and create the canvas
         if (!chartElement) {
-          console.log(
-            "Power distribution chart element not found, checking for parent container..."
-          );
-
-          // Look for a container where we might add the chart
-          const container = document.querySelector(
-            ".dashboard-charts-container"
-          );
-          if (container) {
-            console.log("Creating power distribution chart canvas element");
-            chartElement = document.createElement("canvas");
-            chartElement.id = "powerDistributionChart";
-            chartElement.style.height = "300px";
-            chartElement.style.width = "100%";
-            container.appendChild(chartElement);
-          } else {
-            console.warn("No container found to add power distribution chart");
-            return null;
-          }
+          console.error("Power distribution chart element not found in DOM");
+          return null;
         }
 
-        if (!chartElement.getContext) {
-          console.warn(
-            "Element #powerDistributionChart exists but is not a canvas"
+        console.log("Power distribution chart element found, creating chart");
+
+        // Check if Chart.js is available
+        if (typeof Chart === "undefined") {
+          console.error(
+            "Chart.js library not found. Please include Chart.js before initializing charts."
           );
           return null;
         }
 
+        // Create chart instance
         const chartData = generatePowerDistributionData();
-        let chartInstance = null;
+
+        // Check if the chart already exists and destroy it
+        if (Chart.getChart(chartElement)) {
+          Chart.getChart(chartElement).destroy();
+        }
 
         // Create the chart using Chart.js
-        if (typeof Chart !== "undefined") {
-          chartInstance = new Chart(chartElement, {
-            type: "doughnut",
-            data: chartData,
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: "bottom",
-                },
-                tooltip: {
-                  callbacks: {
-                    label: function (context) {
-                      return context.label + ": " + context.raw + "%";
-                    },
+        const chartInstance = new Chart(chartElement, {
+          type: "doughnut",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return context.label + ": " + context.raw + "%";
                   },
                 },
               },
             },
-          });
-          console.log("Power distribution chart created with Chart.js");
-        } else if (window.EnergyCharts) {
-          chartInstance = window.EnergyCharts.createDoughnutChart(
-            "powerDistributionChart",
-            chartData
-          );
-          console.log("Power distribution chart created with EnergyCharts");
-        } else {
-          console.warn(
-            "No chart library available to create power distribution chart"
-          );
-        }
+          },
+        });
 
+        console.log("Power distribution chart created successfully");
         return chartInstance;
       } catch (error) {
         console.error("Error initializing power distribution chart:", error);
@@ -120,11 +101,14 @@ block content %}
 
     // Function to initialize all charts
     function initAllCharts() {
+      console.log("Initializing all charts");
       try {
         // Initialize power distribution chart
         const powerDistChart = initPowerDistributionChart();
         if (!powerDistChart) {
           console.warn("Failed to initialize power distribution chart");
+        } else {
+          console.log("Power distribution chart initialized successfully");
         }
 
         // Other chart initializations can be added here
