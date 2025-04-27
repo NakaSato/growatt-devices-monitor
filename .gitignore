@@ -5,7 +5,7 @@ node_modules/
 app/static/css/style.css
 
 # Environment variables
-.env
+# .env
 .env.*
 
 # Python virtual environment
