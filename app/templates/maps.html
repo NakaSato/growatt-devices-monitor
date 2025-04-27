@@ -272,32 +272,36 @@ Monitor{% endblock %} {% block styles %}
               ></div>
             </div>
           </div>
-          <div
-            class="flex justify-between mt-2 text-xs text-gray-600 dark:text-gray-400"
-          >
-            <div>
-              <span
-                class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"
-              ></span
-              ><span x-text="selectedRegion?.activeCount || 0"></span> Active
-            </div>
-            <div>
-              <span
-                class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"
-              ></span
-              ><span x-text="selectedRegion?.warningCount || 0"></span> Warning
-            </div>
-            <div>
-              <span
-                class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"
-              ></span
-              ><span x-text="selectedRegion?.errorCount || 0"></span> Error
-            </div>
-            <div>
-              <span
-                class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-1"
-              ></span
-              ><span x-text="selectedRegion?.offlineCount || 0"></span> Offline
+          <div class="mb-4">
+            <div
+              class="flex justify-between mt-2 text-xs text-gray-600 dark:text-gray-400"
+            >
+              <div>
+                <span
+                  class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"
+                ></span
+                ><span x-text="selectedRegion?.activeCount || 0"></span> Active
+              </div>
+              <div>
+                <span
+                  class="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"
+                ></span
+                ><span x-text="selectedRegion?.warningCount || 0"></span>
+                Warning
+              </div>
+              <div>
+                <span
+                  class="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"
+                ></span
+                ><span x-text="selectedRegion?.errorCount || 0"></span> Error
+              </div>
+              <div>
+                <span
+                  class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-1"
+                ></span
+                ><span x-text="selectedRegion?.offlineCount || 0"></span>
+                Offline
+              </div>
             </div>
           </div>
         </div>
@@ -328,14 +332,6 @@ Monitor{% endblock %} {% block styles %}
                   class="h-full bg-blue-500 rounded-full"
                   :style="`width: ${selectedRegion?.totalCapacity ? (selectedRegion.currentOutput / selectedRegion.totalCapacity * 100) : 0}%`"
                 ></div>
-              </div>
-              <div
-                class="flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400"
-              >
-                <span>0 kW</span>
-                <span
-                  x-text="`${(selectedRegion?.totalCapacity || 0).toFixed(1)} kW`"
-                ></span>
               </div>
             </div>
           </div>

@@ -1,14 +1,14 @@
 <header class="relative overflow-hidden shadow-sm">
   <div class="absolute inset-0 bg-pattern opacity-5 z-0"></div>
   <div
-    class="py-1.5 border-b border-gray-700 relative z-10 bg-gradient-to-r from-slate-900 to-slate-800"
+    class="py-1 border-b border-gray-700 relative z-10 bg-gradient-to-r from-slate-900 to-slate-800"
   >
-    <div class="container mx-auto px-2 sm:px-4">
+    <div class="container mx-auto px-1 sm:px-2">
       <div class="flex justify-between items-center text-xs">
-        <div class="flex items-center space-x-2 sm:space-x-4">
+        <div class="flex items-center space-x-1 sm:space-x-2">
           <div class="flex items-center">
             <span
-              class="pulse-dot pulse-success mr-2"
+              class="pulse-dot pulse-success mr-1"
               aria-hidden="true"
             ></span>
             <span class="text-white font-medium tracking-wide"
@@ -16,18 +16,18 @@
             >
           </div>
           <div class="hidden sm:flex items-center">
-            <i class="fas fa-clock text-white mr-1.5"></i>
+            <i class="fas fa-clock text-white mr-1"></i>
             <span id="current-time" class="text-white"></span>
           </div>
         </div>
-        <div class="flex items-center space-x-3 sm:space-x-4">
+        <div class="flex items-center space-x-2 sm:space-x-3">
           <div class="hidden sm:flex items-center">
-            <i class="fas fa-sun text-white mr-1.5"></i>
+            <i class="fas fa-sun text-white mr-1"></i>
             <span class="text-gray-300 text-xs">Gen: </span>
             <span class="text-white font-medium ml-1">9.7 kWh</span>
           </div>
           <div class="flex items-center">
-            <i class="fas fa-bolt text-white mr-1.5"></i>
+            <i class="fas fa-bolt text-white mr-1"></i>
             <span class="text-gray-300 text-xs">Status: </span>
             <span class="text-green-300 font-bold font-medium ml-1"
               >Active</span
@@ -38,7 +38,7 @@
     </div>
   </div>
   <nav
-    class="px-2 sm:p-4 relative z-10 bg-gradient-to-b from-green-500 via-green-550 to-green-600 shadow-md border-b border-green-700"
+    class="px-1 sm:p-2 relative z-10 bg-gradient-to-b from-green-500 via-green-550 to-green-600 shadow-md border-b border-green-700"
     aria-label="Main navigation"
   >
     <div class="container mx-auto">
@@ -56,7 +56,7 @@
           <!-- Mobile menu button -->
           <button
             id="mobile-menu-button"
-            class="text-charcoal focus:outline-none focus:ring-2 focus:ring-eco-green p-1.5 sm:p-2 rounded-md hover:bg-eco-green-10 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            class="focus:outline-none focus:ring-2 focus:ring-eco-green p-1.5 sm:p-2 rounded-md transition-all duration-200 active:scale-95 hover:shadow-sm"
             aria-expanded="false"
             aria-controls="mobile-menu"
             aria-label="Toggle menu"
@@ -80,105 +80,105 @@
       </div>
 
       <!-- Desktop menu -->
-      <div class="hidden md:flex items-center justify-between py-3 lg:py-4">
+      <div class="hidden md:flex items-center justify-between py-1.5 lg:py-2">
         <!-- Logo and main links -->
         <div class="flex items-center">
           <a
             href="/"
-            class="flex items-center mr-4 md:mr-6 lg:mr-8 brand-logo transition-transform duration-300 hover:scale-105"
+            class="flex items-center mr-3 md:mr-4 lg:mr-5 brand-logo transition-transform duration-300 hover:scale-105"
             aria-label="Home"
           >
             <div class="flex flex-col items-center">
               <img
                 src="{{ url_for('static', filename='svg/logo.svg') }}"
                 alt="Growatt Logo"
-                class="h-8 md:h-9 w-auto"
+                class="h-6 md:h-7 w-auto"
                 onerror="this.src='{{ url_for('static', filename='favicon.ico') }}'; this.onerror=null;"
               />
             </div>
           </a>
           <nav aria-label="Primary Navigation">
             <ul
-              class="flex flex-wrap items-center space-x-1.5 md:space-x-2.5 lg:space-x-4"
+              class="flex flex-wrap items-center space-x-1 md:space-x-1.5 lg:space-x-2"
             >
-              <li class="my-1">
+              <li class="my-0.5">
                 <a
                   href="/"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/' }}"
                   aria-current="{{ 'page' if request.path == '/' else 'false' }}"
                 >
                   <i
-                    class="fas fa-tachometer-alt mr-2 text-eco-green"
+                    class="fas fa-tachometer-alt mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Dashboard
                 </a>
               </li>
-              <li class="my-1">
+              <li class="my-0.5">
                 <a
                   href="/plants"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/plants' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/plants' }}"
                   aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
                 >
                   <i
-                    class="fas fa-solar-panel mr-2 text-eco-green"
+                    class="fas fa-solar-panel mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Plants
                 </a>
               </li>
-              <li class="my-1">
+              <li class="my-0.5">
                 <a
                   href="/maps"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/maps' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/maps' }}"
                   aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
                 >
                   <i
-                    class="fas fa-map-marker-alt mr-2 text-eco-green"
+                    class="fas fa-map-marker-alt mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Maps
                 </a>
               </li>
-              <li class="my-1">
+              <li class="my-0.5">
                 <a
                   href="/devices"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/devices' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/devices' }}"
                   aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
                 >
                   <i
-                    class="fas fa-microchip mr-2 text-eco-green"
+                    class="fas fa-microchip mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Devices
                 </a>
               </li>
-              <li class="my-1">
+              <li class="my-0.5">
                 <a
                   href="/weather"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/weather' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/weather' }}"
                   aria-current="{{ 'page' if request.path == '/weather' else 'false' }}"
                 >
                   <i
-                    class="fas fa-cloud-sun mr-2 text-eco-green"
+                    class="fas fa-cloud-sun mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Weather
                 </a>
               </li>
-              <li class="my-1 relative">
+              <li class="my-0.5 relative">
                 <a
                   href="/analytics"
-                  class="nav-link text-charcoal text-xs md:text-sm lg:text-base font-medium hover:text-eco-green px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 rounded-md hover:bg-eco-green-10 transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/analytics' }}"
+                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/analytics' }}"
                   aria-current="{{ 'page' if request.path == '/analytics' else 'false' }}"
                 >
                   <i
-                    class="fas fa-chart-line mr-2 text-eco-green"
+                    class="fas fa-chart-line mr-1.5 text-eco-green"
                     aria-hidden="true"
                   ></i>
                   Analytics
                   <span
-                    class="absolute -top-1.5 -right-1.5 bg-eco-green text-white text-xs px-1.5 py-0.5 rounded-full shadow-sm animate-pulse"
+                    class="absolute -top-1 -right-1 bg-eco-green text-white text-xs px-1 py-0.5 rounded-full shadow-sm animate-pulse"
                     >New</span
                   >
                 </a>
@@ -193,7 +193,7 @@
           <a
             href="/api/access"
             id="api-access-link"
-            class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+            class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 hover:bg-red-50 border border-transparent hover:border-red-200"
             data-method="get"
           >
             <i class="fas fa-key text-green-100"></i>
@@ -223,7 +223,7 @@
           <li>
             <a
               href="/"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200 {{ 'active-nav-link bg-eco-green-5 border-l-4 border-eco-green' if request.path == '/' }}"
+              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/' }}"
               aria-current="{{ 'page' if request.path == '/' else 'false' }}"
             >
               <i
@@ -235,7 +235,7 @@
           <li>
             <a
               href="/plants"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200 {{ 'active-nav-link bg-eco-green-5 border-l-4 border-eco-green' if request.path == '/plants' }}"
+              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/plants' }}"
               aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
             >
               <i
@@ -247,7 +247,7 @@
           <li>
             <a
               href="/devices"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200 {{ 'active-nav-link bg-eco-green-5 border-l-4 border-eco-green' if request.path == '/devices' }}"
+              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/devices' }}"
               aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
             >
               <i
@@ -259,7 +259,7 @@
           <li>
             <a
               href="/weather"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200 {{ 'active-nav-link bg-eco-green-5 border-l-4 border-eco-green' if request.path == '/weather' }}"
+              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/weather' }}"
               aria-current="{{ 'page' if request.path == '/weather' else 'false' }}"
             >
               <i
@@ -271,7 +271,7 @@
           <li>
             <a
               href="/maps"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200 {{ 'active-nav-link bg-eco-green-5 border-l-4 border-eco-green' if request.path == '/maps' }}"
+              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/maps' }}"
               aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
               aria-label="Maps page"
             >
@@ -288,7 +288,7 @@
             <a
               href="/api/access"
               id="mobile-api-access-link"
-              class="nav-link text-charcoal font-medium hover:text-eco-green py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-eco-green-10 flex items-center transition-all duration-200"
+              class="nav-link font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200"
               aria-label="Get API access"
               data-method="get"
             >
@@ -311,7 +311,7 @@
             <button
               type="button"
               id="mobile-logout-button"
-              class="w-full text-left text-charcoal font-medium hover:text-danger py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-danger hover:bg-opacity-10 flex items-center transition-all duration-200"
+              class="w-full text-left font-medium hover:text-danger py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-danger hover:bg-opacity-10 flex items-center transition-all duration-200"
               aria-label="Sign out of account"
             >
               <i
@@ -635,10 +635,6 @@
   }
 
   /* Add a subtle glow effect to active menu items */
-  .active-nav-link {
-    position: relative;
-  }
-
   .active-nav-link::before {
     content: "";
     position: absolute;
@@ -654,5 +650,78 @@
     border-radius: 0.375rem;
     opacity: 0.7;
     z-index: -1;
+  }
+
+  /* Improved hover effects */
+  /* Enhanced hover effect for desktop nav links */
+  .nav-link:hover {
+    color: #10b981; /* Eco green color */
+    transform: translateY(-2px);
+    text-shadow: 0 0 1px rgba(16, 185, 129, 0.2);
+  }
+
+  /* Improved hover effect for buttons */
+  button:hover,
+  a[href]:not(.nav-link):hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Enhanced mobile menu item hover */
+  .mobile-nav-links a:hover,
+  .mobile-nav-links button:hover {
+    background-color: rgba(16, 185, 129, 0.08);
+    padding-left: 20px;
+    border-left: 3px solid #10b981;
+  }
+
+  /* Special hover effect for the logout button */
+  #logout-button:hover,
+  #mobile-logout-button:hover {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  /* Logo hover animation */
+  .brand-logo:hover img {
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.6));
+    animation: pulse-logo 1.5s ease infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Enhanced hover for Get Access button */
+  #api-access-link:hover,
+  #mobile-api-access-link:hover {
+    background-image: linear-gradient(to right, #10b981, #059669);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  }
+
+  /* Subtle hover effect for status bar items */
+  .status-bar-item:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+  }
+
+  /* Mobile menu button hover effect */
+  #mobile-menu-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: rotate(5deg);
+  }
+
+  /* Add a subtle transition to all interactive elements */
+  a,
+  button,
+  .interactive {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 </style>
