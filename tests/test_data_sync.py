@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import after path setup
-import data_sync
+import script.data_sync as data_sync
 from app.data_collector import GrowattDataCollector
 
 
