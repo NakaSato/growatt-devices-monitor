@@ -1,0 +1,21 @@
+name: growatt-devices-monitor
+services:
+  - type: web
+    name: growatt-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --workers=2 --threads=2 --bind=0.0.0.0:$PORT
+    ports:
+      - port: $PORT
+        protocol: http
+    envs:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: PIP_VERSION
+        value: "24.0"
+      - key: GROWATT_USERNAME
+        value: "enwufttest"
+        secret: true
+      - key: GROWATT_PASSWORD
+        value: "enwuft1234"
+        secret: true
