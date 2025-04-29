@@ -14,13 +14,52 @@ block content %}
       >
         Plants
       </h1>
-      <div class="flex items-center gap-3">
-        <!-- View toggle buttons -->
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <!-- View toggle buttons - Now visible on all screen sizes -->
         <div
-          class="hidden sm:flex items-center bg-white rounded-lg p-1 shadow-sm border border-light-gray"
+          class="flex items-center bg-white rounded-lg p-1 shadow-sm border border-light-gray order-2 sm:order-1"
         >
           <button
-            @click="viewMode = 'table'"
+            @click="viewMode = 'cards'; localStorage.setItem('preferredViewMode', 'cards')"
+            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-eco-green/50"
+            :class="viewMode === 'cards' ? 'bg-eco-green text-white font-medium shadow-sm transform scale-105' : 'text-slate-gray hover:bg-snow-white'"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              />
+            </svg>
+            <span class="hidden xs:inline">Cards</span>
+          </button>
+          <button
+            @click="viewMode = 'table'; localStorage.setItem('preferredViewMode', 'table')"
             class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-eco-green/50"
             :class="viewMode === 'table' ? 'bg-eco-green text-white font-medium shadow-sm transform scale-105' : 'text-slate-gray hover:bg-snow-white'"
           >
@@ -38,33 +77,12 @@ block content %}
                 d="M3 10h18M3 14h18M3 18h18M3 6h18"
               />
             </svg>
-            <span>Table</span>
-          </button>
-          <button
-            @click="viewMode = 'cards'"
-            class="px-3 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-eco-green/50"
-            :class="viewMode === 'cards' ? 'bg-eco-green text-white font-medium shadow-sm transform scale-105' : 'text-slate-gray hover:bg-snow-white'"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-              />
-            </svg>
-            <span>Cards</span>
+            <span class="hidden xs:inline">Table</span>
           </button>
         </div>
         <button
           id="refresh-button"
-          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full sm:w-auto order-1 sm:order-2"
           @click="fetchPlants()"
           :disabled="isLoading"
         >
@@ -216,6 +234,13 @@ block content %}
       padding-right: 0.5rem;
     }
   }
+
+  /* Add extra small breakpoint for view toggle buttons */
+  @media (min-width: 480px) {
+    .xs\:inline {
+      display: inline;
+    }
+  }
 </style>
 
 <script>
@@ -225,7 +250,7 @@ block content %}
       filteredPlants: [],
       isLoading: true,
       errorMessage: "",
-      viewMode: window.innerWidth < 640 ? "cards" : "table", // Default to cards on mobile, table on larger screens
+      viewMode: window.innerWidth < 640 ? "cards" : "table", // Default to cards on smaller screens, table on larger ones
       searchQuery: "",
       statusFilter: "all",
       sortField: "plantName", // Default sort field
@@ -277,6 +302,11 @@ block content %}
       init() {
         // Responsive view mode toggle based on screen size
         window.addEventListener("resize", () => {
+          // Only auto-switch view mode if the user hasn't manually selected one
+          if (!localStorage.getItem("preferredViewMode")) {
+            this.viewMode = window.innerWidth < 640 ? "cards" : "table";
+          }
+
           // Update page size when screen size changes
           this.pageSize = window.innerWidth < 640 ? 6 : 10;
 
@@ -285,6 +315,12 @@ block content %}
             this.currentPage = 1;
           }
         });
+
+        // Check for saved preferences
+        const savedViewMode = localStorage.getItem("preferredViewMode");
+        if (savedViewMode) {
+          this.viewMode = savedViewMode;
+        }
 
         this.fetchPlants();
       },
