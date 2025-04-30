@@ -4,19 +4,18 @@ name: Trigger auto deployment for growatt-api
 on:
   # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
+    branches: [main]
     paths:
-    - '**'
-    - '.github/workflows/growatt-api-AutoDeployTrigger-01696b41-7b09-4838-944a-fe31bc133230.yml'
+      - "**"
+      - ".github/workflows/growatt-api-AutoDeployTrigger-01696b41-7b09-4838-944a-fe31bc133230.yml"
 
-  # Allow manual trigger 
-  workflow_dispatch:      
+  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       id-token: write #This is required for requesting the OIDC JWT Token
       contents: read #Required when GH token is used to authenticate with private repo
 
@@ -35,14 +34,10 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          registryUrl: 
+          dockerfilePath: ./Dockerfile
+          registryUrl: ${{ secrets.GROWATTAPI_REGISTRY_URL }}
           registryUsername: ${{ secrets.GROWATTAPI_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.GROWATTAPI_REGISTRY_PASSWORD }}
           containerAppName: growatt-api
           resourceGroup: Personal
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
+          imageToBuild: growatt-api:${{ github.sha }}
