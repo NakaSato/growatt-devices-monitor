@@ -19,8 +19,8 @@ class Config:
     DATABASE_PATH = os.getenv('DATABASE_PATH', 'app/data/growatt_data.db')
     
     # Growatt API credentials
-    GROWATT_USERNAME = os.getenv('GROWATT_USERNAME', 'enwufttest')
-    GROWATT_PASSWORD = os.getenv('GROWATT_PASSWORD', 'enwuft1234')
+    GROWATT_USERNAME = os.getenv('GROWATT_USERNAME', 'PWA_solar')
+    GROWATT_PASSWORD = os.getenv('GROWATT_PASSWORD', '123456')
     GROWATT_BASE_URL = os.getenv('GROWATT_BASE_URL', 'https://server.growatt.com')
     
     # Cache configuration - Updated to work without cachelib
