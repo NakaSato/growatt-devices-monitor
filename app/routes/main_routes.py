@@ -12,15 +12,12 @@ from app.views.templates import (
     render_analytics, render_devices, render_index, render_error_404, render_maps, render_plants, render_weather
 )
 # Import the prediction routes
-from app.routes.prediction_routes import prediction_routes
 # Import the data routes
 from app.routes.data_routes import data_routes
 
 # Create a Blueprint for routes
 api_blueprint = Blueprint('api', __name__)
 
-# Register the prediction routes blueprint
-api_blueprint.register_blueprint(prediction_routes)
 # Register the data routes blueprint
 api_blueprint.register_blueprint(data_routes)
 

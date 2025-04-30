@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 """
-WSGI Entry Point for Koyeb Deployment
+WSGI Entry Point for Production Deployment
+
+This module creates the Flask application instance that will be used
+by Gunicorn or other WSGI servers.
 """
+import os
+import sys
+
+# Add the project root directory to the Python path
+# This ensures the app module can be found
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
 from app import create_app
 
 # Create the Flask application instance
