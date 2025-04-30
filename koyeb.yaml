@@ -4,9 +4,9 @@ services:
     name: growatt-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app --workers=2 --threads=2 --bind=0.0.0.0:$PORT
+    startCommand: gunicorn wsgi:app --workers=2 --threads=2 --bind=0.0.0.0:8000
     ports:
-      - port: $PORT
+      - port: 8000
         protocol: http
     envs:
       - key: PYTHON_VERSION
