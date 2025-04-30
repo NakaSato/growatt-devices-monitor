@@ -7,7 +7,7 @@
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
-    "startCommand": "gunicorn main:app",
+    "startCommand": "gunicorn wsgi:app",
     "sleepApplication": false,
     "multiRegionConfig": {
       "us-west2": {
