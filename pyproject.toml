@@ -1,7 +1,31 @@
 [project]
 name = "growatt-devices-monitor"
 version = "0.1.0"
-description = "Add your description here"
+description = "A monitoring tool for Growatt solar devices that collects and displays performance data"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "blinker>=1.9.0",
+    "certifi>=2025.1.31",
+    "charset-normalizer>=3.4.1",
+    "click>=8.1.8",
+    "flask>=3.1.0",
+    "flask-caching>=2.3.1",
+    "flask-cors>=5.0.1",
+    "gunicorn>=21.2.0",
+    "idna>=3.10",
+    "itsdangerous>=2.2.0",
+    "jinja2>=3.1.6",
+    "joblib>=1.4.2",
+    "markupsafe>=3.0.2",
+    "numpy>=2.2.5",
+    "python-dateutil>=2.9.0.post0",
+    "python-dotenv>=1.1.0",
+    "pytz>=2025.2",
+    "requests>=2.32.3",
+    "six>=1.17.0",
+    "threadpoolctl>=3.6.0",
+    "tzdata>=2025.2",
+    "urllib3>=2.4.0",
+    "werkzeug>=3.1.3",
+]
