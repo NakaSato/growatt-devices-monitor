@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 """
-Markdown to PDF Exporter for Growatt Devices Monitor Documentation
+export_to_pdf.py - Convert Markdown documentation to PDF
 
-This script converts markdown documentation files to PDF format.
-It adds consistent headers, footers, and styling to create professional-looking manuals.
-
+This script converts all Markdown (.md) files in the doc directory to PDF files
+and saves them in the pdf/ subdirectory. It uses WeasyPrint to render HTML to PDF
+and Markdown2 to convert Markdown to HTML.
 """
 
 import os
 import sys
-import argparse
+import glob
 import markdown
-import datetime
+import jinja2
+from datetime import datetime
+from weasyprint import HTML, CSS
+import argparse
 from pathlib import Path
-from jinja2 import Template
-
-try:
-    from weasyprint import HTML, CSS
-    WEASYPRINT_AVAILABLE = True
-except ImportError:
-    WEASYPRINT_AVAILABLE = False
 
 # HTML template for the PDF output
 HTML_TEMPLATE = """
@@ -29,90 +25,199 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+    <!-- Import Thai fonts from Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
     <style>
+        @font-face {
+            font-family: 'Sarabun';
+            src: url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Noto Sans Thai';
+            src: url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
         @page {
-            margin: 1cm;
+            margin: 1.5cm 2cm;
             @top-center {
-                content: "Growatt Devices Monitor";
-                font-weight: bold;
-                color: #333;
+                content: "Devices Monitor System";
+                font-weight: 600;
+                color: #15803d;
+                font-size: 10pt;
+                font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
+            @bottom-left {
+                content: "© {{ year }} Devices Monitor System";
+                font-size: 8pt;
+                color: #4b5563;
+                font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
             @bottom-right {
-                content: "Generated: {{ date }}";
+                content: "Page " counter(page) " of " counter(pages);
                 font-size: 9pt;
-                color: #666;
+                color: #1f2937;
+                font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
+            }
+            @bottom-center {
+                content: "Generated: {{ date }}";
+                font-size: 8pt;
+                color: #4b5563;
+                font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
         }
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Sarabun', 'Noto Sans Thai', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.8;  /* Increased line height for better readability */
+            color: #1f2937;
             margin: 0;
-            padding: 1cm;
+            padding: 0;
+            font-size: 10.5pt;
+            text-align: justify;
+            background-color: #ffffff;
+            letter-spacing: 0.01em;  /* Slightly increased letter spacing */
         }
         h1, h2, h3, h4 {
-            color: #0056b3;
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
+            font-family: 'Sarabun', 'Noto Sans Thai', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-top: 2em;  /* Increased top margin */
+            margin-bottom: 1em;  /* Increased bottom margin */
         }
         h1 {
             page-break-before: always;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 0.3em;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5em;
+            font-size: 22pt;
+            color: #15803d;
+            letter-spacing: -0.01em;  /* Tighter spacing for headings */
         }
         h1:first-of-type {
             page-break-before: avoid;
         }
+        h2 {
+            font-size: 16pt;
+            border-bottom: 1px solid #e5e7eb;
+            color: #166534;
+        }
+        h3 {
+            font-size: 13pt;
+            color: #16a34a;
+        }
+        h4 {
+            font-size: 11.5pt;
+            color: #22c55e;
+        }
+        p {
+            margin: 1em 0 1.4em 0;  /* Increased bottom margin for paragraphs */
+        }
         a {
-            color: #0056b3;
+            color: #2563eb;
             text-decoration: none;
         }
         pre, code {
-            background-color: #f5f5f5;
-            border: 1px solid #ddd;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 4px;
-            padding: 0.2em 0.4em;
-            font-family: "Courier New", monospace;
-            font-size: 0.85em;
+            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            padding: 0.3em 0.5em;  /* Increased padding for inline code */
+            line-height: 1.5;  /* Better line height for code blocks */
+        }
+        code {
+            white-space: nowrap;
+            color: #166534;
         }
         pre {
-            padding: 1em;
+            padding: 1.2em;  /* Increased padding for code blocks */
             overflow-x: auto;
             line-height: 1.45;
+            page-break-inside: avoid;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 1.5em 0;  /* Increased margins */
+            position: relative;
+            border-left: 4px solid #15803d;
         }
         pre code {
             background-color: transparent;
             border: none;
             padding: 0;
+            white-space: pre;
+            color: #1f2937;
+        }
+        /* Code language tag */
+        pre::before {
+            content: attr(data-language);
+            position: absolute;
+            top: 0;
+            right: 0;
+            color: #6b7280;
+            font-size: 0.75em;
+            padding: 0.3em 0.6em;
+            background: #f9fafb;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-right: none;
         }
         table {
             border-collapse: collapse;
             width: 100%;
-            margin: 1em 0;
+            margin: 1.5em 0;
+            border: 1px solid #e5e7eb;
+            page-break-inside: avoid;
+            font-size: 0.95em;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #e5e7eb;
+            padding: 10px 12px;
             text-align: left;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #111827;
         }
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #f9fafb;
         }
         img {
             max-width: 100%;
             height: auto;
+            margin: 1em 0;
+            page-break-inside: avoid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 6px;
         }
         blockquote {
-            border-left: 4px solid #ddd;
-            padding-left: 1em;
-            margin-left: 0;
-            color: #666;
+            border-left: 4px solid #15803d;
+            padding: 1em 1.5em;  /* Increased padding */
+            margin: 1.5em 0;  /* Increased margins */
+            background-color: #f0fdf4;
+            color: #166534;
+            font-style: italic;
+            border-radius: 0 6px 6px 0;
+            line-height: 1.7;  /* Better line height for quotes */
+        }
+        ul, ol {
+            margin: 1.2em 0 1.2em 1.8em;  /* Increased margins for lists */
+            padding: 0;
+            line-height: 1.7;  /* Increased line height for list items */
+        }
+        li {
+            margin-bottom: 0.7em;  /* Increased spacing between list items */
+            padding-left: 0.3em;  /* Added left padding for list items */
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 2em 0;
         }
         .cover-page {
             text-align: center;
@@ -121,163 +226,487 @@ HTML_TEMPLATE = """
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            page-break-after: always;
+            background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+            padding: 2em;
+            position: relative;
         }
         .cover-page h1 {
-            font-size: 2.5em;
+            font-size: 32pt;
             border: none;
+            margin-bottom: 0.2em;
+            color: #15803d;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
         }
         .cover-page .subtitle {
-            font-size: 1.5em;
-            margin-bottom: 2em;
-            color: #666;
+            font-size: 16pt;
+            margin-bottom: 3em;
+            color: #166534;
+            max-width: 80%;
+            line-height: 1.4;
         }
         .cover-page .date {
-            margin-top: 3em;
-            color: #666;
+            margin-top: 4em;
+            color: #4b5563;
+            font-size: 12pt;
+        }
+        .cover-page .version {
+            margin-top: 1em;
+            font-size: 10pt;
+            color: #4b5563;
+            font-weight: 500;
         }
         .cover-page .logo {
-            margin-bottom: 2em;
+            margin-bottom: 3em;
             max-width: 200px;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
         }
         .footer {
             text-align: center;
-            color: #666;
-            font-size: 0.8em;
-            margin-top: 2em;
+            color: #6b7280;
+            font-size: 9pt;
+            margin-top: 3em;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1em;
+        }
+        
+        /* Technical documentation specific elements */
+        .toc {
+            background-color: #f9fafb;
+            padding: 1.8em;
+            margin: 2em 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            page-break-inside: avoid;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .toc h2 {
+            margin-top: 0;
+            font-size: 14pt;
+            border: none;
+            color: #15803d;
+        }
+        .toc ul {
+            margin-left: 1em;
+        }
+        .toc a {
+            color: #1f2937;
+            text-decoration: none;
+        }
+        
+        /* Technical diagram styles */
+        .diagram {
+            margin: 2em 0;
+            padding: 1.5em;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            page-break-inside: avoid;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .diagram img {
+            box-shadow: none;
+            border: 1px solid #e5e7eb;
+            max-width: 95%;
+        }
+        .diagram-caption {
+            font-size: 0.9em;
+            color: #4b5563;
+            margin-top: 0.8em;
+            font-style: italic;
+        }
+        
+        /* Advanced callout boxes */
+        .note, .warning, .tip, .important, .technical, .example {
+            margin: 1.5em 0;
+            padding: 1em 1em 1em 2.5em;
+            border-left: 4px solid;
+            background-color: #f9fafb;
+            page-break-inside: avoid;
+            border-radius: 0 6px 6px 0;
+            position: relative;
+            font-size: 0.95em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .note::before, .warning::before, .tip::before, .important::before, .technical::before, .example::before {
+            position: absolute;
+            left: 0.8em;
+            font-weight: bold;
+        }
+        .note {
+            border-left-color: #2563eb;
+            background-color: #eff6ff;
+        }
+        .note::before {
+            content: "ℹ️";
+            color: #2563eb;
+        }
+        .warning {
+            border-left-color: #dc2626;
+            background-color: #fef2f2;
+        }
+        .warning::before {
+            content: "⚠️";
+            color: #dc2626;
+        }
+        .tip {
+            border-left-color: #15803d;
+            background-color: #f0fdf4;
+        }
+        .tip::before {
+            content: "💡";
+            color: #15803d;
+        }
+        .important {
+            border-left-color: #d97706;
+            background-color: #fffbeb;
+        }
+        .important::before {
+            content: "❗";
+            color: #d97706;
+        }
+        .technical {
+            border-left-color: #7c3aed;
+            background-color: #f5f3ff;
+        }
+        .technical::before {
+            content: "🔧";
+            color: #7c3aed;
+        }
+        .example {
+            border-left-color: #0891b2;
+            background-color: #ecfeff;
+        }
+        .example::before {
+            content: "📝";
+            color: #0891b2;
+        }
+        
+        /* API References */
+        .api-section {
+            margin: 2em 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            page-break-inside: avoid;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .api-header {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .api-header h3 {
+            margin: 0;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+        .api-header h3::before {
+            content: "API";
+            font-size: 0.7em;
+            background-color: #15803d;
+            color: white;
+            padding: 0.3em 0.5em;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .api-content {
+            padding: 1.2em;
+        }
+        .api-params {
+            margin-top: 1em;
+            background-color: #f9fafb;
+            padding: 1em;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+        .param-name {
+            font-family: monospace;
+            font-weight: bold;
+            color: #111827;
+            background-color: #f3f4f6;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            border: 1px solid #e5e7eb;
+        }
+        .param-type {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        
+        /* Code annotations */
+        .code-annotation {
+            display: block;
+            color: #15803d;
+            font-style: italic;
+            margin-top: 0.3em;
+            font-size: 0.9em;
+            padding-left: 1.5em;
+            border-left: 2px solid #15803d;
+            line-height: 1.4;
+        }
+        
+        /* Two-column layout for some sections */
+        .two-column {
+            display: flex;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+            gap: 1.5em;
+        }
+        .column {
+            flex: 1;
+        }
+        .column:first-child {
+            border-right: 1px solid #e5e7eb;
+            padding-right: 1.5em;
+        }
+        
+        /* Command line output */
+        .terminal {
+            background-color: #1a1a1a;
+            color: #f3f4f6;
+            padding: 1.2em;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            overflow-x: auto;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+            line-height: 1.4;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .command {
+            color: #22c55e;
+            display: block;
+            margin-bottom: 0.3em;
+        }
+        .output {
+            color: #f3f4f6;
+            display: block;
+            margin-bottom: 0.8em;
+        }
+        
+        /* Keyboard keys */
+        kbd {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-bottom: 3px solid #d1d5db;
+            border-radius: 3px;
+            padding: 0.2em 0.5em;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 0.85em;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            display: inline-block;
+            margin: 0 0.1em;
+        }
+        
+        /* Version history */
+        .version-history {
+            width: 100%;
+            margin: 2em 0;
+            border-collapse: collapse;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .version-history th,
+        .version-history td {
+            padding: 0.8em 1em;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .version-history th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+        .version-number {
+            font-family: monospace;
+            color: #15803d;
+            font-weight: 600;
+        }
+        
+        /* Dark green box for key information */
+        .key-info {
+            background-color: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 6px;
+            padding: 1.2em;
+            margin: 1.5em 0;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .key-info::before {
+            content: "KEY INFORMATION";
+            position: absolute;
+            top: -0.8em;
+            left: 1em;
+            background-color: #15803d;
+            color: white;
+            font-size: 0.7em;
+            padding: 0.3em 0.6em;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        /* Page break control */
+        .page-break {
+            page-break-after: always;
+        }
+        .avoid-break {
+            page-break-inside: avoid;
         }
     </style>
 </head>
 <body>
 {% if cover_page %}
 <div class="cover-page">
-    <img class="logo" src="../app/static/images/Growatt-logo.png" alt="Growatt Logo">
+    {% if logo_path %}
+    <img class="logo" src="{{ logo_path }}" alt="Growatt Logo">
+    {% else %}
+    <div style="font-size: 24pt; color: #15803d; font-weight: bold; margin-bottom: 2em;">Growatt Monitor</div>
+    {% endif %}
     <h1>{{ title }}</h1>
-    <div class="subtitle">Growatt Devices Monitor Documentation</div>
+    <div class="subtitle">Growatt Devices Monitoring System Documentation</div>
     <div class="date">{{ date }}</div>
+    <div class="version">Version 1.0</div>
 </div>
 {% endif %}
 
 {{ content|safe }}
 
 <div class="footer">
-    &copy; {{ year }} Growatt Devices Monitor. All rights reserved.
+    &copy; {{ year }} BORING9.DEV. All rights reserved.
 </div>
 </body>
 </html>
 """
 
-def md_to_pdf(md_file, output_dir, cover_page=True, verbose=False):
-    """Convert a markdown file to PDF"""
-    if not WEASYPRINT_AVAILABLE:
-        print(f"Error: WeasyPrint not available. Skipping PDF generation for {md_file}")
-        return False
+def convert_markdown_to_html(markdown_content):
+    """Convert Markdown content to HTML."""
+    # Use the Python-Markdown library to convert Markdown to HTML
+    extensions = [
+        'markdown.extensions.tables',
+        'markdown.extensions.fenced_code',
+        'markdown.extensions.codehilite',
+        'markdown.extensions.toc',
+        'markdown.extensions.sane_lists',
+    ]
     
+    html_content = markdown.markdown(markdown_content, extensions=extensions)
+    return html_content
+
+def get_title_from_markdown(markdown_content):
+    """Extract title from the first line of Markdown content."""
+    lines = markdown_content.strip().split('\n')
+    for line in lines:
+        line = line.strip()
+        if line.startswith('# '):
+            return line[2:]  # Remove '# ' prefix
+    return None  # Return None if no title found
+
+def render_html_template(title, html_content, cover_page=True, logo_path=None):
+    """Render HTML content with Jinja2 template."""
+    template = jinja2.Template(HTML_TEMPLATE)
+    today = datetime.now().strftime("%B %d, %Y")
+    year = datetime.now().year
+    
+    # Verify logo path exists
+    if logo_path and not os.path.exists(logo_path):
+        print(f"⚠️ Warning: Logo file not found at {logo_path}")
+        logo_path = None
+    
+    return template.render(
+        title=title,
+        content=html_content,
+        date=today,
+        year=year,
+        cover_page=cover_page,
+        logo_path=logo_path
+    )
+
+def create_pdf(html_content, output_path):
+    """Convert HTML to PDF using WeasyPrint."""
     try:
-        # Read markdown content
-        with open(md_file, 'r') as f:
-            md_content = f.read()
-        
-        # Convert markdown to HTML
-        html_content = markdown.markdown(
-            md_content,
-            extensions=['extra', 'codehilite', 'tables', 'toc']
-        )
-        
-        # Extract title from markdown
-        title = "Growatt Documentation"
-        for line in md_content.split('\n'):
-            if line.startswith('# '):
-                title = line[2:].strip()
-                break
-        
-        # Create output PDF path
-        output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(md_file))[0] + '.pdf')
-        
-        # Render HTML template
-        template = Template(HTML_TEMPLATE)
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        current_year = datetime.datetime.now().year
-        
-        html = template.render(
-            title=title,
-            content=html_content,
-            date=today,
-            year=current_year,
-            cover_page=cover_page
-        )
-        
-        # Convert HTML to PDF
-        HTML(string=html).write_pdf(output_file)
-        
-        if verbose:
-            print(f"Created PDF: {output_file}")
-        
+        HTML(string=html_content).write_pdf(output_path)
+        print(f"✅ Created PDF: {output_path}")
         return True
     except Exception as e:
-        print(f"Error converting {md_file} to PDF: {e}")
+        print(f"❌ Error creating PDF: {e}")
+        return False
+
+def process_markdown_file(markdown_path, output_dir, cover_page=True, logo_path=None):
+    """Process a single Markdown file and convert it to PDF."""
+    try:
+        # Read Markdown content
+        with open(markdown_path, 'r', encoding='utf-8') as f:
+            markdown_content = f.read()
+        
+        # Convert Markdown to HTML
+        html_content = convert_markdown_to_html(markdown_content)
+        
+        # Get title from Markdown content
+        title = get_title_from_markdown(markdown_content) or Path(markdown_path).stem
+        
+        # Render HTML template
+        rendered_html = render_html_template(title, html_content, cover_page, logo_path)
+        
+        # Create output filename
+        output_filename = os.path.basename(markdown_path).replace('.md', '.pdf')
+        output_path = os.path.join(output_dir, output_filename)
+        
+        # Create PDF
+        success = create_pdf(rendered_html, output_path)
+        
+        if success:
+            print(f"✅ Successfully processed {markdown_path}")
+            return True
+        else:
+            print(f"❌ Failed to create PDF for {markdown_path}")
+            return False
+    except Exception as e:
+        print(f"❌ Error processing {markdown_path}: {e}")
         return False
 
 def main():
-    """Main function to handle command line arguments"""
-    parser = argparse.ArgumentParser(description='Convert markdown files to PDF')
-    parser.add_argument('-o', '--output', default='./pdf', help='Output directory for PDF files')
-    parser.add_argument('-s', '--single', help='Convert a single markdown file to PDF')
-    parser.add_argument('-a', '--all', action='store_true', help='Convert all markdown files in the directory')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
-    parser.add_argument('-n', '--no-cover', action='store_true', help='Skip cover page')
-    
+    """Main function to convert all Markdown files to PDF."""
+    parser = argparse.ArgumentParser(description='Convert Markdown files to PDF')
+    parser.add_argument('--input', '-i', help='Input markdown file or directory', default='.')
+    parser.add_argument('--output', '-o', help='Output PDF directory', default='pdf')
+    parser.add_argument('--no-cover', help='Skip cover page', action='store_true')
+    parser.add_argument('--font', help='Font family for Thai text (sarabun, noto, thsarabun)', default='sarabun')
+    parser.add_argument('--logo', help='Path to logo image for cover page', default=None)
     args = parser.parse_args()
     
-    # Check if WeasyPrint is available
-    if not WEASYPRINT_AVAILABLE:
-        print("Warning: WeasyPrint is not installed. Please install it to generate PDFs:")
-        print("pip install weasyprint")
-        print("\nOn macOS you might need additional dependencies:")
-        print("brew install pango gdk-pixbuf libffi")
-        return 1
+    # Determine base directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Handle input file or directory
+    if os.path.isfile(args.input) and args.input.endswith('.md'):
+        markdown_files = [args.input]
+    elif os.path.isdir(args.input):
+        markdown_files = glob.glob(os.path.join(args.input, '*.md'))
+    else:
+        print(f"❌ Invalid input: {args.input}")
+        sys.exit(1)
     
     # Create output directory if it doesn't exist
-    output_dir = os.path.abspath(args.output)
+    output_dir = args.output if os.path.isabs(args.output) else os.path.join(script_dir, args.output)
     os.makedirs(output_dir, exist_ok=True)
     
-    # Convert single file
-    if args.single:
-        file_path = os.path.abspath(args.single)
-        if not os.path.exists(file_path):
-            print(f"Error: File not found - {file_path}")
-            return 1
-        
-        success = md_to_pdf(file_path, output_dir, not args.no_cover, args.verbose)
-        return 0 if success else 1
+    print(f"📁 Found {len(markdown_files)} Markdown files")
     
-    # Convert all markdown files
-    if args.all:
-        successful = 0
-        failed = 0
-        
-        # Get all markdown files in the current directory
-        md_files = list(Path('.').glob('*.md'))
-        
-        if not md_files:
-            print("No markdown files found in the current directory.")
-            return 1
-        
-        print(f"Converting {len(md_files)} markdown files to PDF...")
-        
-        for md_file in md_files:
-            if md_to_pdf(str(md_file), output_dir, not args.no_cover, args.verbose):
-                successful += 1
-            else:
-                failed += 1
-        
-        print(f"\nSummary: {successful} files converted successfully, {failed} files failed.")
-        print(f"PDFs saved to: {output_dir}")
-        
-        return 0 if failed == 0 else 1
+    # Process each Markdown file
+    successful = 0
+    for markdown_file in markdown_files:
+        if process_markdown_file(markdown_file, output_dir, not args.no_cover, args.logo):
+            successful += 1
     
-    # If no specific action provided, show help
-    parser.print_help()
-    return 1
+    print(f"🎉 Successfully converted {successful} of {len(markdown_files)} files to PDF")
+    print(f"📄 PDFs saved to: {output_dir}")
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
