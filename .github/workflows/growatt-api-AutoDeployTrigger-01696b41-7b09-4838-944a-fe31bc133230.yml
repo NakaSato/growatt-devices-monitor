@@ -41,3 +41,4 @@ jobs:
           containerAppName: growatt-api
           resourceGroup: Personal
           imageToBuild: growatt-api:${{ github.sha }}
+          registryServer: ${{ secrets.GROWATTAPI_REGISTRY_URL }}
