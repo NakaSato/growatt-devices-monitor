@@ -9,8 +9,14 @@
   </defs>
   
   <!-- Transparent background glow for the line -->
+  <!-- Path structure:
+       M170 50: Move to (170, 50)
+       L170 170: Draw a straight line to (170, 170)
+       Q170 190 190 190: Draw a quadratic curve to (190, 190) with control point at (170, 190)
+       L230 190: Draw a straight line to (230, 190)
+  -->
   <path
-    d="M170 50 L170 170 Q170 190 190 190 L230 190"
+    d="M170 70 L170 170 Q170 190 190 190 L230 190"
     stroke="url(#lineGlowGradient)"
     stroke-width="8"
     fill="none"
@@ -28,14 +34,14 @@
   <!-- Beginning point marker -->
   <circle 
     cx="170" 
-    cy="50" 
+    cy="70" 
     r="4" 
     fill="#6b6e75" 
     opacity="0.95"
   />
   
   <path
-    d="M170 50 L170 170 Q170 190 190 190 L230 190"
+    d="M170 70 L170 170 Q170 190 190 190 L230 190"
     stroke="#6B7280"
     stroke-width="2.5"
     fill="none"

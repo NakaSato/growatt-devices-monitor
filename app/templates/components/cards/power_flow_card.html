@@ -11,6 +11,25 @@
           xmlns="http://www.w3.org/2000/svg"
           id="power-flow-svg"
         >
+          <!-- Add missing filter and gradient definitions for Safari compatibility -->
+          <defs>
+            <!-- Drop shadow filter -->
+            <filter
+              id="drop-shadow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feDropShadow
+                dx="2"
+                dy="2"
+                stdDeviation="2"
+                flood-opacity="0.3"
+              />
+            </filter>
+          </defs>
+
           <!-- Solar Panel Image centered with improved shadows and quality -->
           <image
             href="{{ url_for('static', filename='images/solar-panel.png') }}"
@@ -277,63 +296,76 @@
               />
             </path>
 
-            <!-- Black connection line from PV panel to inverter -->
-            <!-- Add gradient definitions for background glow effect -->
-            <defs>
-              <linearGradient
-                id="lineGlowGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
+              <!-- Black connection line from PV panel to inverter -->
+              <!-- Add gradient definitions for background glow effect -->
+              <defs>
+                <linearGradient id="lineGlowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4ade80" stop-opacity="0.3" />
+                  <stop offset="50%" stop-color="#22c55e" stop-opacity="0.4" />
+                  <stop offset="100%" stop-color="#4ade80" stop-opacity="0.3" />
+                </linearGradient>
+              </defs>
+              
+              <!-- Transparent background glow for the line -->
+              <!-- Path structure:
+                  M170 50: Move to (170, 50)
+                  L170 170: Draw a straight line to (170, 170)
+                  Q170 190 190 190: Draw a quadratic curve to (190, 190) with control point at (170, 190)
+                  L230 190: Draw a straight line to (230, 190)
+              -->
+              <path
+                d="M170 70 L170 170 Q170 190 190 190 L230 190"
+                stroke="url(#lineGlowGradient)"
+                stroke-width="8"
+                fill="none"
+                stroke-linecap="round"
+                opacity="0.4"
               >
-                <stop offset="0%" stop-color="#4ade80" stop-opacity="0.3" />
-                <stop offset="50%" stop-color="#22c55e" stop-opacity="0.4" />
-                <stop offset="100%" stop-color="#4ade80" stop-opacity="0.3" />
-              </linearGradient>
-            </defs>
-
-            <!-- Transparent background glow for the line -->
-            <path
-              d="M170 50 L170 170 Q170 190 190 190 L230 190"
-              stroke="url(#lineGlowGradient)"
-              stroke-width="8"
-              fill="none"
-              stroke-linecap="round"
-              opacity="0.4"
-            >
-              <animate
-                attributeName="opacity"
-                values="0.4;0.6;0.4"
-                dur="2s"
-                repeatCount="indefinite"
+                <animate
+                  attributeName="opacity"
+                  values="0.4;0.6;0.4"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </path>
+              
+              <!-- Beginning point marker -->
+              <circle 
+                cx="170" 
+                cy="70" 
+                r="4" 
+                fill="#6b6e75" 
+                opacity="0.95"
               />
-            </path>
-
-            <!-- Beginning point marker -->
-            <circle cx="170" cy="50" r="4" fill="#6b6e75" opacity="0.95" />
-
-            <path
-              d="M170 50 L170 170 Q170 190 190 190 L230 190"
-              stroke="#6B7280"
-              stroke-width="2.5"
-              fill="none"
-              stroke-linecap="round"
-              stroke-dasharray="8,4"
-              opacity="0.6"
-            >
-              <animate
-                attributeName="stroke-dashoffset"
-                from="12"
-                to="0"
-                dur="1s"
-                repeatCount="indefinite"
-                media="(prefers-reduced-motion: no-preference)"
+              
+              <path
+                d="M170 70 L170 170 Q170 190 190 190 L230 190"
+                stroke="#6B7280"
+                stroke-width="2.5"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray="8,4"
+                opacity="0.6"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="12"
+                  to="0"
+                  dur="1s"
+                  repeatCount="indefinite"
+                  media="(prefers-reduced-motion: no-preference)"
+                />
+              </path>
+              
+              <!-- End point marker -->
+              <circle 
+                cx="230" 
+                cy="190" 
+                r="4" 
+                fill="#6b6e75"  
+                opacity="0.95"
               />
-            </path>
-
-            <!-- End point marker -->
-            <circle cx="230" cy="190" r="4" fill="#6b6e75" opacity="0.95" />
+            </svg>
 
             <!-- Inverter to load connection path -->
             <path
