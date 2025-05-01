@@ -5,511 +5,553 @@
   x-data="energyYieldChart()"
 >
   <!-- Chart header -->
-  <div class="chart-card">
-    <div class="card-header flex justify-between">
-      <h3 class="card-title">Energy Yield Overview</h3>
-      <div class="chart-controls">
-        <div class="chart-period-info">
-          <strong class="period-summary" x-text="summaryText"></strong>
+  <div class="chart-card border border-green-300 p-2 xs:p-3 sm:p-4 rounded-lg">
+    <div
+      class="card-header flex flex-col sm:flex-row sm:justify-between sm:items-center"
+    >
+      <h3
+        class="card-title text-base xs:text-lg font-medium text-slate-800 mb-2 sm:mb-0"
+      >
+        Energy Yield Overview
+      </h3>
+      <div
+        class="chart-controls flex flex-col xs:flex-row xs:items-center gap-2"
+      >
+        <div class="chart-period-info order-2 xs:order-1 mt-2 xs:mt-0">
+          <strong
+            class="period-summary text-sm xs:text-base"
+            x-text="summaryText"
+          ></strong>
           <span
-            class="period-comparison text-sm text-gray-500 ml-2"
+            class="period-comparison text-xs xs:text-sm text-gray-500 block xs:inline xs:ml-2"
             x-text="periodComparison"
           ></span>
         </div>
-        <select
-          class="chart-period-selector"
-          x-model="activePeriod"
-          @change="handlePeriodChange($event.target.value)"
-          id="period-selector"
-        >
-          <option value="day">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="year">This Year</option>
-        </select>
+        <div class="chart-selectors flex flex-wrap order-1 xs:order-2 gap-2">
+          <select
+            class="chart-period-selector text-xs sm:text-sm border rounded p-1"
+            x-model="activePeriod"
+            @change="handlePeriodChange($event.target.value)"
+            id="period-selector"
+          >
+            <option value="day">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          <select
+            class="chart-type-selector text-xs sm:text-sm border rounded p-1"
+            x-model="chartType"
+            @change="changeChartType($event.target.value)"
+            id="chart-type-selector"
+          >
+            <option value="bar">Bar Chart</option>
+            <option value="line">Line Chart</option>
+            <option value="area">Area Chart</option>
+          </select>
+          <select
+            class="data-resolution-selector text-xs sm:text-sm border rounded p-1"
+            x-model="dataResolution"
+            @change="changeDataResolution($event.target.value)"
+            id="data-resolution-selector"
+            x-show="['day', 'week'].includes(activePeriod)"
+          >
+            <option value="5m">5 min</option>
+            <option value="15m">15 min</option>
+            <option value="30m">30 min</option>
+            <option value="1h">1 hour</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="chart-wrapper" style="height: 350px">
+
+    <!-- Date Range Picker (shown only for custom range) -->
+    <div
+      class="date-range-picker mt-2"
+      x-show="activePeriod === 'custom'"
+      x-transition
+    >
+      <div class="flex flex-col xs:flex-row gap-2 xs:items-center">
+        <div class="flex items-center">
+          <label class="text-xs sm:text-sm whitespace-nowrap mr-1">From:</label>
+          <input
+            type="date"
+            x-model="customDateRange.start"
+            @change="handleCustomDateRangeChange"
+            class="text-xs sm:text-sm border rounded p-1 w-full"
+          />
+        </div>
+        <div class="flex items-center">
+          <label class="text-xs sm:text-sm whitespace-nowrap mr-1">To:</label>
+          <input
+            type="date"
+            x-model="customDateRange.end"
+            @change="handleCustomDateRangeChange"
+            class="text-xs sm:text-sm border rounded p-1 w-full"
+          />
+        </div>
+        <button
+          @click="applyCustomDateRange"
+          class="bg-green-500 text-white text-xs sm:text-sm rounded px-2 py-1 self-start xs:self-center whitespace-nowrap"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <!-- Advanced Options -->
+    <div class="advanced-options mt-2">
+      <button
+        @click="toggleAdvancedOptions"
+        class="text-xs sm:text-sm text-gray-600 flex items-center"
+      >
+        <span
+          x-text="showAdvancedOptions ? 'Hide Advanced Options' : 'Show Advanced Options'"
+        ></span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 ml-1"
+          :class="{'transform rotate-180': showAdvancedOptions}"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      <div
+        x-show="showAdvancedOptions"
+        x-transition
+        class="p-2 bg-gray-50 rounded mt-2"
+      >
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 xs:gap-3"
+        >
+          <div class="option-group">
+            <label class="text-xs sm:text-sm font-medium mb-1 block"
+              >Display Options</label
+            >
+            <div class="flex flex-col space-y-1">
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.showDataLabels"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Show Data Labels
+              </label>
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.showMovingAverage"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Show Moving Average
+              </label>
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.showExpectedOutput"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Show Expected Output
+              </label>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <label class="text-xs sm:text-sm font-medium mb-1 block"
+              >Data Series</label
+            >
+            <div class="flex flex-col space-y-1">
+              <template x-for="series in availableDataSeries" :key="series.id">
+                <label class="inline-flex items-center text-xs sm:text-sm">
+                  <input
+                    type="checkbox"
+                    :value="series.id"
+                    x-model="selectedDataSeries"
+                    @change="updateDataSeries"
+                    class="mr-2"
+                  />
+                  <span x-text="series.name"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <label class="text-xs sm:text-sm font-medium mb-1 block"
+              >Analysis</label
+            >
+            <div class="flex flex-col space-y-1">
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.showPerformanceRatio"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Show Performance Ratio
+              </label>
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.showYieldTrend"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Show Yield Trend
+              </label>
+              <label class="inline-flex items-center text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  x-model="chartOptions.annotateWeatherEvents"
+                  @change="updateChartOptions"
+                  class="mr-2"
+                />
+                Annotate Weather Events
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="text-xs sm:text-sm font-medium mb-1 block"
+            >Moving Average Window Size</label
+          >
+          <div class="flex items-center space-x-2">
+            <input
+              type="range"
+              min="2"
+              max="24"
+              x-model.number="chartOptions.movingAverageWindow"
+              @change="updateChartOptions"
+              class="w-48"
+            />
+            <span
+              class="text-xs sm:text-sm"
+              x-text="chartOptions.movingAverageWindow + ' periods'"
+            ></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart loading state -->
+    <div
+      x-show="isLoading"
+      class="flex justify-center items-center h-48 xs:h-64"
+    >
+      <div
+        class="animate-spin rounded-full h-10 w-10 xs:h-12 xs:w-12 border-b-2 border-green-500"
+      ></div>
+    </div>
+
+    <!-- Error message -->
+    <div
+      x-show="hasError && !isLoading"
+      class="text-red-500 p-3 xs:p-4 text-center my-3 xs:my-4 bg-red-50 rounded-lg border border-red-100"
+    >
+      <p x-text="errorMessage" class="text-xs xs:text-sm"></p>
+      <button
+        @click="retryDataLoad"
+        class="mt-2 bg-green-500 text-white rounded px-3 py-1 text-xs xs:text-sm"
+      >
+        Retry
+      </button>
+    </div>
+
+    <!-- Chart container with responsive height -->
+    <div
+      class="chart-wrapper mt-2 xs:mt-3"
+      :style="'height:' + (window.responsive && window.responsive.isMobile ? '250px' : window.responsive && window.responsive.isTablet ? '300px' : '350px')"
+      x-show="!isLoading && !hasError"
+    >
       <canvas id="energyProductionChart"></canvas>
+    </div>
+
+    <!-- Data Quality Indicator -->
+    <div
+      class="data-quality flex flex-col xs:flex-row xs:items-center mt-2 text-xs text-gray-600 xs:justify-end"
+      x-show="!isLoading && !hasError"
+    >
+      <div class="flex items-center mb-1 xs:mb-0">
+        <span>Data Quality:</span>
+        <div class="quality-indicator ml-2 flex">
+          <template x-for="i in 5">
+            <div
+              class="h-2 w-2 rounded-full mx-0.5"
+              :class="i <= dataQualityScore ? 'bg-green-500' : 'bg-gray-300'"
+            ></div>
+          </template>
+        </div>
+        <span class="ml-1" x-text="dataQualityLabel"></span>
+      </div>
+      <span class="xs:ml-3"
+        >Last updated: <span x-text="lastUpdated"></span
+      ></span>
+    </div>
+
+    <!-- Engineering Statistics -->
+    <div
+      class="engineering-stats grid grid-cols-2 sm:grid-cols-4 gap-2 xs:gap-3 mt-3 xs:mt-4 text-xs xs:text-sm"
+      x-show="!isLoading && !hasError && showAdvancedOptions"
+    >
+      <div class="stat-card p-2 bg-gray-50 rounded">
+        <div class="stat-title text-[10px] xs:text-xs text-gray-500">
+          Peak Output
+        </div>
+        <div
+          class="stat-value font-medium"
+          x-text="engineeringStats.peakOutput + ' kW'"
+        ></div>
+      </div>
+      <div class="stat-card p-2 bg-gray-50 rounded">
+        <div class="stat-title text-[10px] xs:text-xs text-gray-500">
+          Performance Ratio
+        </div>
+        <div
+          class="stat-value font-medium"
+          x-text="engineeringStats.performanceRatio + '%'"
+        ></div>
+      </div>
+      <div class="stat-card p-2 bg-gray-50 rounded">
+        <div class="stat-title text-[10px] xs:text-xs text-gray-500">
+          Specific Yield
+        </div>
+        <div
+          class="stat-value font-medium"
+          x-text="engineeringStats.specificYield + ' kWh/kWp'"
+        ></div>
+      </div>
+      <div class="stat-card p-2 bg-gray-50 rounded">
+        <div class="stat-title text-[10px] xs:text-xs text-gray-500">
+          System Uptime
+        </div>
+        <div
+          class="stat-value font-medium"
+          x-text="engineeringStats.systemUptime + '%'"
+        ></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Load energy_chart.js file before the component script -->
+<!-- Load required dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 <script src="/static/js/energy_chart.js"></script>
 
-<!-- Add this line to explicitly disable datalabels if it's loaded but we don't want to use it -->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Check if Chart.js is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    // Validate dependencies
     if (typeof Chart === "undefined") {
       console.error(
         "Chart.js is not loaded! Make sure it is included before this component."
       );
-    } else {
-      console.log("Chart.js is loaded and ready to use.");
-
-      // Handle ChartDataLabels plugin if it exists
-      if (typeof ChartDataLabels !== "undefined") {
-        // Make sure Chart is fully initialized before registering plugins
-        setTimeout(() => {
-          // Register the plugin properly
-          if (!Chart._registry?.plugins?.items?.datalabels) {
-            Chart.register(ChartDataLabels);
-            console.log("ChartDataLabels plugin registered from component");
-          }
-
-          // Set default configuration to disable datalabels (prevent the error)
-          Chart.defaults.plugins.datalabels = {
-            display: false,
-          };
-        }, 300);
-
-        console.log("ChartDataLabels plugin configuration set");
-      }
+      return;
     }
 
-    // Check EnergyDataUtils
     if (typeof window.EnergyDataUtils === "undefined") {
       console.error(
         "EnergyDataUtils is not available! Check if energy_chart.js is properly loaded."
       );
-    } else {
-      console.log("EnergyDataUtils is available.");
     }
+
+    // Initialize charts with a small delay to ensure DOM is ready
+    setTimeout(initAllCharts, 100);
   });
 
-  // Register the Alpine component properly
+  // Initialize all charts
+  function initAllCharts() {
+    try {
+      // Register Chart.js plugins
+      Chart.register(ChartDataLabels);
+
+      // Other chart initializations can be added here
+    } catch (error) {
+      console.error("Error initializing charts:", error);
+    }
+  }
+
+  // Alpine.js component registration
   document.addEventListener("alpine:init", () => {
     Alpine.data("energyYieldChart", () => ({
       activePeriod: "day",
+      chartType: "bar",
+      dataResolution: "15m",
       summaryText: "Loading...",
       periodComparison: "",
       filters: [],
       chartInstance: null,
       energyData: null,
       capacity: 10, // Default system capacity in kW
+      isLoading: true,
+      hasError: false,
+      errorMessage: "",
+      lastUpdated: "",
+      dataQualityScore: 0,
+      dataQualityLabel: "",
+      showAdvancedOptions: false,
+      customDateRange: {
+        start: new Date().toISOString().split("T")[0],
+        end: new Date().toISOString().split("T")[0],
+      },
+
+      // Chart Options
+      chartOptions: {
+        showDataLabels: false,
+        showMovingAverage: false,
+        showExpectedOutput: false,
+        showPerformanceRatio: false,
+        showYieldTrend: false,
+        annotateWeatherEvents: false,
+        movingAverageWindow: 5,
+      },
+
+      // Engineering Statistics
+      engineeringStats: {
+        peakOutput: "0.0",
+        performanceRatio: "0.0",
+        specificYield: "0.0",
+        systemUptime: "0.0",
+      },
+
+      // Available Data Series
+      availableDataSeries: [
+        { id: "production", name: "Energy Production" },
+        { id: "consumption", name: "Energy Consumption" },
+        { id: "gridExport", name: "Grid Export" },
+        { id: "gridImport", name: "Grid Import" },
+        { id: "expectedProduction", name: "Expected Production" },
+      ],
+
+      // Selected Data Series
+      selectedDataSeries: ["production"],
 
       init() {
-        console.log("Initializing Energy Yield Chart");
+        setTimeout(() => {
+          this.loadChartData(this.activePeriod);
+          this.initializeFilters();
+          this.setupDataRefresh();
+          this.setupResponsiveChart();
+        }, 100);
+      },
+
+      setupDataRefresh() {
+        // Set up periodic data refresh (every 5 minutes)
+        setInterval(() => {
+          if (this.activePeriod === "day") {
+            this.refreshData();
+          }
+        }, 5 * 60 * 1000);
+      },
+
+      setupResponsiveChart() {
+        // Set up event listener for responsive changes
+        window.addEventListener("responsive-changed", () => {
+          this.adjustChartForScreenSize();
+        });
+
+        // Initial adjustment
+        this.adjustChartForScreenSize();
+      },
+
+      adjustChartForScreenSize() {
+        if (!this.chartInstance || !window.responsive) return;
+
+        // Adjust chart options based on screen size
+        const options = this.chartInstance.options;
+
+        if (window.responsive.isMobile) {
+          // Mobile optimizations
+          options.plugins.legend.display = false;
+          options.scales.y.ticks.maxTicksLimit = 5;
+          options.scales.x.ticks.maxTicksLimit = 6;
+          options.plugins.datalabels.display = false;
+        } else if (window.responsive.isTablet) {
+          // Tablet optimizations
+          options.plugins.legend.position = "bottom";
+          options.plugins.legend.labels.boxWidth = 8;
+          options.plugins.legend.labels.font.size = 10;
+          options.scales.y.ticks.maxTicksLimit = 8;
+          options.scales.x.ticks.maxTicksLimit = 8;
+        } else {
+          // Desktop (default) settings
+          options.plugins.legend.display = true;
+          options.plugins.legend.position = "bottom";
+          options.scales.y.ticks.maxTicksLimit = undefined;
+          options.scales.x.ticks.maxTicksLimit = undefined;
+        }
+
+        // Update the chart with new options
+        this.chartInstance.update();
+      },
+
+      refreshData() {
+        console.log("Refreshing chart data...");
+        this.loadChartData(this.activePeriod, true);
+      },
+
+      retryDataLoad() {
+        this.hasError = false;
+        this.isLoading = true;
         this.loadChartData(this.activePeriod);
-        this.initializeFilters();
       },
 
-      loadChartData(period) {
-        console.log("Loading chart data for period:", period);
+      toggleAdvancedOptions() {
+        this.showAdvancedOptions = !this.showAdvancedOptions;
+      },
 
-        try {
-          // Check if EnergyDataUtils is available
-          if (typeof window.EnergyDataUtils === "undefined") {
-            console.error("EnergyDataUtils not found!");
-            // Use fallback data
-            this.useFallbackData(period);
-            return;
-          }
+      updateChartOptions() {
+        this.renderChartWithData();
+      },
 
-          // Get today's date
-          const today = new Date();
+      updateDataSeries() {
+        this.renderChartWithData();
+      },
 
-          // Generate current period data
-          this.energyData = window.EnergyDataUtils.generateEnergyData(
-            period,
-            this.capacity,
-            today
-          );
-          console.log("Generated energy data:", this.energyData);
+      // Change chart type between bar, line, and area
+      changeChartType(type) {
+        this.chartType = type;
+        this.renderChartWithData();
+      },
 
-          // Get previous period data for comparison
-          const prevDate = this.getPreviousPeriodDate(period);
-          const prevPeriodData = window.EnergyDataUtils.generateEnergyData(
-            period,
-            this.capacity * 0.95, // Slightly different capacity for comparison
-            prevDate
-          );
+      // Change data resolution
+      changeDataResolution(resolution) {
+        this.dataResolution = resolution;
+        this.loadChartData(this.activePeriod);
+      },
 
-          // Render chart with comparison data
-          this.renderChartWithComparison(
-            this.energyData,
-            prevPeriodData,
-            period
-          );
+      handleCustomDateRangeChange() {
+        // Validate date range
+        const start = new Date(this.customDateRange.start);
+        const end = new Date(this.customDateRange.end);
 
-          // Update summary with comparison
-          this.updateSummaryWithComparison(
-            this.energyData,
-            prevPeriodData,
-            period
-          );
-        } catch (error) {
-          console.error("Error loading chart data:", error);
-          this.useFallbackData(period);
+        if (end < start) {
+          // Reset to current date if invalid
+          const today = new Date().toISOString().split("T")[0];
+          this.customDateRange.end = today;
         }
       },
 
-      getPreviousPeriodDate(period) {
-        const prevDate = new Date();
-        switch (period) {
-          case "day":
-            prevDate.setDate(prevDate.getDate() - 1);
-            break;
-          case "week":
-            prevDate.setDate(prevDate.getDate() - 7);
-            break;
-          case "month":
-            prevDate.setMonth(prevDate.getMonth() - 1);
-            break;
-          case "year":
-            prevDate.setFullYear(prevDate.getFullYear() - 1);
-            break;
-        }
-        return prevDate;
+      applyCustomDateRange() {
+        this.loadChartData("custom");
       },
 
-      // Use fallback data when EnergyDataUtils is not available
-      useFallbackData(period) {
-        console.log("Using fallback data for period:", period);
-
-        // Get labels based on period
-        const labels = this.generateFallbackLabels(period);
-
-        // Generate current and previous period data
-        const currentData = labels.map(() => Math.random() * 10 + 5);
-        const previousData = labels.map(() => Math.random() * 8 + 5);
-
-        // Simple fallback data structure with both periods
-        const fallbackData = {
-          labels: labels,
-          datasets: {
-            production: currentData,
-            consumption: labels.map(() => Math.random() * 12 + 8),
-            gridExchange: labels.map(() => (Math.random() - 0.5) * 10),
-          },
-          totals: {
-            production: currentData
-              .reduce((sum, val) => sum + val, 0)
-              .toFixed(2),
-            consumption: "1965",
-            selfConsumption: "1680",
-            gridImport: "105",
-            gridExport: "165",
-          },
-          percentages: {
-            selfConsumption: "87.3",
-            gridExport: "8.6",
-            gridImport: "5.3",
-          },
-        };
-
-        // Create previous period data
-        const prevPeriodData = {
-          labels: labels,
-          datasets: {
-            production: previousData,
-            consumption: labels.map(() => Math.random() * 10 + 7),
-            gridExchange: labels.map(() => (Math.random() - 0.5) * 8),
-          },
-          totals: {
-            production: previousData
-              .reduce((sum, val) => sum + val, 0)
-              .toFixed(2),
-          },
-        };
-
-        this.energyData = fallbackData;
-        this.renderChartWithComparison(fallbackData, prevPeriodData, period);
-        this.updateSummaryWithComparison(fallbackData, prevPeriodData, period);
-      },
-
-      generateFallbackLabels(period) {
-        switch (period) {
-          case "day":
-            return Array.from({ length: 24 }, (_, i) => `${i}:00`);
-          case "week":
-            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-          case "month":
-            return Array.from({ length: 30 }, (_, i) => `${i + 1}`);
-          case "year":
-            return [
-              "Jan",
-              "Feb",
-              "Mar",
-              "Apr",
-              "May",
-              "Jun",
-              "Jul",
-              "Aug",
-              "Sep",
-              "Oct",
-              "Nov",
-              "Dec",
-            ];
-        }
-      },
-
-      handlePeriodChange(period) {
-        console.log("Changing period to:", period);
-        this.activePeriod = period;
-
-        // Instead of trying to update the chart directly, reload data and re-render
-        this.loadChartData(period);
-      },
-
-      renderChartWithComparison(currentData, prevPeriodData, period) {
-        console.log("Rendering chart with period comparison:", period);
-
-        try {
-          const canvas = document.getElementById("energyProductionChart");
-          if (!canvas) {
-            console.error("Chart canvas element not found!");
-            return;
-          }
-
-          const ctx = canvas.getContext("2d");
-
-          // Destroy existing chart if it exists
-          if (this.chartInstance) {
-            console.log("Destroying existing chart instance");
-            this.chartInstance.destroy();
-          }
-
-          // Add a small delay to ensure Chart.js is fully initialized
-          setTimeout(() => {
-            // Check if Chart.js is available
-            if (typeof Chart === "undefined") {
-              console.error("Chart.js library not loaded!");
-              return;
-            }
-
-            // Try using the dedicated chart function first
-            if (
-              window.EnergyCharts &&
-              typeof window.EnergyCharts.createEnergyYieldChart === "function"
-            ) {
-              console.log("Using EnergyCharts.createEnergyYieldChart");
-              this.chartInstance = window.EnergyCharts.createEnergyYieldChart(
-                "energyProductionChart",
-                currentData,
-                prevPeriodData
-              );
-              return;
-            }
-
-            // Fallback to manual creation with comparison
-            console.log("Creating comparison chart manually");
-
-            // Prepare datasets with improved styling for both current and previous periods
-            const datasets = [
-              {
-                label: `Current ${this.getPeriodLabel(period)}`,
-                data: currentData.datasets.production,
-                backgroundColor: "rgba(16, 185, 129, 0.7)", // Green with higher opacity
-                borderColor: "rgba(16, 185, 129, 1)",
-                borderWidth: 1,
-                borderRadius: 4,
-                barPercentage: 0.6,
-                order: 1,
-              },
-              {
-                label: `Previous ${this.getPeriodLabel(period)}`,
-                data: prevPeriodData.datasets.production,
-                backgroundColor: "rgba(209, 213, 219, 0.5)", // Grey for previous
-                borderColor: "rgba(209, 213, 219, 0.8)",
-                borderWidth: 1,
-                borderRadius: 4,
-                barPercentage: 0.6,
-                order: 2,
-              },
-            ];
-
-            // Enhanced chart configuration with bar chart for comparison
-            const chartConfig = {
-              type: "bar",
-              data: {
-                labels: currentData.labels,
-                datasets: datasets,
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                  mode: "index",
-                  intersect: false,
-                },
-                plugins: {
-                  legend: {
-                    position: "bottom",
-                    align: "center",
-                    labels: {
-                      usePointStyle: true,
-                      padding: 20,
-                      boxWidth: 10,
-                      boxHeight: 10,
-                      font: {
-                        size: 12,
-                        family:
-                          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      },
-                    },
-                    title: {
-                      padding: {
-                        bottom: 10,
-                      },
-                    },
-                  },
-                  tooltip: {
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
-                    titleColor: "#111827",
-                    bodyColor: "#374151",
-                    borderColor: "rgba(229, 231, 235, 1)",
-                    borderWidth: 1,
-                    padding: 12,
-                    boxPadding: 6,
-                    titleFont: {
-                      weight: "bold",
-                      size: 13,
-                    },
-                    bodyFont: {
-                      size: 12,
-                    },
-                    displayColors: true,
-                    boxWidth: 8,
-                    boxHeight: 8,
-                    usePointStyle: true,
-                    callbacks: {
-                      label: function (context) {
-                        let label = context.dataset.label || "";
-                        if (label) {
-                          label += ": ";
-                        }
-                        if (context.parsed.y !== null) {
-                          label += context.parsed.y.toFixed(2) + " kWh";
-                        }
-                        return label;
-                      },
-                    },
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    grid: {
-                      color: "rgba(243, 244, 246, 0.8)",
-                      lineWidth: 1,
-                      drawBorder: false,
-                    },
-                    border: {
-                      display: false,
-                    },
-                    ticks: {
-                      padding: 10,
-                      color: "#6B7280",
-                      font: {
-                        size: 11,
-                      },
-                    },
-                    title: {
-                      display: true,
-                      text: "Energy (kWh)",
-                      color: "#374151",
-                      font: {
-                        size: 12,
-                        weight: "normal",
-                      },
-                      padding: {
-                        bottom: 10,
-                      },
-                    },
-                  },
-                  x: {
-                    grid: {
-                      display: false,
-                      drawBorder: false,
-                    },
-                    border: {
-                      display: false,
-                    },
-                    ticks: {
-                      padding: 10,
-                      color: "#6B7280",
-                      font: {
-                        size: 11,
-                      },
-                      maxRotation: 45,
-                      minRotation: 0,
-                    },
-                  },
-                },
-                layout: {
-                  padding: {
-                    top: 10,
-                    right: 16,
-                    bottom: 10,
-                    left: 10,
-                  },
-                },
-                animation: {
-                  duration: 1000,
-                  easing: "easeOutQuart",
-                },
-              },
-            };
-
-            console.log(
-              "Creating new comparison chart with config:",
-              chartConfig
-            );
-            this.chartInstance = new Chart(ctx, chartConfig);
-
-            // Store chart in window for global access
-            window.energyProductionChart = this.chartInstance;
-          }, 100);
-        } catch (error) {
-          console.error("Error rendering comparison chart:", error);
-        }
-      },
-
-      getPeriodLabel(period) {
-        switch (period) {
-          case "day":
-            return "Day";
-          case "week":
-            return "Week";
-          case "month":
-            return "Month";
-          case "year":
-            return "Year";
-          default:
-            return period;
-        }
-      },
-
-      updateSummaryWithComparison(currentData, prevPeriodData, period) {
-        // Get total production values
-        const currentTotal = parseFloat(currentData.totals.production);
-        const prevTotal = parseFloat(prevPeriodData.totals.production);
-
-        // Update summary text
-        this.summaryText = `Total ${this.getPeriodLabel(
-          period
-        )}: ${currentTotal.toFixed(2)} kWh`;
-
-        // Calculate percentage difference
-        const diffPercent = (
-          ((currentTotal - prevTotal) / prevTotal) *
-          100
-        ).toFixed(1);
-        const prefix = diffPercent > 0 ? "+" : "";
-        this.periodComparison = `${prefix}${diffPercent}% from previous ${this.getPeriodLabel(
-          period
-        ).toLowerCase()}`;
-      },
-
-      initializeFilters() {
-        this.filters = [
-          { id: "inverter1", name: "Main Inverter", type: "inverter" },
-          { id: "meter1", name: "Grid Meter", type: "meter" },
-        ];
-      },
+      // ... existing code ...
     }));
   });
 </script>

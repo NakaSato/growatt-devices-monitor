@@ -1,0 +1,574 @@
+<!-- Power Distribution Chart -->
+<div class="chart-container mt-6">
+  <div class="chart-card">
+    <div class="card-header flex justify-between">
+      <h3 class="card-title">Power Distribution</h3>
+      <div class="chart-controls">
+        <span class="text-sm text-gray-500">Real-time distribution</span>
+      </div>
+    </div>
+    <div class="chart-wrapper" style="height: 250px">
+      <canvas id="powerDistributionChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Make sure Chart.js is loaded -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Load energy_chart.js file before the component script -->
+<script src="/static/js/energy_chart.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Check if Chart.js is loaded
+    if (typeof Chart === "undefined") {
+      console.error(
+        "Chart.js is not loaded! Make sure it is included before this component."
+      );
+    } else {
+      console.log("Chart.js is loaded and ready to use.");
+    }
+
+    // Check EnergyDataUtils
+    if (typeof window.EnergyDataUtils === "undefined") {
+      console.error(
+        "EnergyDataUtils is not available! Check if energy_chart.js is properly loaded."
+      );
+    } else {
+      console.log("EnergyDataUtils is available.");
+    }
+
+    // Initialize power distribution chart and other charts
+    console.log("DOM fully loaded, initializing charts...");
+    setTimeout(initAllCharts, 100); // Small delay to ensure DOM is ready
+  });
+
+  // Function to generate power distribution data
+  function generatePowerDistributionData() {
+    console.log("Generating power distribution data");
+    // Generate simulated power distribution data
+    return {
+      labels: ["Self-consumption", "Grid Export", "Battery Charging"],
+      datasets: [
+        {
+          data: [42, 45, 13], // Percentages of power distribution
+          backgroundColor: [
+            "rgba(16, 185, 129, 0.7)", // Green for self-consumption
+            "rgba(59, 130, 246, 0.7)", // Blue for grid export
+            "rgba(249, 115, 22, 0.7)", // Orange for battery charging
+          ],
+          borderColor: [
+            "rgba(16, 185, 129, 1)",
+            "rgba(59, 130, 246, 1)",
+            "rgba(249, 115, 22, 1)",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  }
+
+  // Function to initialize the power distribution chart
+  function initPowerDistributionChart() {
+    console.log("Initializing power distribution chart");
+    try {
+      let chartElement = document.getElementById("powerDistributionChart");
+
+      if (!chartElement) {
+        console.error("Power distribution chart element not found in DOM");
+        return null;
+      }
+
+      console.log("Power distribution chart element found, creating chart");
+
+      // Check if Chart.js is available
+      if (typeof Chart === "undefined") {
+        console.error(
+          "Chart.js library not found. Please include Chart.js before initializing charts."
+        );
+        return null;
+      }
+
+      // Create chart instance
+      const chartData = generatePowerDistributionData();
+
+      // Check if the chart already exists and destroy it
+      if (Chart.getChart(chartElement)) {
+        Chart.getChart(chartElement).destroy();
+      }
+
+      // Create the chart using Chart.js
+      const chartInstance = new Chart(chartElement, {
+        type: "doughnut",
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return context.label + ": " + context.raw + "%";
+                },
+              },
+            },
+          },
+        },
+      });
+
+      console.log("Power distribution chart created successfully");
+      return chartInstance;
+    } catch (error) {
+      console.error("Error initializing power distribution chart:", error);
+      return null;
+    }
+  }
+
+  // Function to initialize all charts
+  function initAllCharts() {
+    console.log("Initializing all charts");
+    try {
+      // Initialize power distribution chart
+      const powerDistChart = initPowerDistributionChart();
+      if (!powerDistChart) {
+        console.warn("Failed to initialize power distribution chart");
+      } else {
+        console.log("Power distribution chart initialized successfully");
+      }
+
+      // Other chart initializations can be added here
+    } catch (error) {
+      console.error("Error initializing charts:", error);
+    }
+  }
+
+  // Register the Alpine component properly
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("energyYieldChart", () => ({
+      activePeriod: "day",
+      summaryText: "Loading...",
+      periodComparison: "",
+      filters: [],
+      chartInstance: null,
+      energyData: null,
+      capacity: 10, // Default system capacity in kW
+
+      init() {
+        console.log("Initializing Energy Yield Chart");
+        // Delay chart initialization slightly to ensure DOM and Chart.js are ready
+        setTimeout(() => {
+          this.loadChartData(this.activePeriod);
+          this.initializeFilters();
+        }, 100);
+      },
+
+      loadChartData(period) {
+        console.log("Loading chart data for period:", period);
+
+        try {
+          // Check if EnergyDataUtils is available
+          if (typeof window.EnergyDataUtils === "undefined") {
+            console.error("EnergyDataUtils not found!");
+            // Use fallback data
+            this.useFallbackData(period);
+            return;
+          }
+
+          // Get today's date
+          const today = new Date();
+
+          // Generate current period data
+          this.energyData = window.EnergyDataUtils.generateEnergyData(
+            period,
+            this.capacity,
+            today
+          );
+          console.log("Generated energy data:", this.energyData);
+
+          // Get previous period data for comparison
+          const prevDate = this.getPreviousPeriodDate(period);
+          const prevPeriodData = window.EnergyDataUtils.generateEnergyData(
+            period,
+            this.capacity * 0.95, // Slightly different capacity for comparison
+            prevDate
+          );
+
+          // Render chart with comparison data
+          this.renderChartWithComparison(
+            this.energyData,
+            prevPeriodData,
+            period
+          );
+
+          // Update summary with comparison
+          this.updateSummaryWithComparison(
+            this.energyData,
+            prevPeriodData,
+            period
+          );
+        } catch (error) {
+          console.error("Error loading chart data:", error);
+          this.useFallbackData(period);
+        }
+      },
+
+      getPreviousPeriodDate(period) {
+        const prevDate = new Date();
+        switch (period) {
+          case "day":
+            prevDate.setDate(prevDate.getDate() - 1);
+            break;
+          case "week":
+            prevDate.setDate(prevDate.getDate() - 7);
+            break;
+          case "month":
+            prevDate.setMonth(prevDate.getMonth() - 1);
+            break;
+          case "year":
+            prevDate.setFullYear(prevDate.getFullYear() - 1);
+            break;
+        }
+        return prevDate;
+      },
+
+      // Use fallback data when EnergyDataUtils is not available
+      useFallbackData(period) {
+        console.log("Using fallback data for period:", period);
+
+        // Get labels based on period
+        const labels = this.generateFallbackLabels(period);
+
+        // Generate current and previous period data
+        const currentData = labels.map(() => Math.random() * 10 + 5);
+        const previousData = labels.map(() => Math.random() * 8 + 5);
+
+        // Simple fallback data structure with both periods
+        const fallbackData = {
+          labels: labels,
+          datasets: {
+            production: currentData,
+            consumption: labels.map(() => Math.random() * 12 + 8),
+            gridExchange: labels.map(() => (Math.random() - 0.5) * 10),
+          },
+          totals: {
+            production: currentData
+              .reduce((sum, val) => sum + val, 0)
+              .toFixed(2),
+            consumption: "1965",
+            selfConsumption: "1680",
+            gridImport: "105",
+            gridExport: "165",
+          },
+          percentages: {
+            selfConsumption: "87.3",
+            gridExport: "8.6",
+            gridImport: "5.3",
+          },
+        };
+
+        // Create previous period data
+        const prevPeriodData = {
+          labels: labels,
+          datasets: {
+            production: previousData,
+            consumption: labels.map(() => Math.random() * 10 + 7),
+            gridExchange: labels.map(() => (Math.random() - 0.5) * 8),
+          },
+          totals: {
+            production: previousData
+              .reduce((sum, val) => sum + val, 0)
+              .toFixed(2),
+          },
+        };
+
+        this.energyData = fallbackData;
+        this.renderChartWithComparison(fallbackData, prevPeriodData, period);
+        this.updateSummaryWithComparison(fallbackData, prevPeriodData, period);
+      },
+
+      generateFallbackLabels(period) {
+        switch (period) {
+          case "day":
+            return Array.from({ length: 24 }, (_, i) => `${i}:00`);
+          case "week":
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+          case "month":
+            return Array.from({ length: 30 }, (_, i) => `${i + 1}`);
+          case "year":
+            return [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+        }
+      },
+
+      handlePeriodChange(period) {
+        console.log("Changing period to:", period);
+        this.activePeriod = period;
+
+        // Instead of trying to update the chart directly, reload data and re-render
+        this.loadChartData(period);
+      },
+
+      renderChartWithComparison(currentData, prevPeriodData, period) {
+        console.log("Rendering chart with period comparison:", period);
+
+        try {
+          const canvas = document.getElementById("energyProductionChart");
+          if (!canvas) {
+            console.error("Chart canvas element not found!");
+            return;
+          }
+
+          const ctx = canvas.getContext("2d");
+
+          // Destroy existing chart if it exists
+          if (this.chartInstance) {
+            this.chartInstance.destroy();
+          }
+
+          // Check if Chart.js is available
+          if (typeof Chart === "undefined") {
+            console.error("Chart.js library not loaded!");
+            return;
+          }
+
+          // Try using the dedicated chart function first
+          if (
+            window.EnergyCharts &&
+            typeof window.EnergyCharts.createEnergyYieldChart === "function"
+          ) {
+            console.log("Using EnergyCharts.createEnergyYieldChart");
+            this.chartInstance = window.EnergyCharts.createEnergyYieldChart(
+              "energyProductionChart",
+              currentData,
+              prevPeriodData
+            );
+            return;
+          }
+
+          // Fallback to manual creation with comparison
+          console.log("Creating comparison chart manually");
+
+          // Prepare datasets with improved styling for both current and previous periods
+          const datasets = [
+            {
+              label: `Current ${this.getPeriodLabel(period)}`,
+              data: currentData.datasets.production,
+              backgroundColor: "rgba(16, 185, 129, 0.7)", // Green with higher opacity
+              borderColor: "rgba(16, 185, 129, 1)",
+              borderWidth: 1,
+              borderRadius: 4,
+              barPercentage: 0.6,
+              order: 1,
+            },
+            {
+              label: `Previous ${this.getPeriodLabel(period)}`,
+              data: prevPeriodData.datasets.production,
+              backgroundColor: "rgba(209, 213, 219, 0.5)", // Grey for previous
+              borderColor: "rgba(209, 213, 219, 0.8)",
+              borderWidth: 1,
+              borderRadius: 4,
+              barPercentage: 0.6,
+              order: 2,
+            },
+          ];
+
+          // Enhanced chart configuration with bar chart for comparison
+          const chartConfig = {
+            type: "bar",
+            data: {
+              labels: currentData.labels,
+              datasets: datasets,
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: "index",
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  align: "center",
+                  labels: {
+                    usePointStyle: true,
+                    padding: 20,
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    font: {
+                      size: 12,
+                      family:
+                        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    },
+                  },
+                  title: {
+                    padding: {
+                      bottom: 10,
+                    },
+                  },
+                },
+                tooltip: {
+                  backgroundColor: "rgba(255, 255, 255, 0.95)",
+                  titleColor: "#111827",
+                  bodyColor: "#374151",
+                  borderColor: "rgba(229, 231, 235, 1)",
+                  borderWidth: 1,
+                  padding: 12,
+                  boxPadding: 6,
+                  titleFont: {
+                    weight: "bold",
+                    size: 13,
+                  },
+                  bodyFont: {
+                    size: 12,
+                  },
+                  displayColors: true,
+                  boxWidth: 8,
+                  boxHeight: 8,
+                  usePointStyle: true,
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.dataset.label || "";
+                      if (label) {
+                        label += ": ";
+                      }
+                      if (context.parsed.y !== null) {
+                        label += context.parsed.y.toFixed(2) + " kWh";
+                      }
+                      return label;
+                    },
+                  },
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: "rgba(243, 244, 246, 0.8)",
+                    lineWidth: 1,
+                    drawBorder: false,
+                  },
+                  border: {
+                    display: false,
+                  },
+                  ticks: {
+                    padding: 10,
+                    color: "#6B7280",
+                    font: {
+                      size: 11,
+                    },
+                  },
+                  title: {
+                    display: true,
+                    text: "Energy (kWh)",
+                    color: "#374151",
+                    font: {
+                      size: 12,
+                      weight: "normal",
+                    },
+                    padding: {
+                      bottom: 10,
+                    },
+                  },
+                },
+                x: {
+                  grid: {
+                    display: false,
+                    drawBorder: false,
+                  },
+                  border: {
+                    display: false,
+                  },
+                  ticks: {
+                    padding: 10,
+                    color: "#6B7280",
+                    font: {
+                      size: 11,
+                    },
+                    maxRotation: 45,
+                    minRotation: 0,
+                  },
+                },
+              },
+              layout: {
+                padding: {
+                  top: 10,
+                  right: 16,
+                  bottom: 10,
+                  left: 10,
+                },
+              },
+              animation: {
+                duration: 1000,
+                easing: "easeOutQuart",
+              },
+            },
+          };
+
+          console.log("Creating new chart with config");
+          this.chartInstance = new Chart(ctx, chartConfig);
+        } catch (error) {
+          console.error("Error rendering comparison chart:", error);
+        }
+      },
+
+      getPeriodLabel(period) {
+        switch (period) {
+          case "day":
+            return "Day";
+          case "week":
+            return "Week";
+          case "month":
+            return "Month";
+          case "year":
+            return "Year";
+          default:
+            return period;
+        }
+      },
+
+      updateSummaryWithComparison(currentData, prevPeriodData, period) {
+        // Get total production values
+        const currentTotal = parseFloat(currentData.totals.production);
+        const prevTotal = parseFloat(prevPeriodData.totals.production);
+
+        // Update summary text
+        this.summaryText = `Total ${this.getPeriodLabel(
+          period
+        )}: ${currentTotal.toFixed(2)} kWh`;
+
+        // Calculate percentage difference
+        const diffPercent = (
+          ((currentTotal - prevTotal) / prevTotal) *
+          100
+        ).toFixed(1);
+        const prefix = diffPercent > 0 ? "+" : "";
+        this.periodComparison = `${prefix}${diffPercent}% from previous ${this.getPeriodLabel(
+          period
+        ).toLowerCase()}`;
+      },
+
+      initializeFilters() {
+        this.filters = [
+          { id: "inverter1", name: "Main Inverter", type: "inverter" },
+          { id: "meter1", name: "Grid Meter", type: "meter" },
+        ];
+      },
+    }));
+  });
+</script>

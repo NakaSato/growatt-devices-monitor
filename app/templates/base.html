@@ -230,9 +230,7 @@
     <!-- Header and Navigation -->
     {% include 'components/navbar.html' %}
 
-    <main class="container mx-auto min-h-screen">
-      {% block content %}{% endblock %}
-    </main>
+    <main class="">{% block content %}{% endblock %}</main>
 
     {% include 'components/footer.html' %}
 
@@ -347,21 +345,134 @@
         window.location.href = "/api/logout";
       }
 
-      // Add responsive screen detection
-      window.isSmallScreen = window.matchMedia("(max-width: 640px)").matches;
-      window.isMediumScreen = window.matchMedia(
-        "(min-width: 641px) and (max-width: 1024px)"
-      ).matches;
-      window.isLargeScreen = window.matchMedia("(min-width: 1025px)").matches;
+      // Add responsive screen detection with enhanced breakpoints
+      const breakpoints = {
+        xs: 320,
+        sm: 640,
+        md: 768,
+        lg: 1024,
+        xl: 1280,
+        "2xl": 1536,
+      };
 
-      // Update on resize
-      window.addEventListener("resize", () => {
-        window.isSmallScreen = window.matchMedia("(max-width: 640px)").matches;
-        window.isMediumScreen = window.matchMedia(
-          "(min-width: 641px) and (max-width: 1024px)"
+      // Create responsive state object
+      window.responsive = {
+        breakpoints,
+        current: "",
+        width: window.innerWidth,
+        isXs: false,
+        isSm: false,
+        isMd: false,
+        isLg: false,
+        isXl: false,
+        is2xl: false,
+        isMobile: false,
+        isTablet: false,
+        isDesktop: false,
+        isPortrait: window.matchMedia("(orientation: portrait)").matches,
+        isLandscape: window.matchMedia("(orientation: landscape)").matches,
+        isDarkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
+        isReducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches,
+        isTouch: "ontouchstart" in window || navigator.maxTouchPoints > 0,
+        supportsHover: window.matchMedia("(hover: hover)").matches,
+      };
+
+      // Update responsive state based on current viewport
+      function updateResponsiveState() {
+        const width = window.innerWidth;
+        window.responsive.width = width;
+
+        // Update breakpoint flags
+        window.responsive.isXs =
+          width >= breakpoints.xs && width < breakpoints.sm;
+        window.responsive.isSm =
+          width >= breakpoints.sm && width < breakpoints.md;
+        window.responsive.isMd =
+          width >= breakpoints.md && width < breakpoints.lg;
+        window.responsive.isLg =
+          width >= breakpoints.lg && width < breakpoints.xl;
+        window.responsive.isXl =
+          width >= breakpoints.xl && width < breakpoints["2xl"];
+        window.responsive.is2xl = width >= breakpoints["2xl"];
+
+        // Update device type flags
+        window.responsive.isMobile = width < breakpoints.md;
+        window.responsive.isTablet =
+          width >= breakpoints.md && width < breakpoints.lg;
+        window.responsive.isDesktop = width >= breakpoints.lg;
+
+        // Set current breakpoint name
+        if (width < breakpoints.sm) window.responsive.current = "xs";
+        else if (width < breakpoints.md) window.responsive.current = "sm";
+        else if (width < breakpoints.lg) window.responsive.current = "md";
+        else if (width < breakpoints.xl) window.responsive.current = "lg";
+        else if (width < breakpoints["2xl"]) window.responsive.current = "xl";
+        else window.responsive.current = "2xl";
+
+        // Update orientation
+        window.responsive.isPortrait = window.matchMedia(
+          "(orientation: portrait)"
         ).matches;
-        window.isLargeScreen = window.matchMedia("(min-width: 1025px)").matches;
+        window.responsive.isLandscape = window.matchMedia(
+          "(orientation: landscape)"
+        ).matches;
+
+        // Dispatch custom event when responsive state changes
+        window.dispatchEvent(
+          new CustomEvent("responsive-changed", {
+            detail: window.responsive,
+          })
+        );
+
+        // Add responsive classes to body for CSS targeting
+        document.body.classList.remove(
+          "screen-xs",
+          "screen-sm",
+          "screen-md",
+          "screen-lg",
+          "screen-xl",
+          "screen-2xl"
+        );
+        document.body.classList.add(`screen-${window.responsive.current}`);
+
+        // Add device type classes
+        document.body.classList.remove(
+          "device-mobile",
+          "device-tablet",
+          "device-desktop"
+        );
+        if (window.responsive.isMobile)
+          document.body.classList.add("device-mobile");
+        else if (window.responsive.isTablet)
+          document.body.classList.add("device-tablet");
+        else document.body.classList.add("device-desktop");
+      }
+
+      // Initialize responsive state
+      updateResponsiveState();
+
+      // Update on resize with debounce
+      let resizeTimer;
+      window.addEventListener("resize", function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(updateResponsiveState, 100);
       });
+
+      // Update on orientation change
+      window.addEventListener("orientationchange", updateResponsiveState);
+
+      // Listen for dark mode changes
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+          window.responsive.isDarkMode = e.matches;
+        });
+
+      // For backwards compatibility
+      window.isSmallScreen = window.responsive.isMobile;
+      window.isMediumScreen = window.responsive.isTablet;
+      window.isLargeScreen = window.responsive.isDesktop;
     </script>
   </body>
 </html>

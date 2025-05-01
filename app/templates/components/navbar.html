@@ -1,26 +1,26 @@
 <header
-  class="relative overflow-hidden shadow-sm backdrop-blur-sm sticky top-0 w-full z-50 transition-all duration-300"
+  class="overflow-hidden shadow-sm backdrop-blur-sm top-0 w-full z-50 transition-colors duration-300"
   id="site-header"
 >
   <div class="absolute inset-0 bg-pattern opacity-5 z-0"></div>
-  <!-- Status bar -->
+  <!-- Status bar with enhanced responsive support -->
   <div
-    class="py-1.5 border-b border-gray-700/50 relative z-10 bg-gradient-to-r from-slate-800 to-slate-900"
+    class="py-1 border-b border-gray-700/50 relative z-20 bg-gradient-to-r from-slate-800 to-slate-900 w-full"
   >
     <div class="container mx-auto px-2 sm:px-4">
       <div class="flex justify-between items-center text-xs">
-        <div class="flex items-center space-x-2 sm:space-x-6">
+        <div class="flex items-center space-x-1 sm:space-x-6">
           <div class="flex items-center px-2 py-1">
             <span
-              class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1.5 sm:mr-2 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               aria-hidden="true"
             ></span>
             <span
-              class="text-emerald-200 font-medium tracking-wider text-xs uppercase"
+              class="text-emerald-200 font-medium tracking-wider text-[10px] xs:text-xs uppercase"
               >System Online</span
             >
           </div>
-          <div class="hidden sm:flex items-center gap-2 px-2 py-1">
+          <div class="hidden xs:flex items-center gap-2 px-2 py-1">
             <span
               class="text-slate-400 text-xs font-light tracking-wide"
               id="current-date"
@@ -31,35 +31,56 @@
             ></span>
           </div>
         </div>
-        <div class="hidden md:flex items-center space-x-4">
-          <!-- Metrics badges -->
+        <div
+          class="hidden sm:flex items-center space-x-2 md:space-x-4"
+          aria-label="System Metrics"
+        >
+          <!-- Metrics badges with better spacing for small/medium screens -->
           <div
-            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-emerald-900/40 border-emerald-700/30 text-emerald-300"
+            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-emerald-900/40 border-emerald-700/30 text-emerald-300"
+            aria-label="Generation"
           >
-            <span class="text-slate-400 text-xs uppercase tracking-wider"
+            <span
+              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              id="generation-label"
               >Gen:</span
             >
-            <span class="font-medium tabular-nums" id="generation-value"
+            <span
+              class="font-medium tabular-nums text-xs sm:text-sm"
+              id="generation-value"
+              aria-labelledby="generation-label"
               >9.7 kWh</span
             >
           </div>
           <div
-            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-blue-900/40 border-blue-700/30 text-blue-300"
+            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-blue-900/40 border-blue-700/30 text-blue-300"
+            aria-label="Consumption"
           >
-            <span class="text-slate-400 text-xs uppercase tracking-wider"
+            <span
+              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              id="consumption-label"
               >Cons:</span
             >
-            <span class="font-medium tabular-nums" id="consumption-value"
+            <span
+              class="font-medium tabular-nums text-xs sm:text-sm"
+              id="consumption-value"
+              aria-labelledby="consumption-label"
               >6.4 kWh</span
             >
           </div>
           <div
-            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-amber-900/40 border-amber-700/30 text-amber-300"
+            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-amber-900/40 border-amber-700/30 text-amber-300"
+            aria-label="Efficiency"
           >
-            <span class="text-slate-400 text-xs uppercase tracking-wider"
+            <span
+              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              id="efficiency-label"
               >Eff:</span
             >
-            <span class="font-medium tabular-nums" id="efficiency-value"
+            <span
+              class="font-medium tabular-nums text-xs sm:text-sm"
+              id="efficiency-value"
+              aria-labelledby="efficiency-label"
               >92.8%</span
             >
           </div>
@@ -68,37 +89,28 @@
     </div>
   </div>
 
-  <!-- Main navigation bar -->
+  <!-- Main navigation bar with improved responsive design -->
   <nav
-    class="px-4 py-3 relative z-10 bg-white shadow-md border-b border-gray-200 transition-all duration-300"
+    class="px-2 xs:px-4 py-2 xs:py-3 relative z-10 bg-white shadow-md border-b border-gray-200 transition-all duration-300"
     id="main-nav"
     aria-label="Main navigation"
   >
-    <div class="container mx-auto">
+    <div class="lg:container lg:mx-auto">
       <!-- Mobile menu button and logo -->
       <div class="flex items-center justify-between lg:hidden">
-        <a href="/" class="flex items-center gap-2.5 group" aria-label="Home">
-          <div class="relative mr-2.5">
+        <a href="/" class="flex items-center group" aria-label="Home">
+          <div class="relative">
             <img
-              src="{{ url_for('static', filename='svg/logo.svg') }}"
+              src="{{ url_for('static', filename='images/Growatt-logo.png') }}"
               alt="Growatt Monitor Logo"
-              class="w-6 h-6"
+              class="h-8 xs:h-10 sm:h-12"
             />
           </div>
         </a>
-        <div class="flex items-center gap-3">
-          <button
-            class="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors relative"
-            aria-label="Notifications"
-          >
-            <i class="fas fa-bell"></i>
-            <span
-              class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"
-            ></span>
-          </button>
+        <div class="flex items-center">
           <button
             id="mobile-menu-button"
-            class="text-slate-700 bg-slate-100 p-2 rounded-md hover:bg-slate-200 transition-colors"
+            class="text-slate-700 bg-slate-100 px-3 py-2 rounded-md hover:bg-slate-200 transition-colors flex items-center justify-center w-10 h-10"
             aria-expanded="false"
             aria-controls="mobile-menu"
             aria-label="Toggle menu"
@@ -575,12 +587,7 @@
         mainNav.classList.remove("py-2.5");
       }
 
-      if (scrollTop > lastScrollTop && scrollTop > 150) {
-        header.classList.add("-translate-y-full");
-      } else {
-        header.classList.remove("-translate-y-full");
-      }
-
+      // Remove the translation logic that hides the header
       lastScrollTop = scrollTop;
     }
 

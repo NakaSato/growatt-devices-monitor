@@ -1,10 +1,10 @@
 <!-- System Status Overview Component -->
-<div x-data="{ activeTab: 'overview' }">
+<div x-data="{ activeTab: 'overview' }" class="responsive-dashboard">
   <!-- System Status Header -->
   {% include 'components/metrics/system_metrics.html' %}
 
   <!-- Overview Tab (Default) -->
-  <div class="my-4">{% include 'components/tab-overview.html' %}</div>
+  <div class="my-3 xs:my-4">{% include 'components/tab-overview.html' %}</div>
 
   <div
     x-show="activeTab === 'overview'"
@@ -12,7 +12,9 @@
     x-transition:enter-start="opacity-0"
     x-transition:enter-end="opacity-100"
   >
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-2 lg:gap-2">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 xs:gap-3 md:gap-4"
+    >
       <!-- Power Flow Card -->
       {% include 'components/cards/power_flow_card.html' %}
 
@@ -102,6 +104,51 @@
           showError();
         }
       }, 700); // Simulate network delay
+    }
+
+    // Apply responsive adjustments based on screen size
+    function applyResponsiveAdjustments() {
+      if (window.responsive) {
+        const dashboard = document.querySelector(".responsive-dashboard");
+        if (!dashboard) return;
+
+        // Add appropriate classes based on device type
+        if (window.responsive.isMobile) {
+          dashboard.classList.add("mobile-view");
+          dashboard.classList.remove("tablet-view", "desktop-view");
+        } else if (window.responsive.isTablet) {
+          dashboard.classList.add("tablet-view");
+          dashboard.classList.remove("mobile-view", "desktop-view");
+        } else {
+          dashboard.classList.add("desktop-view");
+          dashboard.classList.remove("mobile-view", "tablet-view");
+        }
+
+        // Adjust chart dimensions based on screen size if charts exist
+        if (efficiencyChart || distributionChart) {
+          const chartWidth = window.responsive.isMobile
+            ? window.innerWidth - 40
+            : window.responsive.isTablet
+            ? window.innerWidth * 0.9
+            : undefined;
+
+          if (efficiencyChart && chartWidth) {
+            efficiencyChart.resize(chartWidth);
+          }
+
+          if (distributionChart && chartWidth) {
+            distributionChart.resize(chartWidth);
+          }
+        }
+      }
+    }
+
+    // Register responsive event listener
+    window.addEventListener("responsive-changed", applyResponsiveAdjustments);
+
+    // Initial application of responsive adjustments
+    if (window.responsive) {
+      setTimeout(applyResponsiveAdjustments, 100);
     }
 
     // Add event listener for time range selector

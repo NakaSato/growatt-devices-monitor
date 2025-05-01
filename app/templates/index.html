@@ -1,452 +1,131 @@
 {% extends "base.html" %} {% block title %}Home - Growatt API{% endblock %} {%
 block content %}
-<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 max-w-8xl">
-  <!-- Include the dashboard metrics component from its new location -->
-  <div
-    class="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-sm p-2 sm:p-4"
-  >
+<div class="lg:container lg:mx-auto p-4 -mt-6 lg:p-0 lg:pt-4">
+  <!-- Dashboard content with enhanced responsive support -->
+  <div class="mt-6">
     {% include "components/dashboard_layout.html" %}
+
+    <!-- Responsive quick actions bar -->
+    <div class="mt-6 pt-4 border-t border-gray-100">
+      <div
+        class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3"
+      >
+        <a
+          href="/plants"
+          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-solar-panel text-amber-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Plants</span
+          >
+        </a>
+        <a
+          href="/devices"
+          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-microchip text-blue-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Devices</span
+          >
+        </a>
+        <a
+          href="/analytics"
+          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-chart-line text-purple-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Analytics</span
+          >
+        </a>
+        <a
+          href="/maps"
+          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-map-marker-alt text-red-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Maps</span
+          >
+        </a>
+        <a
+          href="#"
+          class="hidden xs:flex bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-cog text-gray-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Settings</span
+          >
+        </a>
+        <a
+          href="#"
+          class="hidden xs:flex bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex-col items-center justify-center text-center transition-colors group"
+        >
+          <i
+            class="fas fa-download text-emerald-500 text-lg mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <span class="text-xs sm:text-sm font-medium text-slate-700"
+            >Export</span
+          >
+        </a>
+      </div>
+    </div>
   </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      // No need for Alpine.js loading code since it's in base.html
-      console.log("DOM fully loaded, initializing charts...");
-      setTimeout(initAllCharts, 100); // Small delay to ensure DOM is ready
-    });
-
-    // Function to generate power distribution data
-    function generatePowerDistributionData() {
-      console.log("Generating power distribution data");
-      // Generate simulated power distribution data
-      return {
-        labels: ["Self-consumption", "Grid Export", "Battery Charging"],
-        datasets: [
-          {
-            data: [42, 45, 13], // Percentages of power distribution
-            borderWidth: 1,
-          },
-        ],
-      };
-    }
-
-    // Function to initialize the power distribution chart
-    function initPowerDistributionChart() {
-      console.log("Initializing power distribution chart");
-      try {
-        let chartElement = document.getElementById("powerDistributionChart");
-
-        if (!chartElement) {
-          console.error("Power distribution chart element not found in DOM");
-          return null;
-        }
-
-        console.log("Power distribution chart element found, creating chart");
-
-        // Check if Chart.js is available
-        if (typeof Chart === "undefined") {
-          console.error(
-            "Chart.js library not found. Please include Chart.js before initializing charts."
-          );
-          return null;
-        }
-
-        // Create chart instance
-        const chartData = generatePowerDistributionData();
-
-        // Check if the chart already exists and destroy it
-        if (Chart.getChart(chartElement)) {
-          Chart.getChart(chartElement).destroy();
-        }
-
-        // Create the chart using Chart.js
-        const chartInstance = new Chart(chartElement, {
-          type: "doughnut",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "bottom",
-              },
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    return context.label + ": " + context.raw + "%";
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        console.log("Power distribution chart created successfully");
-        return chartInstance;
-      } catch (error) {
-        console.error("Error initializing power distribution chart:", error);
-        return null;
-      }
-    }
-
-    // Function to initialize all charts
-    function initAllCharts() {
-      console.log("Initializing all charts");
-      try {
-        // Initialize power distribution chart
-        const powerDistChart = initPowerDistributionChart();
-        if (!powerDistChart) {
-          console.warn("Failed to initialize power distribution chart");
-        } else {
-          console.log("Power distribution chart initialized successfully");
-        }
-
-        // Other chart initializations can be added here
-      } catch (error) {
-        console.error("Error initializing charts:", error);
-      }
-    }
-
-    // Alpine.js Weather Widget Component
-    function weatherWidget() {
-      return {
-        weatherData: {},
-        isLoading: true,
-        temperatureHistory: [22, 24, 27, 28, 26, 23],
-        humidityHistory: [60, 55, 48, 45, 50, 58],
-        timeLabels: ["6 AM", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM"],
-        weatherChart: null,
-        refreshTimer: null,
-        errorCount: 0,
-        maxErrors: 3,
-
-        init() {
-          this.fetchWeatherData();
-          // Auto-refresh every 5 minutes
-          this.refreshTimer = setInterval(() => {
-            this.fetchWeatherData();
-          }, 5 * 60 * 1000);
-
-          // Clean up on destroy
-          this.$cleanup = () => {
-            if (this.refreshTimer) {
-              clearInterval(this.refreshTimer);
-            }
-
-            if (this.weatherChart) {
-              this.weatherChart.destroy();
-            }
-          };
-        },
-
-        fetchWeatherData(manualRefresh = false) {
-          this.isLoading = true;
-
-          // Try to fetch actual API data
-          fetch("/api/weather/current")
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error("Weather API not available");
-              }
-              return response.json();
-            })
-            .then((data) => {
-              this.handleWeatherDataSuccess(data);
-            })
-            .catch((error) => {
-              console.warn("Using simulated weather data:", error.message);
-              this.errorCount++;
-              this.generateSimulatedWeatherData();
-            })
-            .finally(() => {
-              this.isLoading = false;
-
-              if (manualRefresh) {
-                this.showRefreshNotification();
-              }
-            });
-        },
-
-        handleWeatherDataSuccess(data) {
-          this.weatherData = data;
-          this.errorCount = 0; // Reset error count
-
-          // Update chart data based on new values
-          this.updateChartDataFromWeatherValues(data);
-          this.updateChartWithNewData();
-        },
-
-        updateChartDataFromWeatherValues(data) {
-          if (data.temperature) {
-            const tempValue = parseFloat(
-              data.temperature.replace(/[^\d.-]/g, "")
-            );
-            if (!isNaN(tempValue)) {
-              this.temperatureHistory.push(tempValue);
-              this.temperatureHistory.shift();
-            }
-          }
-
-          if (data.humidity) {
-            const humValue = parseFloat(data.humidity.replace(/[^\d.-]/g, ""));
-            if (!isNaN(humValue)) {
-              this.humidityHistory.push(humValue);
-              this.humidityHistory.shift();
-            }
-          }
-        },
-
-        showRefreshNotification() {
-          const toast = document.createElement("div");
-          toast.className =
-            "fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50";
-          toast.textContent = "Weather data refreshed";
-          document.body.appendChild(toast);
-
-          // Auto-remove after 3 seconds
-          setTimeout(() => {
-            toast.remove();
-          }, 3000);
-        },
-
-        generateSimulatedWeatherData() {
-          const now = new Date();
-          const hour = now.getHours();
-
-          // Calculate temperature based on time of day
-          const currentTemp = this.calculateSimulatedTemperature(hour);
-
-          // Humidity tends to be inverse of temperature
-          const currentHumidity = this.calculateSimulatedHumidity(currentTemp);
-
-          // Determine weather condition
-          const condition = this.determineWeatherCondition(
-            currentHumidity,
-            hour
-          );
-
-          // Create final weather data object
-          this.weatherData = {
-            location: "Solar Plant A",
-            temperature: `${currentTemp}°C`,
-            weather: condition,
-            humidity: `${currentHumidity}%`,
-            last_update_time: now.toLocaleTimeString(),
-            date: now.toLocaleDateString(),
-          };
-
-          // Update temperature and humidity history
-          this.temperatureHistory.push(parseFloat(currentTemp));
-          this.temperatureHistory.shift();
-
-          this.humidityHistory.push(parseInt(currentHumidity));
-          this.humidityHistory.shift();
-
-          this.updateChartWithNewData();
-        },
-
-        calculateSimulatedTemperature(hour) {
-          let currentTemp = 22;
-
-          if (hour >= 6 && hour < 12) {
-            currentTemp = 22 + (hour - 6) * 0.8; // Morning warming
-          } else if (hour >= 12 && hour < 18) {
-            currentTemp = 26 + Math.sin(((hour - 12) / 6) * Math.PI) * 4; // Afternoon peak
-          } else if (hour >= 18 && hour < 22) {
-            currentTemp = 26 - (hour - 18) * 1.2; // Evening cooling
-          }
-
-          // Add some randomness
-          return (currentTemp + (Math.random() * 2 - 1)).toFixed(1);
-        },
-
-        calculateSimulatedHumidity(temperature) {
-          return (
-            70 -
-            parseInt(temperature) +
-            10 +
-            (Math.random() * 10 - 5)
-          ).toFixed(0);
-        },
-
-        determineWeatherCondition(humidity, hour) {
-          let condition = "Sunny";
-
-          if (humidity > 70) {
-            condition = "Cloudy";
-          } else if (humidity > 85) {
-            condition = "Rainy";
-          }
-
-          if (hour < 6 || hour > 19) {
-            condition = hour < 6 ? "Clear Night" : "Partly Cloudy Night";
-          }
-
-          return condition;
-        },
-
-        updateChartWithNewData() {
-          if (this.weatherChart) {
-            this.updateExistingChart();
-          } else {
-            this.initWeatherChart();
-          }
-        },
-
-        updateExistingChart() {
-          // Update data points
-          this.weatherChart.data.datasets[0].data = [
-            ...this.temperatureHistory,
-          ];
-          this.weatherChart.data.datasets[1].data = [...this.humidityHistory];
-
-          // Update time labels to show recent hours
-          this.updateChartTimeLabels();
-
-          // Apply updates to the chart
-          this.weatherChart.update();
-        },
-
-        updateChartTimeLabels() {
-          const now = new Date();
-          this.timeLabels = Array.from({ length: 6 }, (_, i) => {
-            const d = new Date(now);
-            d.setHours(now.getHours() - 5 + i);
-            return d.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-          });
-          this.weatherChart.data.labels = this.timeLabels;
-        },
-
-        initWeatherChart() {
-          // Check for chart libraries
-          if (
-            typeof Chart === "undefined" &&
-            typeof window.EnergyCharts === "undefined"
-          ) {
-            console.error("Neither Chart.js nor EnergyCharts is available.");
-            return;
-          }
-
-          const chartElement = document.getElementById("weatherTrendChart");
-          if (!chartElement) {
-            console.warn("Weather trend chart element not found");
-            return;
-          }
-
-          try {
-            if (typeof Chart !== "undefined") {
-              this.initChartJs(chartElement);
-            } else if (window.EnergyCharts) {
-              this.initEnergyCharts(chartElement);
-            }
-          } catch (error) {
-            this.handleChartError(error, chartElement);
-          }
-        },
-
-        initChartJs(chartElement) {
-          const ctx = chartElement.getContext("2d");
-          this.weatherChart = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: this.timeLabels,
-              datasets: [
-                {
-                  label: "Temperature (°C)",
-                  data: this.temperatureHistory,
-                  borderColor: "rgba(249, 115, 22, 1)",
-                  backgroundColor: "rgba(249, 115, 22, 0.2)",
-                  borderWidth: 2,
-                  tension: 0.3,
-                  pointRadius: 3,
-                },
-                {
-                  label: "Humidity (%)",
-                  data: this.humidityHistory,
-                  borderColor: "rgba(59, 130, 246, 1)",
-                  backgroundColor: "rgba(59, 130, 246, 0.2)",
-                  borderWidth: 2,
-                  tension: 0.3,
-                  pointRadius: 3,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {
-                title: {
-                  display: true,
-                  text: "Weather Trends",
-                  font: { size: 16 },
-                },
-                legend: { position: "bottom" },
-                tooltip: { mode: "index", intersect: false },
-              },
-              scales: {
-                y: {
-                  beginAtZero: false,
-                  ticks: {
-                    callback: function (value) {
-                      return value;
-                    },
-                  },
-                },
-                x: { grid: { display: false } },
-              },
-            },
-          });
-        },
-
-        initEnergyCharts(chartElement) {
-          const data = {
-            labels: this.timeLabels,
-            datasets: [
-              window.EnergyCharts.createDataset(
-                "Temperature (°C)",
-                this.temperatureHistory,
-                "tertiary",
-                { pointRadius: 3 }
-              ),
-              window.EnergyCharts.createDataset(
-                "Humidity (%)",
-                this.humidityHistory,
-                "secondary",
-                { pointRadius: 3 }
-              ),
-            ],
-          };
-
-          this.weatherChart = window.EnergyCharts.createLineChart(
-            "weatherTrendChart",
-            data,
-            {
-              plugins: {
-                title: {
-                  display: true,
-                  text: "Weather Trends",
-                },
-              },
-            }
-          );
-        },
-
-        handleChartError(error, chartElement) {
-          console.error("Error initializing weather chart:", error);
-
-          // Show visual error message
-          const chartContainer = chartElement.parentNode;
-          const errorMsg = document.createElement("div");
-          errorMsg.className = "text-red-500 p-4 text-center";
-          errorMsg.textContent =
-            "Unable to load weather chart. Please refresh the page.";
-          chartContainer.appendChild(errorMsg);
-        },
-      };
-    }
-  </script>
-  {% endblock %}
 </div>
+
+<!-- JavaScript for responsive dashboard -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Update time and date in the dashboard
+    function updateDateTime() {
+      const now = new Date();
+
+      // Format date: May 1, 2025
+      const options = { year: "numeric", month: "short", day: "numeric" };
+      const dateElement = document.getElementById("dashboard-date");
+      if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString(undefined, options);
+      }
+
+      // Format time: 14:35:22
+      const timeElement = document.getElementById("dashboard-time");
+      if (timeElement) {
+        const hours = now.getHours().toString().padStart(2, "0");
+        const minutes = now.getMinutes().toString().padStart(2, "0");
+        timeElement.textContent = `${hours}:${minutes}`;
+      }
+    }
+
+    // Update time initially and then every minute
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+
+    // Apply responsive adjustments based on screen size
+    function applyResponsiveAdjustments() {
+      // This function will be triggered when the responsive state changes
+      // You can use the global window.responsive object we created earlier
+
+      // Example: Adjust layout based on device type
+      if (window.responsive && window.responsive.isMobile) {
+        // Mobile-specific adjustments (if needed)
+      }
+    }
+
+    // Listen for responsive state changes
+    window.addEventListener("responsive-changed", applyResponsiveAdjustments);
+
+    // Initial application
+    if (window.responsive) {
+      applyResponsiveAdjustments();
+    }
+  });
+</script>
+{% endblock %}

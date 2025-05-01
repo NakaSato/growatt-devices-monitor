@@ -1,20 +1,22 @@
 <div
-  class="status-header flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 mb-3 md:mb-4 p-3 md:p-4 bg-white rounded-lg shadow border border-green-300"
+  class="status-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 xs:gap-3 sm:gap-0 mb-2 xs:mb-3 sm:mb-4 p-2 xs:p-3 sm:p-4 bg-white rounded-lg shadow border border-green-300"
   x-data="{ mobileMenuOpen: false }"
 >
-  <div class="flex justify-between w-full md:w-auto items-center">
-    <h2 class="text-lg md:text-xl font-bold text-gray-800">
+  <div class="flex justify-between w-full sm:w-auto items-center">
+    <h2 class="text-base xs:text-lg sm:text-xl font-bold text-gray-800">
       System Status Overview
     </h2>
     <!-- Mobile menu toggle -->
     <button
       @click="mobileMenuOpen = !mobileMenuOpen"
-      class="md:hidden bg-gray-100 p-1.5 rounded-md hover:bg-gray-200"
+      class="sm:hidden bg-gray-100 p-1.5 rounded-md hover:bg-gray-200 active:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300"
       aria-label="Toggle menu"
+      aria-expanded="false"
+      :aria-expanded="mobileMenuOpen"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5 text-gray-700"
+        class="h-4 w-4 xs:h-5 xs:w-5 text-gray-700"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -30,29 +32,35 @@
   </div>
 
   <!-- Desktop navigation -->
-  <div class="status-tabs hidden md:flex flex-wrap space-x-2">
+  <div class="status-tabs hidden sm:flex flex-wrap gap-1 xs:gap-2">
     <button
       @click="activeTab = 'overview'"
       :class="{'bg-indigo-600 text-white': activeTab === 'overview', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'overview'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium"
+      class="px-3 xs:px-4 py-1.5 rounded-md text-xs xs:text-sm font-medium transition-colors"
+      aria-pressed="true"
+      :aria-pressed="activeTab === 'overview'"
     >
       Overview
     </button>
     <button
       @click="activeTab = 'alerts'"
       :class="{'bg-indigo-600 text-white': activeTab === 'alerts', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'alerts'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium flex items-center"
+      class="px-3 xs:px-4 py-1.5 rounded-md text-xs xs:text-sm font-medium flex items-center transition-colors"
+      aria-pressed="false"
+      :aria-pressed="activeTab === 'alerts'"
     >
       <span>Alerts</span>
       <span
-        class="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5"
+        class="ml-1 bg-red-500 text-white text-[0.65rem] xs:text-xs rounded-full w-4 h-4 xs:w-5 xs:h-5 inline-flex items-center justify-center"
         >3</span
       >
     </button>
     <button
-      @click="activeTab = 'analytics'"
+      @click="activeTab = 'analytics'; initAnalytics()"
       :class="{'bg-indigo-600 text-white': activeTab === 'analytics', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'analytics'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium"
+      class="px-3 xs:px-4 py-1.5 rounded-md text-xs xs:text-sm font-medium transition-colors"
+      aria-pressed="false"
+      :aria-pressed="activeTab === 'analytics'"
     >
       Analytics
     </button>
@@ -61,29 +69,43 @@
   <!-- Mobile navigation -->
   <div
     x-show="mobileMenuOpen"
-    class="status-tabs flex flex-col w-full space-y-2 mt-2 md:hidden"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 transform -translate-y-2"
+    x-transition:enter-end="opacity-100 transform translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 transform translate-y-0"
+    x-transition:leave-end="opacity-0 transform -translate-y-2"
+    class="status-tabs flex flex-col w-full space-y-1 mt-2 sm:hidden absolute left-0 right-0 bg-white z-10 border border-gray-200 rounded-md shadow-md p-2"
+    style="top: calc(100% - 8px)"
   >
     <button
       @click="activeTab = 'overview'; mobileMenuOpen = false"
       :class="{'bg-indigo-600 text-white': activeTab === 'overview', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'overview'}"
-      class="px-3 py-2 rounded-md text-sm font-medium text-left"
+      class="px-3 py-2 rounded-md text-sm font-medium text-left transition-colors"
+      aria-pressed="true"
+      :aria-pressed="activeTab === 'overview'"
     >
       Overview
     </button>
     <button
       @click="activeTab = 'alerts'; mobileMenuOpen = false"
       :class="{'bg-indigo-600 text-white': activeTab === 'alerts', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'alerts'}"
-      class="px-3 py-2 rounded-md text-sm font-medium flex items-center justify-between"
+      class="px-3 py-2 rounded-md text-sm font-medium flex items-center justify-between transition-colors"
+      aria-pressed="false"
+      :aria-pressed="activeTab === 'alerts'"
     >
       <span>Alerts</span>
-      <span class="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5"
+      <span
+        class="bg-red-500 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center"
         >3</span
       >
     </button>
     <button
-      @click="activeTab = 'analytics'; mobileMenuOpen = false"
+      @click="activeTab = 'analytics'; mobileMenuOpen = false; initAnalytics()"
       :class="{'bg-indigo-600 text-white': activeTab === 'analytics', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'analytics'}"
-      class="px-3 py-2 rounded-md text-sm font-medium text-left"
+      class="px-3 py-2 rounded-md text-sm font-medium text-left transition-colors"
+      aria-pressed="false"
+      :aria-pressed="activeTab === 'analytics'"
     >
       Analytics
     </button>
@@ -91,10 +113,25 @@
 </div>
 
 <style>
-  @media (max-width: 768px) {
+  @media (max-width: 640px) {
     .status-header {
       position: relative;
       z-index: 10;
+    }
+  }
+
+  /* Touch device optimization for buttons */
+  @media (hover: none) {
+    .status-tabs button {
+      min-height: 44px;
+    }
+  }
+
+  /* Ensure mobile menu doesn't overflow on small screens */
+  @media (max-width: 320px) {
+    .status-tabs {
+      width: calc(100vw - 32px);
+      max-width: 100%;
     }
   }
 </style>
