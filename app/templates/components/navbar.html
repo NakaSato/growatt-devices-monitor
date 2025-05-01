@@ -1,38 +1,67 @@
 <header
   class="relative overflow-hidden shadow-sm backdrop-blur-sm sticky top-0 w-full z-50 transition-all duration-300"
+  id="site-header"
 >
   <div class="absolute inset-0 bg-pattern opacity-5 z-0"></div>
   <!-- Status bar -->
   <div
-    class="py-1 border-b border-gray-700/50 relative z-10 bg-gradient-to-r from-slate-900 to-slate-800"
+    class="py-1.5 border-b border-gray-700/50 relative z-10 bg-gradient-to-r from-slate-800 to-slate-900"
   >
-    <div class="container mx-auto px-2 sm:px-3">
+    <div class="container mx-auto px-2 sm:px-4">
       <div class="flex justify-between items-center text-xs">
-        <div class="flex items-center space-x-2 sm:space-x-3">
+        <div class="flex items-center space-x-2 sm:space-x-6">
           <div class="flex items-center px-2 py-1">
             <span
-              class="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 bg-green-500 rounded-full mr-1.5 animate-[pulse_2s_cubic-bezier(0.66,0,0.33,1)_infinite] shadow-[0_0_0_0_rgba(76,175,80,0.4)]"
+              class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               aria-hidden="true"
             ></span>
-            <span class="text-white font-medium tracking-wide text-xs"
+            <span
+              class="text-emerald-200 font-medium tracking-wider text-xs uppercase"
               >System Online</span
             >
           </div>
-          <div class="hidden sm:flex items-center px-2 py-1">
-            <i class="fas fa-clock text-white mr-1.5 text-xs"></i>
-            <span id="current-time" class="text-white text-xs"></span>
+          <div class="hidden sm:flex items-center gap-2 px-2 py-1">
+            <span
+              class="text-slate-400 text-xs font-light tracking-wide"
+              id="current-date"
+            ></span>
+            <span
+              class="text-slate-300 font-mono font-medium tabular-nums text-xs tracking-tight"
+              id="current-time"
+            ></span>
           </div>
         </div>
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <div class="hidden sm:flex items-center px-2 py-1">
-            <i class="fas fa-sun text-yellow-300 mr-1.5 text-xs"></i>
-            <span class="text-gray-300 text-xs">Gen: </span>
-            <span class="text-white font-medium ml-0.5 text-xs">9.7 kWh</span>
+        <div class="hidden md:flex items-center space-x-4">
+          <!-- Metrics badges -->
+          <div
+            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-emerald-900/40 border-emerald-700/30 text-emerald-300"
+          >
+            <span class="text-slate-400 text-xs uppercase tracking-wider"
+              >Gen:</span
+            >
+            <span class="font-medium tabular-nums" id="generation-value"
+              >9.7 kWh</span
+            >
           </div>
-          <div class="flex items-center px-2 py-1">
-            <i class="fas fa-bolt text-yellow-300 mr-1.5 text-xs"></i>
-            <span class="text-gray-300 text-xs">Status: </span>
-            <span class="text-green-300 font-bold ml-1 text-xs">Active</span>
+          <div
+            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-blue-900/40 border-blue-700/30 text-blue-300"
+          >
+            <span class="text-slate-400 text-xs uppercase tracking-wider"
+              >Cons:</span
+            >
+            <span class="font-medium tabular-nums" id="consumption-value"
+              >6.4 kWh</span
+            >
+          </div>
+          <div
+            class="flex items-center gap-2 px-3 py-1 rounded-md border bg-amber-900/40 border-amber-700/30 text-amber-300"
+          >
+            <span class="text-slate-400 text-xs uppercase tracking-wider"
+              >Eff:</span
+            >
+            <span class="font-medium tabular-nums" id="efficiency-value"
+              >92.8%</span
+            >
           </div>
         </div>
       </div>
@@ -41,120 +70,132 @@
 
   <!-- Main navigation bar -->
   <nav
-    class="px-1 sm:px-2 py-1 relative z-10 bg-white shadow-md border-b border-gray-200 group"
+    class="px-4 py-3 relative z-10 bg-white shadow-md border-b border-gray-200 transition-all duration-300"
+    id="main-nav"
     aria-label="Main navigation"
   >
     <div class="container mx-auto">
       <!-- Mobile menu button and logo -->
-      <div class="flex items-center justify-between py-1 md:hidden">
-        <a href="/" class="flex items-center" aria-label="Home">
-          <img
-            src="{{ url_for('static', filename='svg/logo.svg') }}"
-            alt="Growatt Logo"
-            class="h-6 sm:h-7 w-auto mr-1 filter invert"
-            onerror="this.src='{{ url_for('static', filename='favicon.ico') }}'; this.onerror=null;"
-          />
+      <div class="flex items-center justify-between lg:hidden">
+        <a href="/" class="flex items-center gap-2.5 group" aria-label="Home">
+          <div class="relative mr-2.5">
+            <img
+              src="{{ url_for('static', filename='svg/logo.svg') }}"
+              alt="Growatt Monitor Logo"
+              class="w-6 h-6"
+            />
+          </div>
         </a>
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <!-- Mobile menu button -->
+        <div class="flex items-center gap-3">
+          <button
+            class="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors relative"
+            aria-label="Notifications"
+          >
+            <i class="fas fa-bell"></i>
+            <span
+              class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"
+            ></span>
+          </button>
           <button
             id="mobile-menu-button"
-            class="text-gray-800 p-1 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200 {{ 'bg-green-100 text-green-700 ring-2 ring-green-500' if request.path == '/' }}"
+            class="text-slate-700 bg-slate-100 p-2 rounded-md hover:bg-slate-200 transition-colors"
             aria-expanded="false"
             aria-controls="mobile-menu"
             aria-label="Toggle menu"
           >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              ></path>
-            </svg>
+            <i class="fas fa-bars" id="menu-icon-bars"></i>
+            <i class="fas fa-times hidden" id="menu-icon-close"></i>
           </button>
         </div>
       </div>
 
       <!-- Desktop menu -->
-      <div class="hidden md:flex items-center justify-between py-1 lg:py-1.5">
+      <div class="hidden lg:flex items-center justify-between py-1">
         <!-- Logo and main links -->
         <div class="flex items-center">
           <a
             href="/"
-            class="flex items-center mr-2 md:mr-3 lg:mr-4 hover:drop-shadow-[0_0_4px_rgba(0,0,0,0.2)]"
+            class="flex items-center gap-2.5 mr-8 group"
             aria-label="Home"
           >
-            <div class="flex flex-col items-center">
+            <div class="mr-2 relative">
               <img
-                src="{{ url_for('static', filename='svg/logo.svg') }}"
-                alt="Growatt Logo"
-                class="h-6 md:h-7 w-auto"
-                onerror="this.src='{{ url_for('static', filename='favicon.ico') }}'; this.onerror=null;"
+                src="{{ url_for('static', filename='images/Growatt-logo.png') }}"
+                alt="Growatt Monitor Logo"
+                class="h-16"
               />
             </div>
           </a>
           <nav aria-label="Primary Navigation">
-            <ul
-              class="flex flex-wrap items-center space-x-0.5 md:space-x-1 lg:space-x-2"
-            >
+            <ul class="flex items-center space-x-1">
               <li class="my-0">
                 <a
                   href="/"
-                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/' }}"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
                   aria-current="{{ 'page' if request.path == '/' else 'false' }}"
                 >
-                  <i
-                    class="fas fa-tachometer-alt mr-1.5 text-black/90 text-sm"
-                    aria-hidden="true"
-                  ></i>
-                  Dashboard
+                  <i class="fas fa-tachometer-alt mr-1.5 text-sm"></i>
+                  Dashboard {% if request.path == '/' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
                 </a>
               </li>
               <li class="my-0">
                 <a
                   href="/plants"
-                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/plants' }}"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/plants' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
                   aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
                 >
-                  <i
-                    class="fas fa-solar-panel mr-1.5 text-black/90 text-sm"
-                    aria-hidden="true"
-                  ></i>
-                  All Plants
+                  <i class="fas fa-solar-panel mr-1.5 text-sm"></i>
+                  Energy Plant {% if request.path == '/plants' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
                 </a>
               </li>
               <li class="my-0">
                 <a
                   href="/devices"
-                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/devices' }}"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/devices' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
                   aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
                 >
-                  <i
-                    class="fas fa-microchip mr-1.5 text-black/90 text-sm"
-                    aria-hidden="true"
-                  ></i>
-                  Devices
+                  <i class="fas fa-microchip mr-1.5 text-sm"></i>
+                  Devices {% if request.path == '/devices' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
                 </a>
               </li>
-              <!-- Other navbar items: just showing one as example, repeat for others -->
               <li class="my-0">
                 <a
                   href="/maps"
-                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/maps' }}"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/maps' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
                   aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
                 >
-                  <i
-                    class="fas fa-map-marker-alt mr-1.5 text-black/90 text-sm"
-                    aria-hidden="true"
-                  ></i>
-                  Maps
+                  <i class="fas fa-map-marker-alt mr-1.5 text-sm"></i>
+                  Maps {% if request.path == '/maps' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
+                </a>
+              </li>
+              <li class="my-0">
+                <a
+                  href="/analytics"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/analytics' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
+                  aria-current="{{ 'page' if request.path == '/analytics' else 'false' }}"
+                >
+                  <i class="fas fa-chart-line mr-1.5 text-sm"></i>
+                  Analytics {% if request.path == '/analytics' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
                 </a>
               </li>
             </ul>
@@ -162,31 +203,44 @@
         </div>
 
         <!-- Right side buttons -->
-        <div class="flex items-center space-x-2 lg:space-x-3">
-          {% if not authenticated %}
+        <div class="flex items-center space-x-1">
+          <div class="h-6 w-px bg-slate-200 mx-1"></div>
+
+          {% if authenticated %}
+          <div
+            class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
+          >
+            <div
+              class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600"
+            >
+              <i class="fas fa-user text-sm"></i>
+            </div>
+            <div class="flex flex-col items-start">
+              <span class="text-sm font-medium text-slate-900">Admin</span>
+              <span class="text-xs text-slate-500">Energy Manager</span>
+            </div>
+            <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+          </div>
+          <button
+            type="button"
+            id="logout-button"
+            class="ml-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-md shadow-sm flex items-center transition-all duration-200 hover:shadow-md active:scale-95"
+            aria-label="Sign out of account"
+          >
+            <i class="fas fa-sign-out-alt mr-2 text-sm"></i>
+            <span>Sign Out</span>
+          </button>
+          {% else %}
           <a
             href="/api/access"
             id="api-access-link"
-            class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md shadow-sm hover:shadow-md active:scale-98 border border-green-400/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-green-500/30 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+            class="ml-2 bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md shadow-sm hover:shadow-md active:scale-95 border border-green-400/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-green-500/30 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
             data-method="get"
             aria-label="Get API access"
           >
             <i class="fas fa-key text-white/90 text-sm"></i>
             <span>Get Access</span>
           </a>
-          {% endif %} {% if authenticated %}
-          <button
-            type="button"
-            id="logout-button"
-            class="flex items-center justify-center text-white text-sm font-medium px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:ring-opacity-50 active:scale-95 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border border-red-500/30 hover:border-red-500/50 shadow-sm hover:shadow transition-all duration-200"
-            aria-label="Sign out of account"
-          >
-            <i
-              class="fas fa-sign-out-alt mr-1.5 text-sm"
-              aria-hidden="true"
-            ></i>
-            <span class="sr-only sm:not-sr-only sm:inline-block">Sign Out</span>
-          </button>
           {% endif %}
         </div>
       </div>
@@ -194,99 +248,154 @@
       <!-- Mobile menu (hidden by default) -->
       <div
         id="mobile-menu"
-        class="hidden md:hidden flex-col mt-2 space-y-0.5 opacity-0 max-h-0 overflow-hidden rounded-lg shadow-xl border border-gray-200 backdrop-blur-md transition-all duration-300"
+        class="hidden lg:hidden flex-col mt-3 space-y-0.5 opacity-0 max-h-0 overflow-hidden rounded-lg shadow-xl border border-gray-200 backdrop-blur-md transition-all duration-300"
         aria-labelledby="mobile-menu-button"
       >
-        <ul
-          class="py-1 bg-white dark:bg-gray-800 rounded-lg divide-y divide-gray-100 dark:divide-gray-700"
-        >
-          <li>
-            <a
-              href="/"
-              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/' }}"
-              aria-current="{{ 'page' if request.path == '/' else 'false' }}"
-            >
-              <i
-                class="fas fa-tachometer-alt mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Dashboard
-            </a>
-          </li>
-          <li>
-            <a
-              href="/plants"
-              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/plants' }}"
-              aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
-            >
-              <i
-                class="fas fa-solar-panel mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Plants
-            </a>
-          </li>
-          <li>
-            <a
-              href="/plants?status=active"
-              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/plants' and request.args.get('status') == 'active' }}"
-              aria-current="{{ 'page' if request.path == '/plants' and request.args.get('status') == 'active' else 'false' }}"
-            >
-              <i
-                class="fas fa-check-circle mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Active Plants
-            </a>
-          </li>
-          <li>
-            <a
-              href="/devices"
-              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/devices' }}"
-              aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
-            >
-              <i
-                class="fas fa-microchip mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Devices
-            </a>
-          </li>
-          <li>
-            <a
-              href="/maps"
-              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/maps' }}"
-              aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
-            >
-              <i
-                class="fas fa-map-marker-alt mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Maps
-            </a>
-          </li>
-          {% if not authenticated %}
-          <li class="border-t border-gray-100 dark:border-gray-700">
+        <div class="py-2 bg-white rounded-lg">
+          <ul class="divide-y divide-gray-100">
+            <li>
+              <a
+                href="/"
+                class="flex items-center font-medium text-base py-2.5 px-4 text-{{ 'emerald-600' if request.path == '/' else 'slate-700 hover:text-slate-900 hover:bg-slate-50' }} transition-all"
+                aria-current="{{ 'page' if request.path == '/' else 'false' }}"
+              >
+                <i
+                  class="fas fa-tachometer-alt mr-3 w-5 text-center {{ 'text-emerald-600' if request.path == '/' else 'text-slate-600' }}"
+                ></i>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                href="/plants"
+                class="flex items-center font-medium text-base py-2.5 px-4 text-{{ 'emerald-600' if request.path == '/plants' else 'slate-700 hover:text-slate-900 hover:bg-slate-50' }} transition-all"
+                aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
+              >
+                <i
+                  class="fas fa-solar-panel mr-3 w-5 text-center {{ 'text-emerald-600' if request.path == '/plants' else 'text-slate-600' }}"
+                ></i>
+                Energy Production
+              </a>
+            </li>
+            <li>
+              <a
+                href="/devices"
+                class="flex items-center font-medium text-base py-2.5 px-4 text-{{ 'emerald-600' if request.path == '/devices' else 'slate-700 hover:text-slate-900 hover:bg-slate-50' }} transition-all"
+                aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
+              >
+                <i
+                  class="fas fa-microchip mr-3 w-5 text-center {{ 'text-emerald-600' if request.path == '/devices' else 'text-slate-600' }}"
+                ></i>
+                Devices
+              </a>
+            </li>
+            <li>
+              <a
+                href="/maps"
+                class="flex items-center font-medium text-base py-2.5 px-4 text-{{ 'emerald-600' if request.path == '/maps' else 'slate-700 hover:text-slate-900 hover:bg-slate-50' }} transition-all"
+                aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
+              >
+                <i
+                  class="fas fa-map-marker-alt mr-3 w-5 text-center {{ 'text-emerald-600' if request.path == '/maps' else 'text-slate-600' }}"
+                ></i>
+                Maps
+              </a>
+            </li>
+            <li>
+              <a
+                href="/analytics"
+                class="flex items-center font-medium text-base py-2.5 px-4 text-{{ 'emerald-600' if request.path == '/analytics' else 'slate-700 hover:text-slate-900 hover:bg-slate-50' }} transition-all"
+                aria-current="{{ 'page' if request.path == '/analytics' else 'false' }}"
+              >
+                <i
+                  class="fas fa-chart-line mr-3 w-5 text-center {{ 'text-emerald-600' if request.path == '/analytics' else 'text-slate-600' }}"
+                ></i>
+                Analytics
+              </a>
+            </li>
+          </ul>
+
+          <!-- Mobile System Metrics -->
+          <div class="pt-2 mt-2 border-t border-slate-200 px-4">
+            <div class="flex items-center justify-between py-2">
+              <span class="text-sm font-medium text-slate-500"
+                >System Metrics</span
+              >
+            </div>
+            <div class="grid grid-cols-1 gap-2">
+              <div
+                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+              >
+                <span class="text-sm font-medium text-slate-700"
+                  >Generation</span
+                >
+                <span
+                  class="font-medium tabular-nums text-emerald-500"
+                  id="mobile-generation-value"
+                  >9.7 kWh</span
+                >
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+              >
+                <span class="text-sm font-medium text-slate-700"
+                  >Consumption</span
+                >
+                <span
+                  class="font-medium tabular-nums text-blue-500"
+                  id="mobile-consumption-value"
+                  >6.4 kWh</span
+                >
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+              >
+                <span class="text-sm font-medium text-slate-700"
+                  >Efficiency</span
+                >
+                <span
+                  class="font-medium tabular-nums text-amber-500"
+                  id="mobile-efficiency-value"
+                  >92.8%</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile menu footer -->
+          <div class="px-4 pt-3 mt-2 border-t border-slate-200">
+            {% if not authenticated %}
             <a
               href="/api/access"
               id="mobile-api-access-link"
-              class="text-green-600 dark:text-green-400 text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target"
+              class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center gap-2 text-sm font-medium px-4 py-2.5 rounded-md shadow-sm mb-2"
             >
-              <i
-                class="fas fa-key mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
-              ></i
-              >Get Access
+              <i class="fas fa-key text-white/90 text-sm"></i>
+              Get Access
             </a>
-          </li>
-          {% endif %}
-          <li class="border-t border-gray-100 dark:border-gray-700">
+            {% endif %} {% if authenticated %}
+            <div class="flex items-center gap-2 py-2">
+              <div
+                class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600"
+              >
+                <i class="fas fa-user text-sm"></i>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-slate-900">Admin</span>
+                <span class="text-xs text-slate-500">Energy Manager</span>
+              </div>
+            </div>
             <button
               type="button"
               id="mobile-logout-button"
-              class="w-full text-left text-white text-sm font-medium py-3 px-4 flex items-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all duration-200 touch-target"
+              class="w-full mt-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-md shadow-sm flex items-center justify-center gap-2 transition-all duration-200"
             >
-              <i
-                class="fas fa-sign-out-alt mr-3 w-5 text-center text-white text-sm"
-              ></i
-              >Sign Out
+              <i class="fas fa-sign-out-alt text-sm"></i>
+              Sign Out
             </button>
-          </li>
-        </ul>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -294,55 +403,142 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Update the current time in the status bar
-    function updateCurrentTime() {
+    // Energy data simulation
+    let energyData = {
+      generation: 9.72,
+      consumption: 6.45,
+      efficiency: 92.8,
+    };
+
+    // Update the date and time in the status bar
+    function updateDateTime() {
+      const now = new Date();
+
+      // Format time
+      const formattedTime =
+        now.getHours().toString().padStart(2, "0") +
+        ":" +
+        now.getMinutes().toString().padStart(2, "0") +
+        ":" +
+        now.getSeconds().toString().padStart(2, "0");
+
+      // Format date
+      const options = { year: "numeric", month: "short", day: "numeric" };
+      const formattedDate = now.toLocaleDateString(undefined, options);
+
+      // Update DOM
       const timeElement = document.getElementById("current-time");
-      if (timeElement) {
-        const now = new Date();
-        const formattedTime = now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        timeElement.textContent = formattedTime;
+      const dateElement = document.getElementById("current-date");
+
+      if (timeElement) timeElement.textContent = formattedTime;
+      if (dateElement) dateElement.textContent = formattedDate;
+    }
+
+    // Update energy metrics
+    function updateEnergyMetrics() {
+      // Simulate changing energy data with small random variations
+      energyData.generation = +(
+        energyData.generation +
+        (Math.random() * 0.02 - 0.01)
+      ).toFixed(2);
+      energyData.consumption = +(
+        energyData.consumption +
+        (Math.random() * 0.02 - 0.01)
+      ).toFixed(2);
+      energyData.efficiency = +(
+        energyData.efficiency +
+        (Math.random() * 0.2 - 0.1)
+      ).toFixed(1);
+
+      // Update desktop displays
+      const genElement = document.getElementById("generation-value");
+      const consElement = document.getElementById("consumption-value");
+      const effElement = document.getElementById("efficiency-value");
+
+      if (genElement) genElement.textContent = `${energyData.generation} kWh`;
+      if (consElement)
+        consElement.textContent = `${energyData.consumption} kWh`;
+      if (effElement) effElement.textContent = `${energyData.efficiency}%`;
+
+      // Update mobile displays
+      const mobileGenElement = document.getElementById(
+        "mobile-generation-value"
+      );
+      const mobileConsElement = document.getElementById(
+        "mobile-consumption-value"
+      );
+      const mobileEffElement = document.getElementById(
+        "mobile-efficiency-value"
+      );
+
+      if (mobileGenElement)
+        mobileGenElement.textContent = `${energyData.generation} kWh`;
+      if (mobileConsElement)
+        mobileConsElement.textContent = `${energyData.consumption} kWh`;
+      if (mobileEffElement)
+        mobileEffElement.textContent = `${energyData.efficiency}%`;
+    }
+
+    // Mobile menu functionality
+    const menuButton = document.getElementById("mobile-menu-button");
+    const mobileMenu = document.getElementById("mobile-menu");
+    const menuIconBars = document.getElementById("menu-icon-bars");
+    const menuIconClose = document.getElementById("menu-icon-close");
+    let isMenuOpen = false;
+
+    function toggleMenu() {
+      isMenuOpen = !isMenuOpen;
+      menuButton.setAttribute("aria-expanded", isMenuOpen);
+
+      // Toggle menu icons
+      if (isMenuOpen) {
+        menuIconBars.classList.add("hidden");
+        menuIconClose.classList.remove("hidden");
+      } else {
+        menuIconBars.classList.remove("hidden");
+        menuIconClose.classList.add("hidden");
+      }
+
+      // Toggle menu visibility
+      if (isMenuOpen) {
+        mobileMenu.classList.remove("hidden");
+        setTimeout(() => {
+          mobileMenu.classList.add("opacity-100");
+          mobileMenu.style.maxHeight = `${mobileMenu.scrollHeight + 20}px`;
+        }, 10);
+      } else {
+        mobileMenu.classList.remove("opacity-100");
+        mobileMenu.style.maxHeight = "0";
+        setTimeout(() => {
+          mobileMenu.classList.add("hidden");
+        }, 300);
       }
     }
 
-    // Update time immediately and then every minute
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 60000);
+    if (menuButton) {
+      menuButton.addEventListener("click", toggleMenu);
+    }
 
-    // Cache DOM elements for better performance
-    const menuButton = document.getElementById("mobile-menu-button");
-    const mobileMenu = document.getElementById("mobile-menu");
-    const mobileAccessLink = document.getElementById("mobile-api-access-link");
-    const logoutButton = document.getElementById("logout-button");
-    const mobileLogoutButton = document.getElementById("mobile-logout-button");
-    let isMenuOpen = false;
-
-    // Set up logout functionality
+    // Set up logout functionality (reusing existing code)
     function handleLogout(event) {
-      // Prevent default button behavior
       event.preventDefault();
-
-      // First clear any stored data/cache
       localStorage.clear();
       sessionStorage.clear();
 
-      // Show feedback to user before redirect
       const clickedButton = event.currentTarget;
       const originalText = clickedButton.innerHTML;
       clickedButton.innerHTML =
         '<i class="fas fa-spinner fa-spin mr-1.5" aria-hidden="true"></i><span>Logging out...</span>';
       clickedButton.disabled = true;
 
-      // Small timeout to ensure user sees feedback
       setTimeout(() => {
-        // Then redirect to logout endpoint
         window.location.href = "/api/logout";
       }, 300);
     }
 
-    // Add logout event listeners
+    const logoutButton = document.getElementById("logout-button");
+    const mobileLogoutButton = document.getElementById("mobile-logout-button");
+
     if (logoutButton) {
       logoutButton.addEventListener("click", handleLogout);
     }
@@ -352,6 +548,7 @@
     }
 
     // Clone the event listener from the main API access link if it exists
+    const mobileAccessLink = document.getElementById("mobile-api-access-link");
     if (mobileAccessLink) {
       const mainAccessLink = document.getElementById("api-access-link");
       if (mainAccessLink && mainAccessLink.onclick) {
@@ -359,91 +556,66 @@
       }
     }
 
-    // Toggle mobile menu
-    menuButton.addEventListener("click", function () {
-      isMenuOpen = !isMenuOpen;
+    // Scroll behavior for sticky header
+    const header = document.getElementById("site-header");
+    const mainNav = document.getElementById("main-nav");
+    let lastScrollTop = 0;
 
-      // Update ARIA attributes for accessibility
-      menuButton.setAttribute("aria-expanded", isMenuOpen);
+    function handleScroll() {
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
 
-      // Update menu button icon
-      const menuIcon = menuButton.querySelector("svg");
-      if (isMenuOpen) {
-        menuIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />`;
+      if (scrollTop > 10) {
+        header.classList.add("shadow-lg", "shadow-slate-900/5");
+        mainNav.classList.add("py-2.5");
+        mainNav.classList.remove("py-3");
       } else {
-        menuIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />`;
+        header.classList.remove("shadow-lg", "shadow-slate-900/5");
+        mainNav.classList.add("py-3");
+        mainNav.classList.remove("py-2.5");
       }
 
-      // Toggle visibility
-      if (isMenuOpen) {
-        mobileMenu.classList.remove("hidden");
-        mobileMenu.style.maxHeight = `${mobileMenu.scrollHeight + 20}px`; // Add padding for safety
+      if (scrollTop > lastScrollTop && scrollTop > 150) {
+        header.classList.add("-translate-y-full");
       } else {
-        mobileMenu.style.maxHeight = "0";
-        // Hide completely after a slight delay
-        setTimeout(function () {
-          mobileMenu.classList.add("hidden");
-        }, 300);
+        header.classList.remove("-translate-y-full");
       }
-    });
 
-    // Handle responsive design for window resize
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
+      lastScrollTop = scrollTop;
+    }
+
+    // Initialize functions and set intervals
+    updateDateTime();
+    updateEnergyMetrics();
+    setInterval(updateDateTime, 1000);
+    setInterval(updateEnergyMetrics, 5000);
+
+    // Resize handling
+    let resizeTimeout;
+    function handleResize() {
+      if (window.innerWidth >= 1024) {
         // Reset mobile menu if we resize to desktop
         mobileMenu.classList.add("hidden");
         mobileMenu.style.maxHeight = "0";
+        mobileMenu.classList.remove("opacity-100");
         isMenuOpen = false;
         menuButton.setAttribute("aria-expanded", "false");
+        if (menuIconBars && menuIconClose) {
+          menuIconBars.classList.remove("hidden");
+          menuIconClose.classList.add("hidden");
+        }
       }
-    };
+    }
 
-    // Debounce resize event
-    let resizeTimeout;
     window.addEventListener("resize", function () {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(handleResize, 100);
     });
 
-    // Initial check
+    window.addEventListener("scroll", handleScroll);
+
+    // Initial execution
     handleResize();
-
-    // Add scroll behavior for sticky navbar
-    let lastScrollTop = 0;
-    const header = document.querySelector("header");
-
-    window.addEventListener("scroll", function () {
-      let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-      if (scrollTop > 10) {
-        // Add Tailwind classes for scrolled state
-        header.classList.add(
-          "shadow-lg",
-          "bg-green-500/95",
-          "backdrop-blur-md",
-          "border-b",
-          "border-white/10"
-        );
-      } else {
-        // Remove Tailwind classes for scrolled state
-        header.classList.remove(
-          "shadow-lg",
-          "bg-green-500/95",
-          "backdrop-blur-md",
-          "border-b",
-          "border-white/10"
-        );
-      }
-
-      if (scrollTop > lastScrollTop && scrollTop > 150) {
-        // Scrolling down & past threshold - hide navbar with Tailwind transform class
-        header.classList.add("-translate-y-full");
-      } else {
-        // Scrolling up or at top - show navbar
-        header.classList.remove("-translate-y-full");
-      }
-
-      lastScrollTop = scrollTop;
-    });
+    handleScroll();
   });
 </script>
