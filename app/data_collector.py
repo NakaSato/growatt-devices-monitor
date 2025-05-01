@@ -92,8 +92,12 @@ class GrowattDataCollector:
             bool: True if authentication was successful, False otherwise
         """
         # Validate credentials before attempting authentication
-        if not self.username or not self.password:
-            logger.error("Authentication failed: Missing credentials. Please check your configuration.")
+        if not self.username:
+            logger.error("Missing API credentials: Username not configured. Please check your environment variables or .env file.")
+            return False
+            
+        if not self.password:
+            logger.error("Missing API credentials: Password not configured. Please check your environment variables or .env file.")
             return False
             
         logger.debug(f"Attempting authentication with username: {self.username}")

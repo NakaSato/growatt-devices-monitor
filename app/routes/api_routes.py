@@ -232,6 +232,25 @@ def logout() -> Union[Response, WerkzeugResponse]:
         current_app.logger.error(f"Error in logout: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_blueprint.route('/debug-env', methods=['GET'])
+def debug_env():
+    """
+    Debug endpoint to check if environment variables are loaded.
+    Only enabled in development mode for security.
+    """
+    if current_app.config.get('DEBUG', False):
+        username = current_app.config.get('GROWATT_USERNAME', 'NOT SET')
+        # Mask password for security
+        password = 'SET' if current_app.config.get('GROWATT_PASSWORD') else 'NOT SET'
+        
+        return jsonify({
+            'GROWATT_USERNAME': username,
+            'GROWATT_PASSWORD_SET': password,
+            'DEBUG': current_app.config.get('DEBUG', False),
+        })
+    else:
+        return jsonify({"error": "Debug endpoint only available in development mode"}), 403
+
 # Helper rendering functions
 def render_plants(plants_data: List[Dict[str, Any]]) -> str:
     """Render the plants page with data"""

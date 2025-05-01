@@ -70,9 +70,13 @@ def get_access_api() -> Dict[str, Any]:
         username = current_app.config.get("GROWATT_USERNAME")
         password = current_app.config.get("GROWATT_PASSWORD")
         
-        if not username or not password:
-            current_app.logger.error("Missing API credentials: Username or password not configured")
-            return {"success": False, "message": "Missing API credentials", "authenticated": False}
+        if not username:
+            current_app.logger.error("Missing API credentials: Username not configured in environment variables or .env file")
+            return {"success": False, "message": "Missing API credentials: Username not configured", "authenticated": False}
+        
+        if not password:
+            current_app.logger.error("Missing API credentials: Password not configured in environment variables or .env file")
+            return {"success": False, "message": "Missing API credentials: Password not configured", "authenticated": False}
         
         current_app.logger.info(f"Attempting to login with username: {username}")
             
