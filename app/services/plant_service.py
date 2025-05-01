@@ -162,25 +162,90 @@ sample_plants = [
     }
 ]
 
+class PlantService:
+    """Service class for managing plant data and operations"""
+    
+    def __init__(self):
+        """Initialize the PlantService"""
+        self.plants = sample_plants
+    
+    def get_all_plants(self):
+        """Get all plants"""
+        return self.plants
+    
+    def get_plant_detail(self, plant_id):
+        """Get detailed information for a specific plant"""
+        try:
+            plant_id = int(plant_id)  # Convert to integer if it's a string
+            for plant in self.plants:
+                if plant['id'] == plant_id:
+                    # Add additional power distribution data for the chart
+                    plant_data = plant.copy()
+                    
+                    # Generate random power distribution data
+                    total_capacity = plant_data['capacity']
+                    current_output = plant_data['current_output']
+                    
+                    # Add power distribution data if the plant is active
+                    if plant_data['status'] in ['active', 'warning'] and current_output > 0:
+                        # Calculate power values for different destinations
+                        self_consumption = round(current_output * 0.4, 1)  # 40% for self consumption
+                        power_to_grid = round(current_output * 0.45, 1)    # 45% exported to grid
+                        power_to_battery = round(current_output * 0.15, 1) # 15% to battery
+                        
+                        # Add power values to plant data
+                        plant_data['power_self_consumption'] = self_consumption
+                        plant_data['power_to_grid'] = power_to_grid
+                        plant_data['power_to_battery'] = power_to_battery
+                        plant_data['last_update_time'] = datetime.now().isoformat()
+                    else:
+                        # If the plant is not active, set all power values to 0
+                        plant_data['power_self_consumption'] = 0
+                        plant_data['power_to_grid'] = 0
+                        plant_data['power_to_battery'] = 0
+                        plant_data['last_update_time'] = datetime.now().isoformat()
+                    
+                    return plant_data
+            return None
+        except Exception as e:
+            print(f"Error getting plant detail: {str(e)}")
+            return None
+    
+    def get_maps_plants(self):
+        """Get all plants formatted for map display"""
+        plants = []
+        for plant_data in self.plants:
+            plants.append(Plant.from_dict(plant_data))
+        return plants
+    
+    def get_plant_by_id(self, plant_id):
+        """Get a plant by ID"""
+        for plant_data in self.plants:
+            if plant_data['id'] == plant_id:
+                return Plant.from_dict(plant_data)
+        return None
+    
+    def get_plant_status_counts(self):
+        """Get counts of plants by status"""
+        total = len(self.plants)
+        active = sum(1 for plant in self.plants if plant['status'] == 'active')
+        warning = sum(1 for plant in self.plants if plant['status'] == 'warning')
+        error = sum(1 for plant in self.plants if plant['status'] == 'error')
+        
+        return total, active, warning, error
+
+# Keep the original functions for backwards compatibility
 def get_maps_plants():
-    """Get all plants"""
-    plants = []
-    for plant_data in sample_plants:
-        plants.append(Plant.from_dict(plant_data))
-    return plants
+    """Get all plants (legacy function)"""
+    service = PlantService()
+    return service.get_maps_plants()
 
 def get_plant_by_id(plant_id):
-    """Get a plant by ID"""
-    for plant_data in sample_plants:
-        if plant_data['id'] == plant_id:
-            return Plant.from_dict(plant_data)
-    return None
+    """Get a plant by ID (legacy function)"""
+    service = PlantService()
+    return service.get_plant_by_id(plant_id)
 
 def get_plant_status_counts():
-    """Get counts of plants by status"""
-    total = len(sample_plants)
-    active = sum(1 for plant in sample_plants if plant['status'] == 'active')
-    warning = sum(1 for plant in sample_plants if plant['status'] == 'warning')
-    error = sum(1 for plant in sample_plants if plant['status'] == 'error')
-    
-    return total, active, warning, error
+    """Get counts of plants by status (legacy function)"""
+    service = PlantService()
+    return service.get_plant_status_counts()

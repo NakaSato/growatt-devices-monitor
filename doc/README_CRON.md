@@ -31,10 +31,11 @@ python setup_cron.py
 - Set different intervals:
 
   ```bash
-  python setup_cron.py --interval daily    # Run once a day at 1:00 AM
-  python setup_cron.py --interval hourly   # Run every hour
-  python setup_cron.py --interval every6h  # Run every 6 hours
-  python setup_cron.py --interval every12h # Run every 12 hours
+  python setup_cron.py --interval every15m  # Run every 15 minutes
+  python setup_cron.py --interval hourly    # Run every hour
+  python setup_cron.py --interval every6h   # Run every 6 hours
+  python setup_cron.py --interval every12h  # Run every 12 hours
+  python setup_cron.py --interval daily     # Run once a day at 1:00 AM
   ```
 
 - List current cron jobs:

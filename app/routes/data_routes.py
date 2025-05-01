@@ -2,16 +2,17 @@
 Routes for manual data collection and database management
 """
 
-import logging
 import subprocess
 import sys
 import os
 from pathlib import Path
 from flask import Blueprint, jsonify, request, current_app
-from typing import Tuple, Dict, Any, List, Optional, Union
+from typing import Tuple, Dict, Any
+from datetime import datetime
 
 from app.data_collector import GrowattDataCollector
 from app.database import DatabaseConnector
+from app.services.plant_service import PlantService
 
 # Create a Blueprint for data management routes
 data_routes = Blueprint('data', __name__, url_prefix='/api/data')
@@ -100,7 +101,7 @@ def schedule_sync() -> Tuple[Dict[str, Any], int]:
     
     Request body should contain:
     {
-        "interval": "hourly" | "daily" | "every6h" | "every12h"
+        "interval": "every15m" | "hourly" | "daily" | "every6h" | "every12h"
     }
     
     Returns:
@@ -112,7 +113,7 @@ def schedule_sync() -> Tuple[Dict[str, Any], int]:
         interval = params.get('interval', 'hourly')
         
         # Validate interval parameter
-        valid_intervals = ['hourly', 'daily', 'every6h', 'every12h']
+        valid_intervals = ['every15m', 'hourly', 'daily', 'every6h', 'every12h']
         if interval not in valid_intervals:
             return jsonify({
                 "status": "error",
@@ -254,4 +255,74 @@ def get_data_stats() -> Tuple[Dict[str, Any], int]:
         return jsonify({
             "status": "error",
             "message": str(e)
+        }), 500
+
+@data_routes.route('/api/power-distribution', methods=['GET'])
+def get_power_distribution():
+    """API endpoint to get the current power distribution data for the dashboard chart."""
+    try:
+        # Get the plant_id from query parameter or use the default
+        plant_id = request.args.get('plant_id', None)
+        
+        # Get the current power data from the plant service
+        plant_service = PlantService()
+        
+        if plant_id:
+            plant_data = plant_service.get_plant_detail(plant_id)
+        else:
+            # Get the default plant (first one)
+            plants = plant_service.get_all_plants()
+            if not plants:
+                return jsonify({
+                    'error': 'No plants found'
+                }), 404
+            plant_data = plant_service.get_plant_detail(plants[0]['id'])
+        
+        # Extract power values from plant data
+        self_consumption = float(plant_data.get('power_self_consumption', 0))
+        grid_export = float(plant_data.get('power_to_grid', 0))
+        battery_charging = float(plant_data.get('power_to_battery', 0))
+        
+        total_power = self_consumption + grid_export + battery_charging
+        
+        # Calculate percentages
+        if total_power > 0:
+            self_consumption_percent = round((self_consumption / total_power) * 100)
+            grid_export_percent = round((grid_export / total_power) * 100)
+            battery_charging_percent = round((battery_charging / total_power) * 100)
+        else:
+            self_consumption_percent = 0
+            grid_export_percent = 0
+            battery_charging_percent = 0
+            
+        # Ensure percentages add up to 100%
+        total_percent = self_consumption_percent + grid_export_percent + battery_charging_percent
+        if total_percent != 100 and total_percent > 0:
+            # Adjust largest percentage to make total 100%
+            max_percent = max(self_consumption_percent, grid_export_percent, battery_charging_percent)
+            if max_percent == self_consumption_percent:
+                self_consumption_percent += (100 - total_percent)
+            elif max_percent == grid_export_percent:
+                grid_export_percent += (100 - total_percent)
+            else:
+                battery_charging_percent += (100 - total_percent)
+        
+        result = {
+            'percentages': [self_consumption_percent, grid_export_percent, battery_charging_percent],
+            'values': [
+                round(self_consumption, 1),
+                round(grid_export, 1),
+                round(battery_charging, 1)
+            ],
+            'total': round(total_power, 1),
+            'updated_at': plant_data.get('last_update_time', datetime.now().isoformat())
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching power distribution data: {str(e)}")
+        return jsonify({
+            'error': 'Failed to fetch power distribution data',
+            'message': str(e)
         }), 500
