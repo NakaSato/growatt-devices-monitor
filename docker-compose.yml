@@ -5,8 +5,11 @@ services:
     container_name: growatt-app
     restart: unless-stopped
     environment:
-      - SECRET_KEY=change_this_to_a_random_secret_string
+      - SECRET_KEY=${SECRET_KEY}
       - DEBUG=False
+    env_file: .env
+    ports:
+      - "8000:8000"
     volumes:
       - ./app:/app/app
       - growatt-data:/app/app/data # Persistent volume for database
@@ -18,7 +21,7 @@ services:
           cpus: "0.50"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
