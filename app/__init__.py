@@ -5,21 +5,18 @@ import os
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
+# Import Config class which already handles .env loading
 from app.config import Config
 from app.database import init_db
 
 # Define version
 __version__ = "1.0.0"
 
-# Configure logging
+# Configure logging using values from Config
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=getattr(logging, Config.LOG_LEVEL),
+    format=Config.LOG_FORMAT,
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)

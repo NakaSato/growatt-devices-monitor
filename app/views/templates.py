@@ -1,5 +1,5 @@
 from typing import Tuple, List, Dict, Any, Union
-from flask import render_template
+from flask import render_template, session
 import logging
 
 # Create a logger for this module
@@ -12,7 +12,9 @@ def render_index() -> str:
     Returns:
         str: Rendered HTML template for the index page
     """
-    return render_template('index.html')
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    return render_template('index.html', authenticated=authenticated)
 
 def render_plants(plants: List[Dict[str, Any]]) -> str:
     """
@@ -24,7 +26,9 @@ def render_plants(plants: List[Dict[str, Any]]) -> str:
     Returns:
         str: Rendered HTML template for the plants page
     """
-    return render_template('plants.html', plants=plants)
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    return render_template('plants.html', plants=plants, authenticated=authenticated)
 
 def render_devices(plant_id: str = '', plant_name: str = '', error: str = '') -> Union[str, Tuple[str, int]]:
     """
@@ -38,12 +42,16 @@ def render_devices(plant_id: str = '', plant_name: str = '', error: str = '') ->
     Returns:
         Union[str, Tuple[str, int]]: Rendered HTML template for the devices page or error with status code
     """
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
     if error:
         return render_template('error.html', 
-                                    error=error,
-                                    error_code="404", 
-                                    error_title="Not Found"), 404
-    return render_template('devices.html', plant_id=plant_id, plant_name=plant_name)
+                                error=error,
+                                error_code="404", 
+                                error_title="Not Found",
+                                authenticated=authenticated), 404
+    return render_template('devices.html', plant_id=plant_id, plant_name=plant_name, authenticated=authenticated)
 
 def render_device_not_found(plant_id: str = '', plant_name: str = '') -> Tuple[str, int]:
     """
@@ -56,15 +64,7 @@ def render_device_not_found(plant_id: str = '', plant_name: str = '') -> Tuple[s
     Returns:
         Tuple[str, int]: Rendered HTML template with error message and 404 status code
     """
-    error_message = f"No devices found for plant {plant_name}" if plant_name else "Device not found"
-    return render_template('error.html', 
-                                error=error_message,
-                                error_code="404", 
-                                error_title="Not Found"), 404
-
-def render_weather(plant_id: str = '', plant_name: str = '') -> str:
-    """
-    Render the weather template.
+    # Check authentication status from session
     
     Args:
         plant_id (str, optional): ID of the plant to display weather for. Defaults to ''.
