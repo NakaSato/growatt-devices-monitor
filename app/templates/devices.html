@@ -156,18 +156,21 @@
     <div
       class="bg-snow-white rounded-lg shadow-md overflow-hidden border border-light-gray"
     >
-      <div class="table-responsive overflow-x-auto">
+      <div class="table-responsive table-overflow-scroll">
         <table class="w-full table-auto" x-ref="deviceTable">
           <thead class="bg-eco-green">
             <tr>
               <template x-for="(column, index) in columns" :key="index">
                 <th
                   @click="sortTable(index)"
-                  class="px-4 py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors relative"
+                  class="px-3 py-2.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors relative touch-target"
                   :class="{'bg-deep-forest': sortColumn === index}"
                 >
                   <div class="flex items-center">
-                    <span x-text="column.label" class="mr-4"></span>
+                    <span
+                      x-text="column.label"
+                      class="mr-2 sm:mr-4 whitespace-nowrap"
+                    ></span>
                     <span
                       class="sort-icon opacity-60"
                       x-text="sortColumn === index ? (sortDirection === 'asc' ? '▲' : '▼') : ''"
@@ -183,39 +186,42 @@
                 class="hover:bg-eco-green-10 transition-colors"
                 :class="index % 2 === 0 ? 'bg-white' : 'bg-slate-50'"
               >
-                <td class="px-4 py-3 device-cell">
+                <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
                   <span
-                    class="text-charcoal font-medium text-sm"
+                    class="text-charcoal font-medium text-xs sm:text-sm line-clamp-1"
                     x-text="device.plant_name || 'N/A'"
+                    :title="device.plant_name || 'N/A'"
                   ></span>
                 </td>
-                <td class="px-4 py-3 device-cell">
+                <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
                   <span
-                    class="text-charcoal text-sm"
+                    class="text-charcoal text-xs sm:text-sm line-clamp-1"
                     x-text="device.alias || 'N/A'"
+                    :title="device.alias || 'N/A'"
                   ></span>
                 </td>
-                <td class="px-4 py-3 device-cell">
+                <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
                   <span
-                    class="text-slate-gray font-mono text-xs bg-slate-50 px-2 py-1 rounded"
+                    class="text-slate-gray font-mono text-xs bg-slate-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded line-clamp-1"
                     x-text="device.serial_number || 'N/A'"
+                    :title="device.serial_number || 'N/A'"
                   ></span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-3 py-2 sm:px-4 sm:py-3">
                   <span
-                    class="status-indicator"
+                    class="status-indicator text-xs whitespace-nowrap px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full inline-block"
                     :class="getStatusClass(device.status)"
                     x-text="device.status || 'Unknown'"
                   ></span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-3 py-2 sm:px-4 sm:py-3">
                   <span
-                    class="energy-value font-medium text-eco-green"
+                    class="energy-value font-medium text-eco-green text-xs sm:text-sm whitespace-nowrap"
                     x-text="device.total_energy || '0 kWh'"
                   ></span>
                 </td>
                 <td
-                  class="px-4 py-3 text-slate-gray text-sm"
+                  class="px-3 py-2 sm:px-4 sm:py-3 text-slate-gray text-xs sm:text-sm whitespace-nowrap"
                   x-text="formatDate(device.last_update_time)"
                 ></td>
               </tr>

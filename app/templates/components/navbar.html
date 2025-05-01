@@ -1,68 +1,71 @@
-<header class="relative overflow-hidden shadow-sm">
+<header
+  class="relative overflow-hidden shadow-sm backdrop-blur-sm sticky top-0 w-full z-50 transition-all duration-300"
+>
   <div class="absolute inset-0 bg-pattern opacity-5 z-0"></div>
+  <!-- Status bar -->
   <div
-    class="py-1 border-b border-gray-700 relative z-10 bg-gradient-to-r from-slate-900 to-slate-800"
+    class="py-1 border-b border-gray-700/50 relative z-10 bg-gradient-to-r from-slate-900 to-slate-800"
   >
-    <div class="container mx-auto px-1 sm:px-2">
+    <div class="container mx-auto px-2 sm:px-3">
       <div class="flex justify-between items-center text-xs">
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <div class="flex items-center">
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <div class="flex items-center px-2 py-1">
             <span
-              class="pulse-dot pulse-success mr-1"
+              class="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 bg-green-500 rounded-full mr-1.5 animate-[pulse_2s_cubic-bezier(0.66,0,0.33,1)_infinite] shadow-[0_0_0_0_rgba(76,175,80,0.4)]"
               aria-hidden="true"
             ></span>
-            <span class="text-white font-medium tracking-wide"
+            <span class="text-white font-medium tracking-wide text-xs"
               >System Online</span
             >
           </div>
-          <div class="hidden sm:flex items-center">
-            <i class="fas fa-clock text-white mr-1"></i>
-            <span id="current-time" class="text-white"></span>
+          <div class="hidden sm:flex items-center px-2 py-1">
+            <i class="fas fa-clock text-white mr-1.5 text-xs"></i>
+            <span id="current-time" class="text-white text-xs"></span>
           </div>
         </div>
         <div class="flex items-center space-x-2 sm:space-x-3">
-          <div class="hidden sm:flex items-center">
-            <i class="fas fa-sun text-white mr-1"></i>
+          <div class="hidden sm:flex items-center px-2 py-1">
+            <i class="fas fa-sun text-yellow-300 mr-1.5 text-xs"></i>
             <span class="text-gray-300 text-xs">Gen: </span>
-            <span class="text-white font-medium ml-1">9.7 kWh</span>
+            <span class="text-white font-medium ml-0.5 text-xs">9.7 kWh</span>
           </div>
-          <div class="flex items-center">
-            <i class="fas fa-bolt text-white mr-1"></i>
+          <div class="flex items-center px-2 py-1">
+            <i class="fas fa-bolt text-yellow-300 mr-1.5 text-xs"></i>
             <span class="text-gray-300 text-xs">Status: </span>
-            <span class="text-green-300 font-bold font-medium ml-1"
-              >Active</span
-            >
+            <span class="text-green-300 font-bold ml-1 text-xs">Active</span>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Main navigation bar -->
   <nav
-    class="px-1 sm:p-2 relative z-10 bg-gradient-to-b from-green-500 via-green-550 to-green-600 shadow-md border-b border-green-700"
+    class="px-1 sm:px-2 py-1 relative z-10 bg-white shadow-md border-b border-gray-200 group"
     aria-label="Main navigation"
   >
     <div class="container mx-auto">
       <!-- Mobile menu button and logo -->
-      <div class="flex items-center justify-between py-2 md:hidden">
+      <div class="flex items-center justify-between py-1 md:hidden">
         <a href="/" class="flex items-center" aria-label="Home">
           <img
             src="{{ url_for('static', filename='svg/logo.svg') }}"
             alt="Growatt Logo"
-            class="h-6 sm:h-7 w-auto mr-2 text-white"
+            class="h-6 sm:h-7 w-auto mr-1 filter invert"
             onerror="this.src='{{ url_for('static', filename='favicon.ico') }}'; this.onerror=null;"
           />
         </a>
-        <div class="flex items-center space-x-2 sm:space-x-3">
+        <div class="flex items-center space-x-1 sm:space-x-2">
           <!-- Mobile menu button -->
           <button
             id="mobile-menu-button"
-            class="focus:outline-none focus:ring-2 focus:ring-eco-green p-1.5 sm:p-2 rounded-md transition-all duration-200 active:scale-95 hover:shadow-sm"
+            class="text-gray-800 p-1 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200 {{ 'bg-green-100 text-green-700 ring-2 ring-green-500' if request.path == '/' }}"
             aria-expanded="false"
             aria-controls="mobile-menu"
             aria-label="Toggle menu"
           >
             <svg
-              class="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300"
+              class="w-6 h-6"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -80,12 +83,12 @@
       </div>
 
       <!-- Desktop menu -->
-      <div class="hidden md:flex items-center justify-between py-1.5 lg:py-2">
+      <div class="hidden md:flex items-center justify-between py-1 lg:py-1.5">
         <!-- Logo and main links -->
         <div class="flex items-center">
           <a
             href="/"
-            class="flex items-center mr-3 md:mr-4 lg:mr-5 brand-logo transition-transform duration-300 hover:scale-105"
+            class="flex items-center mr-2 md:mr-3 lg:mr-4 hover:drop-shadow-[0_0_4px_rgba(0,0,0,0.2)]"
             aria-label="Home"
           >
             <div class="flex flex-col items-center">
@@ -99,88 +102,59 @@
           </a>
           <nav aria-label="Primary Navigation">
             <ul
-              class="flex flex-wrap items-center space-x-1 md:space-x-1.5 lg:space-x-2"
+              class="flex flex-wrap items-center space-x-0.5 md:space-x-1 lg:space-x-2"
             >
-              <li class="my-0.5">
+              <li class="my-0">
                 <a
                   href="/"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/' }}"
+                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/' }}"
                   aria-current="{{ 'page' if request.path == '/' else 'false' }}"
                 >
                   <i
-                    class="fas fa-tachometer-alt mr-1.5 text-eco-green"
+                    class="fas fa-tachometer-alt mr-1.5 text-black/90 text-sm"
                     aria-hidden="true"
                   ></i>
                   Dashboard
                 </a>
               </li>
-              <li class="my-0.5">
+              <li class="my-0">
                 <a
                   href="/plants"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/plants' }}"
+                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/plants' }}"
                   aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
                 >
                   <i
-                    class="fas fa-solar-panel mr-1.5 text-eco-green"
+                    class="fas fa-solar-panel mr-1.5 text-black/90 text-sm"
                     aria-hidden="true"
                   ></i>
-                  Plants
+                  All Plants
                 </a>
               </li>
-              <li class="my-0.5">
-                <a
-                  href="/maps"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/maps' }}"
-                  aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
-                >
-                  <i
-                    class="fas fa-map-marker-alt mr-1.5 text-eco-green"
-                    aria-hidden="true"
-                  ></i>
-                  Maps
-                </a>
-              </li>
-              <li class="my-0.5">
+              <li class="my-0">
                 <a
                   href="/devices"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/devices' }}"
+                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/devices' }}"
                   aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
                 >
                   <i
-                    class="fas fa-microchip mr-1.5 text-eco-green"
+                    class="fas fa-microchip mr-1.5 text-black/90 text-sm"
                     aria-hidden="true"
                   ></i>
                   Devices
                 </a>
               </li>
-              <li class="my-0.5">
+              <!-- Other navbar items: just showing one as example, repeat for others -->
+              <li class="my-0">
                 <a
-                  href="/weather"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/weather' }}"
-                  aria-current="{{ 'page' if request.path == '/weather' else 'false' }}"
+                  href="/maps"
+                  class="relative overflow-hidden text-black text-sm font-medium px-2 py-1 rounded-md hover:scale-105 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 {{ 'shadow-sm' if request.path == '/maps' }}"
+                  aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
                 >
                   <i
-                    class="fas fa-cloud-sun mr-1.5 text-eco-green"
+                    class="fas fa-map-marker-alt mr-1.5 text-black/90 text-sm"
                     aria-hidden="true"
                   ></i>
-                  Weather
-                </a>
-              </li>
-              <li class="my-0.5 relative">
-                <a
-                  href="/analytics"
-                  class="nav-link  text-xs md:text-xs lg:text-sm font-medium px-2 md:px-2 lg:px-3 py-1.5 md:py-1.5 rounded-md transition-all duration-200 transform hover:-translate-y-0.5 {{ 'active-nav-link bg-eco-green-10 text-eco-green shadow-sm' if request.path == '/analytics' }}"
-                  aria-current="{{ 'page' if request.path == '/analytics' else 'false' }}"
-                >
-                  <i
-                    class="fas fa-chart-line mr-1.5 text-eco-green"
-                    aria-hidden="true"
-                  ></i>
-                  Analytics
-                  <span
-                    class="absolute -top-1 -right-1 bg-eco-green text-white text-xs px-1 py-0.5 rounded-full shadow-sm animate-pulse"
-                    >New</span
-                  >
+                  Maps
                 </a>
               </li>
             </ul>
@@ -188,137 +162,127 @@
         </div>
 
         <!-- Right side buttons -->
-        <div class="flex items-center space-x-4 lg:space-x-6">
+        <div class="flex items-center space-x-2 lg:space-x-3">
           {% if not authenticated %}
           <a
             href="/api/access"
             id="api-access-link"
-            class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 hover:bg-red-50 border border-transparent hover:border-red-200"
+            class="bg-gradient-to-r from-green-400 to-green-600 text-white flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md shadow-sm hover:shadow active:scale-95 border border-green-400/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-green-500/40"
             data-method="get"
           >
-            <i class="fas fa-key text-green-100"></i>
+            <i class="fas fa-key text-white text-sm"></i>
             <span>Get Access</span>
           </a>
-          {% endif %}
-
+          {% endif %} {% if authenticated %}
           <button
             type="button"
             id="logout-button"
-            class="flex items-center justify-center text-slate-700 hover:text-red-600 text-sm lg:text-base font-medium px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 active:scale-95 hover:bg-red-50 border border-transparent hover:border-red-200"
+            class="flex items-center justify-center text-white hover:text-red-200 text-sm font-medium px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:ring-opacity-50 active:scale-95 bg-red-800/10 hover:bg-red-800/20 border border-red-800/20 hover:border-red-800/30 transition-all duration-200"
             aria-label="Sign out of account"
           >
-            <i class="fas fa-sign-out-alt mr-2" aria-hidden="true"></i>
+            <i
+              class="fas fa-sign-out-alt mr-1.5 text-sm"
+              aria-hidden="true"
+            ></i>
             <span class="sr-only sm:not-sr-only sm:inline-block">Sign Out</span>
           </button>
+          {% endif %}
         </div>
       </div>
 
       <!-- Mobile menu (hidden by default) -->
       <div
         id="mobile-menu"
-        class="hidden md:hidden flex-col mt-2 sm:mt-3 space-y-1 opacity-0 transition-all duration-300 ease-in-out max-h-0 overflow-hidden bg-white rounded-lg shadow-md border border-gray-100"
+        class="hidden md:hidden flex-col mt-2 space-y-0.5 opacity-0 max-h-0 overflow-hidden rounded-lg shadow-xl border border-gray-200 backdrop-blur-md transition-all duration-300"
         aria-labelledby="mobile-menu-button"
       >
-        <ul class="py-2 mobile-nav-links">
+        <ul
+          class="py-1 bg-white dark:bg-gray-800 rounded-lg divide-y divide-gray-100 dark:divide-gray-700"
+        >
           <li>
             <a
               href="/"
-              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/' }}"
+              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/' }}"
               aria-current="{{ 'page' if request.path == '/' else 'false' }}"
             >
               <i
-                class="fas fa-home mr-3 sm:mr-4 w-5 text-center text-eco-green"
+                class="fas fa-tachometer-alt mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
               ></i
-              >Home
+              >Dashboard
             </a>
           </li>
           <li>
             <a
               href="/plants"
-              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/plants' }}"
+              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/plants' }}"
               aria-current="{{ 'page' if request.path == '/plants' else 'false' }}"
             >
               <i
-                class="fas fa-solar-panel mr-3 sm:mr-4 w-5 text-center text-eco-green"
+                class="fas fa-solar-panel mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
               ></i
               >Plants
             </a>
           </li>
           <li>
             <a
-              href="/devices"
-              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/devices' }}"
-              aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
+              href="/plants?status=active"
+              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/plants' and request.args.get('status') == 'active' }}"
+              aria-current="{{ 'page' if request.path == '/plants' and request.args.get('status') == 'active' else 'false' }}"
             >
               <i
-                class="fas fa-microchip mr-3 sm:mr-4 w-5 text-center text-eco-green"
+                class="fas fa-check-circle mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
               ></i
-              >Status Devices
+              >Active Plants
             </a>
           </li>
           <li>
             <a
-              href="/weather"
-              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/weather' }}"
-              aria-current="{{ 'page' if request.path == '/weather' else 'false' }}"
+              href="/devices"
+              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/devices' }}"
+              aria-current="{{ 'page' if request.path == '/devices' else 'false' }}"
             >
               <i
-                class="fas fa-cloud-sun mr-3 sm:mr-4 w-5 text-center text-sky-blue"
+                class="fas fa-microchip mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
               ></i
-              >Weather Status
+              >Devices
             </a>
           </li>
           <li>
             <a
               href="/maps"
-              class="nav-link  font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200 {{ 'active-nav-link border-l-4' if request.path == '/maps' }}"
+              class="text-gray-800 dark:text-white text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target {{ 'bg-gray-100 dark:bg-gray-700 border-l-4 border-green-500 pl-3' if request.path == '/maps' }}"
               aria-current="{{ 'page' if request.path == '/maps' else 'false' }}"
-              aria-label="Maps page"
             >
               <i
-                class="fas fa-map-marker-alt mr-3 sm:mr-4 w-5 text-center text-sunshine-yellow"
-                aria-hidden="true"
-              ></i>
-              <span>Maps</span>
+                class="fas fa-map-marker-alt mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
+              ></i
+              >Maps
             </a>
           </li>
-
           {% if not authenticated %}
-          <li>
+          <li class="border-t border-gray-100 dark:border-gray-700">
             <a
               href="/api/access"
               id="mobile-api-access-link"
-              class="nav-link font-medium py-3 sm:py-3.5 px-4 sm:px-5 flex items-center transition-all duration-200"
-              aria-label="Get API access"
-              data-method="get"
+              class="text-green-600 dark:text-green-400 text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target"
             >
               <i
-                class="fas fa-key mr-3 sm:mr-4 w-5 text-center text-ocean-teal"
-                aria-hidden="true"
-              ></i>
-              <span>Get Access</span>
+                class="fas fa-key mr-3 w-5 text-center text-green-600 dark:text-green-400 text-sm"
+              ></i
+              >Get Access
             </a>
           </li>
           {% endif %}
-
-          <li
-            class="border-t border-gray-100 my-1.5"
-            role="separator"
-            aria-hidden="true"
-          ></li>
-
-          <li>
+          <li class="border-t border-gray-100 dark:border-gray-700">
             <button
               type="button"
               id="mobile-logout-button"
-              class="w-full text-left font-medium hover:text-danger py-3 sm:py-3.5 px-4 sm:px-5 hover:bg-danger hover:bg-opacity-10 flex items-center transition-all duration-200"
-              aria-label="Sign out of account"
+              class="w-full text-left text-red-600 dark:text-red-400 text-sm font-medium py-3 px-4 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 touch-target"
             >
               <i
-                class="fas fa-sign-out-alt mr-3 sm:mr-4 w-5 text-center text-danger"
-                aria-hidden="true"
-              ></i>
-              <span>Sign Out</span>
+                class="fas fa-sign-out-alt mr-3 w-5 text-center text-red-600 dark:text-red-400 text-sm"
+              ></i
+              >Sign Out
             </button>
           </li>
         </ul>
@@ -394,42 +358,31 @@
       }
     }
 
-    // Toggle mobile menu with improved animation
+    // Toggle mobile menu
     menuButton.addEventListener("click", function () {
       isMenuOpen = !isMenuOpen;
 
       // Update ARIA attributes for accessibility
       menuButton.setAttribute("aria-expanded", isMenuOpen);
 
-      // Animate menu button icon
+      // Update menu button icon
       const menuIcon = menuButton.querySelector("svg");
       if (isMenuOpen) {
         menuIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />`;
-        menuIcon.classList.add("transform", "rotate-0");
       } else {
         menuIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />`;
-        menuIcon.classList.remove("transform", "rotate-0");
       }
 
-      // Toggle visibility with improved animation
+      // Toggle visibility
       if (isMenuOpen) {
         mobileMenu.classList.remove("hidden");
-
-        // Use requestAnimationFrame for smoother transitions
-        requestAnimationFrame(() => {
-          mobileMenu.classList.remove("opacity-0");
-          mobileMenu.classList.add("opacity-100");
-          mobileMenu.style.maxHeight = `${mobileMenu.scrollHeight + 20}px`; // Add padding for safety
-        });
+        mobileMenu.style.maxHeight = `${mobileMenu.scrollHeight + 20}px`; // Add padding for safety
       } else {
-        mobileMenu.classList.remove("opacity-100");
-        mobileMenu.classList.add("opacity-0");
         mobileMenu.style.maxHeight = "0";
-
-        // Hide completely after animation completes
+        // Hide completely after a slight delay
         setTimeout(function () {
           mobileMenu.classList.add("hidden");
-        }, 300); // Match the duration in the CSS
+        }, 300);
       }
     });
 
@@ -438,16 +391,13 @@
       if (window.innerWidth >= 768) {
         // Reset mobile menu if we resize to desktop
         mobileMenu.classList.add("hidden");
-        mobileMenu.classList.remove("opacity-100");
-        mobileMenu.classList.add("opacity-0");
         mobileMenu.style.maxHeight = "0";
         isMenuOpen = false;
-        menuButton.classList.remove("rotate-90");
         menuButton.setAttribute("aria-expanded", "false");
       }
     };
 
-    // Throttle resize event for better performance
+    // Debounce resize event
     let resizeTimeout;
     window.addEventListener("resize", function () {
       clearTimeout(resizeTimeout);
@@ -457,18 +407,7 @@
     // Initial check
     handleResize();
 
-    // Add touch feedback for mobile menu items with improved feedback
-    const mobileMenuItems = mobileMenu.querySelectorAll("a, button");
-    mobileMenuItems.forEach((item) => {
-      item.addEventListener("touchstart", function () {
-        this.classList.add("bg-eco-green-10", "scale-[0.98]");
-      });
-      item.addEventListener("touchend", function () {
-        this.classList.remove("bg-eco-green-10", "scale-[0.98]");
-      });
-    });
-
-    // Add scroll behavior to make navbar sticky and change appearance on scroll
+    // Add scroll behavior for sticky navbar
     let lastScrollTop = 0;
     const header = document.querySelector("header");
 
@@ -476,252 +415,34 @@
       let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
       if (scrollTop > 10) {
-        header.classList.add("navbar-scrolled");
+        // Add Tailwind classes for scrolled state
+        header.classList.add(
+          "shadow-lg",
+          "bg-green-500/95",
+          "backdrop-blur-md",
+          "border-b",
+          "border-white/10"
+        );
       } else {
-        header.classList.remove("navbar-scrolled");
+        // Remove Tailwind classes for scrolled state
+        header.classList.remove(
+          "shadow-lg",
+          "bg-green-500/95",
+          "backdrop-blur-md",
+          "border-b",
+          "border-white/10"
+        );
       }
 
       if (scrollTop > lastScrollTop && scrollTop > 150) {
-        // Scrolling down & past threshold
-        header.classList.add("navbar-hidden");
+        // Scrolling down & past threshold - hide navbar with Tailwind transform class
+        header.classList.add("-translate-y-full");
       } else {
-        // Scrolling up or at top
-        header.classList.remove("navbar-hidden");
+        // Scrolling up or at top - show navbar
+        header.classList.remove("-translate-y-full");
       }
 
       lastScrollTop = scrollTop;
     });
   });
 </script>
-<style>
-  /* Pulse animations and core functionality styles that can't be replaced with Tailwind */
-  .pulse-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    position: relative;
-    transform: translateZ(0); /* Performance optimization */
-    will-change: box-shadow; /* Performance hint */
-  }
-  @media (min-width: 375px) {
-    .pulse-dot {
-      width: 10px;
-      height: 10px;
-    }
-  }
-  @media (min-width: 640px) {
-    .pulse-dot {
-      width: 12px;
-      height: 12px;
-    }
-  }
-  .pulse-success {
-    background-color: var(--eco-green);
-    box-shadow: 0 0 0 rgba(76, 175, 80, 0.4);
-    animation: pulse-green 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-  }
-  .pulse-warning {
-    background-color: var(--warning-yellow);
-    box-shadow: 0 0 0 rgba(255, 193, 7, 0.4);
-    animation: pulse-yellow 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-  }
-  .pulse-danger {
-    background-color: var(--danger-red);
-    box-shadow: 0 0 0 rgba(244, 67, 54, 0.4);
-    animation: pulse-red 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-  }
-
-  /* Enhanced animations for status indicators */
-  @keyframes pulse-green {
-    0% {
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.85);
-      transform: scale(1);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
-      transform: scale(1.1);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-      transform: scale(1);
-    }
-  }
-  @keyframes pulse-yellow {
-    0% {
-      box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.85);
-      transform: scale(1);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
-      transform: scale(1.1);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
-      transform: scale(1);
-    }
-  }
-  @keyframes pulse-red {
-    0% {
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.85);
-      transform: scale(1);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      transform: scale(1.1);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      transform: scale(1);
-    }
-  }
-
-  /* Mobile menu animation - enhanced for better visual effect */
-  #mobile-menu {
-    transition: opacity 0.3s ease, max-height 0.3s ease;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    background: linear-gradient(to bottom, white, #f9fafb);
-    border-radius: 0.5rem;
-  }
-
-  /* Navbar scroll behavior - improved with smoother transition */
-  .navbar-scrolled {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.98),
-      rgba(249, 250, 251, 0.96)
-    );
-    transition: all 0.4s ease;
-  }
-
-  .navbar-hidden {
-    transform: translateY(-100%);
-    transition: transform 0.4s ease-in-out;
-  }
-
-  /* Active link styles with improved visual effects */
-  .active-nav-link {
-    position: relative;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Enhanced transition effect for all links */
-  .nav-link {
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .nav-link::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background-color: var(--eco-green);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(-50%);
-    opacity: 0;
-  }
-
-  .nav-link:hover::after,
-  .active-nav-link::after {
-    width: 70%;
-    opacity: 1;
-  }
-
-  /* Add a subtle glow effect to active menu items */
-  .active-nav-link::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(
-      circle at center,
-      rgba(52, 211, 153, 0.15),
-      transparent 70%
-    );
-    border-radius: 0.375rem;
-    opacity: 0.7;
-    z-index: -1;
-  }
-
-  /* Improved hover effects */
-  /* Enhanced hover effect for desktop nav links */
-  .nav-link:hover {
-    color: #10b981; /* Eco green color */
-    transform: translateY(-2px);
-    text-shadow: 0 0 1px rgba(16, 185, 129, 0.2);
-  }
-
-  /* Improved hover effect for buttons */
-  button:hover,
-  a[href]:not(.nav-link):hover {
-    filter: brightness(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Enhanced mobile menu item hover */
-  .mobile-nav-links a:hover,
-  .mobile-nav-links button:hover {
-    background-color: rgba(16, 185, 129, 0.08);
-    padding-left: 20px;
-    border-left: 3px solid #10b981;
-  }
-
-  /* Special hover effect for the logout button */
-  #logout-button:hover,
-  #mobile-logout-button:hover {
-    color: #ef4444;
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-  }
-
-  /* Logo hover animation */
-  .brand-logo:hover img {
-    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.6));
-    animation: pulse-logo 1.5s ease infinite;
-  }
-
-  @keyframes pulse-logo {
-    0%,
-    100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-  }
-
-  /* Enhanced hover for Get Access button */
-  #api-access-link:hover,
-  #mobile-api-access-link:hover {
-    background-image: linear-gradient(to right, #10b981, #059669);
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-  }
-
-  /* Subtle hover effect for status bar items */
-  .status-bar-item:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.1);
-  }
-
-  /* Mobile menu button hover effect */
-  #mobile-menu-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: rotate(5deg);
-  }
-
-  /* Add a subtle transition to all interactive elements */
-  a,
-  button,
-  .interactive {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-</style>

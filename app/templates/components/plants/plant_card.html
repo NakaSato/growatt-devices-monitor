@@ -1,66 +1,82 @@
 <div
-  :class="'card rounded-lg shadow-md overflow-hidden border border-light-gray transition-all duration-300 bg-white hover:shadow-lg ' + (plant.status === 'active' ? 'plant-active' : '')"
+  class="plant-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1"
+  :id="'plant-' + plant.id"
 >
   <div
-    class="p-4 border-b border-light-gray bg-snow-white flex justify-between items-center"
+    class="relative h-40 bg-gradient-to-r from-eco-green to-fresh-mint overflow-hidden"
   >
+    <img
+      :src="plant.image_url || '{{ url_for('static', filename='images/default-plant.jpg') }}'"
+      :alt="plant.plantName || 'Solar Plant'"
+      class="w-full h-full object-cover transition-all duration-500 filter hover:brightness-110"
+      @error="handleImageError"
+    />
+    <div
+      class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"
+    ></div>
+    <div
+      class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium text-white"
+      :class="getStatusBadgeClass(plant.status || 'active')"
+    >
+      <span x-text="getStatusText(plant.status || 'active')"></span>
+    </div>
     <h3
-      class="font-medium text-deep-forest truncate"
-      x-text="plant.plantName"
-    ></h3>
-    <span
-      class="px-2 py-0.5 text-xs leading-5 font-semibold rounded-full"
-      :class="getStatusClass(plant.status || 'active')"
-      x-text="getStatusText(plant.status || 'active')"
-    ></span>
+      class="absolute bottom-2 left-3 text-white font-bold text-lg line-clamp-1 pr-3"
+      :title="plant.plantName"
+    >
+      <span x-text="plant.plantName || 'Unnamed Plant'"></span>
+    </h3>
   </div>
-  <div class="p-4 space-y-3">
-    <div class="flex justify-between items-center">
-      <span class="text-sm text-slate-gray">Plant ID:</span>
-      <span class="text-sm font-mono text-deep-forest" x-text="plant.id"></span>
+  <div class="p-3 sm:p-4 flex-grow flex flex-col justify-between">
+    <div>
+      <div class="flex items-baseline justify-between mb-3">
+        <div class="text-xs sm:text-sm text-slate-gray">
+          <i class="fas fa-map-marker-alt mr-1 text-eco-green"></i>
+          <span
+            x-text="plant.location || 'Unknown Location'"
+            class="line-clamp-1"
+            :title="plant.location"
+          ></span>
+        </div>
+        <div
+          class="text-xs bg-eco-green-5 text-eco-green px-2 py-0.5 rounded-full"
+          x-text="'ID: ' + plant.id"
+        ></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs sm:text-sm mb-3">
+        <div class="flex flex-col">
+          <span class="text-slate-gray mb-1">Power</span>
+          <span class="font-medium text-deep-forest">
+            <span x-text="formatPower(plant.totalPower)"></span>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-slate-gray mb-1">Today</span>
+          <span class="font-medium text-deep-forest">
+            <span x-text="formatEnergy(plant.todayEnergy)"></span>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-slate-gray mb-1">Month</span>
+          <span class="font-medium text-deep-forest">
+            <span x-text="formatEnergy(plant.monthEnergy)"></span>
+          </span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-slate-gray mb-1">Total</span>
+          <span class="font-medium text-deep-forest">
+            <span x-text="formatEnergy(plant.totalEnergy)"></span>
+          </span>
+        </div>
+      </div>
     </div>
-    <div class="flex justify-between items-center">
-      <span class="text-sm text-slate-gray">Total Power:</span>
-      <span
-        class="text-sm font-semibold text-eco-green"
-        x-text="formatPower(plant.totalPower)"
-      ></span>
-    </div>
-    <div class="flex justify-between items-center">
-      <span class="text-sm text-slate-gray">Energy Today:</span>
-      <span
-        class="text-sm font-semibold text-eco-green"
-        x-text="formatEnergy(plant.todayEnergy)"
-      ></span>
-    </div>
-    <div class="flex justify-between items-center">
-      <span class="text-sm text-slate-gray">Timezone:</span>
-      <span
-        class="text-sm text-deep-forest"
-        x-text="formatTimezone(plant.timezone)"
-      ></span>
-    </div>
-  </div>
-  <div class="p-4 bg-snow-white border-t border-light-gray text-right">
+
     <a
       :href="'/plant/' + plant.id"
-      class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-eco-green hover:bg-deep-forest transition-colors"
+      class="mt-2 w-full flex items-center justify-center py-2 px-3 bg-eco-green text-white text-xs sm:text-sm font-medium rounded hover:bg-deep-forest transition-colors duration-200 touch-target"
     >
-      View Details
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="ml-1 h-4 w-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 5l7 7-7 7"
-        />
-      </svg>
+      <i class="fas fa-chart-line mr-2"></i> View Details
     </a>
   </div>
 </div>

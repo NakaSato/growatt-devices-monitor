@@ -5,10 +5,18 @@
   x-transition:enter-start="opacity-0"
   x-transition:enter-end="opacity-100"
 >
-  <div class="status-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="status-grid grid grid-cols-1 md:grid-cols-3 gap-2">
     <!-- Power Generation Status -->
     <div
-      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-green-500"
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border"
+      :class="{ 
+      'border-green-500': status === 'Active',
+      'border-yellow-500': status === 'Standby',
+      'border-blue-500': status === 'Peak',
+      'border-orange-500': status === 'Low Output',
+      'border-gray-500': status === 'Maintenance',
+      'border-red-500': status === 'Offline'
+      }"
       x-data="powerGenerationData"
     >
       <div class="flex justify-between items-center">
@@ -68,14 +76,19 @@
 
     <!-- Devices Status -->
     <div
-      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border-purple-500"
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border"
+      :class="{
+      'border-green-500': inverterStatus === 'Online',
+      'border-red-500': inverterStatus === 'Offline',
+      'border-yellow-500': inverterStatus === 'Waiting'
+      }"
       x-data="devicesStatus"
       x-effect="updateCardBorder"
     >
       <div class="flex justify-between">
         <h3 class="text-gray-700 font-medium">Devices Status</h3>
         <span
-          class="status-indicator bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded"
+          class="status-indicator text-xs font-medium px-2 py-0.5 rounded"
           :class="statusClass"
           x-text="inverterStatus"
         ></span>
@@ -118,7 +131,7 @@
 
     <!-- Faults Status -->
     <div
-      class="status-card bg-white rounded-lg shadow p-4 border-l-4"
+      class="status-card bg-white rounded-lg shadow p-4 border-l-4 border"
       :class="faultsCount > 0 ? 'border-red-500' : 'border-green-500'"
       x-data="faultsData"
       x-init="initFaults"

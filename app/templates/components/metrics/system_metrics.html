@@ -9,7 +9,7 @@
     <!-- Mobile menu toggle -->
     <button
       @click="mobileMenuOpen = !mobileMenuOpen"
-      class="md:hidden bg-gray-100 p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+      class="md:hidden bg-gray-100 p-1.5 rounded-md hover:bg-gray-200"
       aria-label="Toggle menu"
     >
       <svg
@@ -34,14 +34,14 @@
     <button
       @click="activeTab = 'overview'"
       :class="{'bg-indigo-600 text-white': activeTab === 'overview', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'overview'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium transition duration-150"
+      class="px-4 py-1.5 rounded-md text-sm font-medium"
     >
       Overview
     </button>
     <button
       @click="activeTab = 'alerts'"
       :class="{'bg-indigo-600 text-white': activeTab === 'alerts', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'alerts'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium transition duration-150 flex items-center"
+      class="px-4 py-1.5 rounded-md text-sm font-medium flex items-center"
     >
       <span>Alerts</span>
       <span
@@ -52,7 +52,7 @@
     <button
       @click="activeTab = 'analytics'"
       :class="{'bg-indigo-600 text-white': activeTab === 'analytics', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'analytics'}"
-      class="px-4 py-1.5 rounded-md text-sm font-medium transition duration-150"
+      class="px-4 py-1.5 rounded-md text-sm font-medium"
     >
       Analytics
     </button>
@@ -61,25 +61,19 @@
   <!-- Mobile navigation -->
   <div
     x-show="mobileMenuOpen"
-    x-transition:enter="transition ease-out duration-200"
-    x-transition:enter-start="opacity-0 transform -translate-y-2"
-    x-transition:enter-end="opacity-100 transform translate-y-0"
-    x-transition:leave="transition ease-in duration-150"
-    x-transition:leave-start="opacity-100 transform translate-y-0"
-    x-transition:leave-end="opacity-0 transform -translate-y-2"
     class="status-tabs flex flex-col w-full space-y-2 mt-2 md:hidden"
   >
     <button
       @click="activeTab = 'overview'; mobileMenuOpen = false"
       :class="{'bg-indigo-600 text-white': activeTab === 'overview', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'overview'}"
-      class="px-3 py-2 rounded-md text-sm font-medium transition duration-150 text-left"
+      class="px-3 py-2 rounded-md text-sm font-medium text-left"
     >
       Overview
     </button>
     <button
       @click="activeTab = 'alerts'; mobileMenuOpen = false"
       :class="{'bg-indigo-600 text-white': activeTab === 'alerts', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'alerts'}"
-      class="px-3 py-2 rounded-md text-sm font-medium transition duration-150 flex items-center justify-between"
+      class="px-3 py-2 rounded-md text-sm font-medium flex items-center justify-between"
     >
       <span>Alerts</span>
       <span class="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5"
@@ -89,7 +83,7 @@
     <button
       @click="activeTab = 'analytics'; mobileMenuOpen = false"
       :class="{'bg-indigo-600 text-white': activeTab === 'analytics', 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeTab !== 'analytics'}"
-      class="px-3 py-2 rounded-md text-sm font-medium transition duration-150 text-left"
+      class="px-3 py-2 rounded-md text-sm font-medium text-left"
     >
       Analytics
     </button>
