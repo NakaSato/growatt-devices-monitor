@@ -230,7 +230,11 @@
     <!-- Header and Navigation -->
     {% include 'components/navbar.html' %}
 
-    <main class="">{% block content %}{% endblock %}</main>
+    <main
+      class="lg:container lg:mx-auto sm:px-0 lg:px-4 py-2 sm:py-2 lg:py-0 min-h-[60vh]"
+    >
+      {% block content %}{% endblock %}
+    </main>
 
     {% include 'components/footer.html' %}
 
