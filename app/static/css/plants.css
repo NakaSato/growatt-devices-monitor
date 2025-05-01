@@ -1,0 +1,82 @@
+/* Plants page specific styles */
+
+/* Animation for the loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive card hover effect enhancement */
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-5px);
+  }
+}
+
+/* Improved card transitions */
+.card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Solar icon glow animation for active plants */
+.plant-active .card-icon {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+/* Status colors */
+.status-active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-inactive {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-maintenance {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Better table responsiveness for small screens */
+@media (max-width: 640px) {
+  table {
+    font-size: 0.8rem;
+  }
+
+  th,
+  td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Add extra small breakpoint for view toggle buttons */
+@media (min-width: 480px) {
+  .xs\:inline {
+    display: inline;
+  }
+}

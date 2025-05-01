@@ -65,6 +65,18 @@ def render_device_not_found(plant_id: str = '', plant_name: str = '') -> Tuple[s
         Tuple[str, int]: Rendered HTML template with error message and 404 status code
     """
     # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    error_message = f"No devices found for plant {plant_name}" if plant_name else "Device not found"
+    return render_template('error.html', 
+                                error=error_message,
+                                error_code="404", 
+                                error_title="Not Found",
+                                authenticated=authenticated), 404
+
+def render_weather(plant_id: str = '', plant_name: str = '') -> str:
+    """
+    Render the weather template.
     
     Args:
         plant_id (str, optional): ID of the plant to display weather for. Defaults to ''.
@@ -73,31 +85,34 @@ def render_device_not_found(plant_id: str = '', plant_name: str = '') -> Tuple[s
     Returns:
         str: Rendered HTML template for the weather page
     """
-    return render_template('weather.html', plant_id=plant_id, plant_name=plant_name)
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    return render_template('weather.html', plant_id=plant_id, plant_name=plant_name, authenticated=authenticated)
 
 def render_maps() -> Tuple[str, int]:
     """
-    Render the 404 error template.
+    Render the maps template.
     
     Returns:
-        Tuple[str, int]: Rendered HTML template for the 404 page and status code
+        Tuple[str, int]: Rendered HTML template for the maps page and status code
     """
-    return render_template('maps.html', 
-                               error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
-                               error_code="404", 
-                               error_title="Not Found"), 404
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    return render_template('maps.html', authenticated=authenticated), 200
 
 def render_analytics() -> Tuple[str, int]:
     """
-    Render the 404 error template.
+    Render the analytics template.
     
     Returns:
-        Tuple[str, int]: Rendered HTML template for the 404 page and status code
+        Tuple[str, int]: Rendered HTML template for the analytics page and status code
     """
-    return render_template('analytics.html', 
-                               error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
-                               error_code="404", 
-                               error_title="Not Found"), 404
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    return render_template('analytics.html', authenticated=authenticated), 200
 
 def render_error_404() -> Tuple[str, int]:
     """
@@ -106,9 +121,13 @@ def render_error_404() -> Tuple[str, int]:
     Returns:
         Tuple[str, int]: Rendered HTML template for the 404 page and status code
     """
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
     return render_template('error.html', 
                                error="The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
                                error_code="404", 
-                               error_title="Not Found"), 404
+                               error_title="Not Found",
+                               authenticated=authenticated), 404
 
 

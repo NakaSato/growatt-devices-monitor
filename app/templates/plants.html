@@ -1,5 +1,16 @@
 {% extends "base.html" %} {% block title %}Plants - Growatt API{% endblock %} {%
-block content %}
+block styles %}
+<!-- Plants specific styles -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/plants.css') }}"
+/>
+{% endblock %} {% block head_scripts %}
+<!-- Plant utilities -->
+<script src="{{ url_for('static', filename='js/utils/plant-data-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/export-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/plants-app.js') }}"></script>
+{% endblock %} {% block content %}
 <div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6">
   <div
     x-data="plantsApp()"
@@ -81,8 +92,30 @@ block content %}
           </button>
         </div>
         <button
+          id="export-excel-button"
+          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 w-full sm:w-auto order-3 sm:order-2 mt-2 sm:mt-0"
+          @click="exportToExcel()"
+          :disabled="isLoading || filteredPlants.length === 0"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+            />
+          </svg>
+          <span class="font-medium">Export</span>
+        </button>
+        <button
           id="refresh-button"
-          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full sm:w-auto order-1 sm:order-2"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full sm:w-auto order-1 sm:order-3"
           @click="fetchPlants()"
           :disabled="isLoading"
         >
@@ -159,322 +192,4 @@ block content %}
     </div>
   </div>
 </div>
-
-<style>
-  /* Animation for the loading spinner */
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-
-  /* Responsive card hover effect enhancement */
-  @media (hover: hover) {
-    .card:hover {
-      transform: translateY(-5px);
-    }
-  }
-
-  /* Improved card transitions */
-  .card {
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-
-  /* Solar icon glow animation for active plants */
-  .plant-active .card-icon {
-    animation: pulse-green 2s infinite;
-  }
-
-  @keyframes pulse-green {
-    0% {
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
-    }
-    70% {
-      box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-    }
-  }
-
-  /* Status colors */
-  .status-active {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-
-  .status-inactive {
-    background-color: #f3f4f6;
-    color: #4b5563;
-  }
-
-  .status-maintenance {
-    background-color: #fef3c7;
-    color: #92400e;
-  }
-
-  .status-error {
-    background-color: #fee2e2;
-    color: #b91c1c;
-  }
-
-  /* Better table responsiveness for small screens */
-  @media (max-width: 640px) {
-    table {
-      font-size: 0.8rem;
-    }
-
-    th,
-    td {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-  }
-
-  /* Add extra small breakpoint for view toggle buttons */
-  @media (min-width: 480px) {
-    .xs\:inline {
-      display: inline;
-    }
-  }
-</style>
-
-<script>
-  function plantsApp() {
-    return {
-      plants: [],
-      filteredPlants: [],
-      isLoading: true,
-      errorMessage: "",
-      viewMode: window.innerWidth < 640 ? "cards" : "table", // Default to cards on smaller screens, table on larger ones
-      searchQuery: "",
-      statusFilter: "all",
-      sortField: "plantName", // Default sort field
-      sortAsc: true, // Default sort direction
-
-      // Pagination
-      currentPage: 1,
-      pageSize: window.innerWidth < 640 ? 6 : 10, // Smaller page size on mobile
-
-      // Computed property for page numbers
-      get pageNumbers() {
-        const totalPages = this.totalPages;
-        const currentPage = this.currentPage;
-
-        if (totalPages <= 5) {
-          return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
-
-        if (currentPage <= 3) {
-          return [1, 2, 3, 4, 5];
-        }
-
-        if (currentPage >= totalPages - 2) {
-          return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
-        }
-
-        return [
-          currentPage - 2,
-          currentPage - 1,
-          currentPage,
-          currentPage + 1,
-          currentPage + 2,
-        ];
-      },
-
-      // Computed property for total pages
-      get totalPages() {
-        return Math.ceil(this.filteredPlants.length / this.pageSize);
-      },
-
-      // Computed property for paginated plants
-      get paginatedPlants() {
-        const start = (this.currentPage - 1) * this.pageSize;
-        const end = start + this.pageSize;
-        return this.filteredPlants.slice(start, end);
-      },
-
-      // Lifecycle hooks - Initialize with responsive settings
-      init() {
-        // Responsive view mode toggle based on screen size
-        window.addEventListener("resize", () => {
-          // Only auto-switch view mode if the user hasn't manually selected one
-          if (!localStorage.getItem("preferredViewMode")) {
-            this.viewMode = window.innerWidth < 640 ? "cards" : "table";
-          }
-
-          // Update page size when screen size changes
-          this.pageSize = window.innerWidth < 640 ? 6 : 10;
-
-          // Reset to page 1 if the current page would be out of bounds after resize
-          if (this.currentPage > this.totalPages && this.totalPages > 0) {
-            this.currentPage = 1;
-          }
-        });
-
-        // Check for saved preferences
-        const savedViewMode = localStorage.getItem("preferredViewMode");
-        if (savedViewMode) {
-          this.viewMode = savedViewMode;
-        }
-
-        this.fetchPlants();
-      },
-
-      fetchPlants() {
-        this.isLoading = true;
-        this.errorMessage = "";
-
-        fetch("/api/plants")
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // Process the data
-            this.plants = Array.isArray(data) ? data : [];
-            this.filteredPlants = [...this.plants]; // Initialize filtered plants
-            this.sortPlants(); // Apply initial sort
-            console.log("Plants data:", this.plants);
-          })
-          .catch((error) => {
-            console.error("Error fetching plants:", error);
-            this.errorMessage = `Failed to load plants: ${error.message}`;
-          })
-          .finally(() => {
-            this.isLoading = false;
-          });
-      },
-
-      // Filter plants based on search and status filter
-      filterPlants() {
-        this.currentPage = 1; // Reset to first page when filtering
-
-        // Filter by search query and status
-        this.filteredPlants = this.plants.filter((plant) => {
-          const matchesSearch =
-            !this.searchQuery ||
-            (plant.plantName &&
-              plant.plantName
-                .toLowerCase()
-                .includes(this.searchQuery.toLowerCase())) ||
-            (plant.id && plant.id.toString().includes(this.searchQuery));
-
-          const matchesStatus =
-            this.statusFilter === "all" ||
-            (plant.status || "active") === this.statusFilter;
-
-          return matchesSearch && matchesStatus;
-        });
-
-        // Apply current sorting
-        this.sortPlants();
-      },
-
-      // Sort plants by field
-      sortBy(field) {
-        if (this.sortField === field) {
-          this.sortAsc = !this.sortAsc;
-        } else {
-          this.sortField = field;
-          this.sortAsc = true;
-        }
-
-        this.sortPlants();
-      },
-
-      // Apply sorting to filtered plants
-      sortPlants() {
-        const field = this.sortField;
-        const direction = this.sortAsc ? 1 : -1;
-
-        this.filteredPlants.sort((a, b) => {
-          let aValue = a[field];
-          let bValue = b[field];
-
-          // Handle undefined values
-          if (aValue === undefined) aValue = "";
-          if (bValue === undefined) bValue = "";
-
-          // Convert to appropriate types for comparison
-          if (typeof aValue === "string") {
-            return direction * aValue.localeCompare(bValue);
-          } else {
-            return direction * (aValue - bValue);
-          }
-        });
-      },
-
-      // Pagination methods
-      prevPage() {
-        if (this.currentPage > 1) {
-          this.currentPage--;
-        }
-      },
-
-      nextPage() {
-        if (this.currentPage < this.totalPages) {
-          this.currentPage++;
-        }
-      },
-
-      goToPage(page) {
-        this.currentPage = page;
-      },
-
-      formatTimezone(timezone) {
-        if (timezone === undefined || timezone === null) return "N/A";
-
-        // Convert timezone string to number
-        const timezoneNum = parseInt(timezone);
-        if (isNaN(timezoneNum)) return timezone;
-
-        // Format timezone as UTC+X or UTC-X
-        const sign = timezoneNum >= 0 ? "+" : "-";
-        const absValue = Math.abs(timezoneNum);
-        return `UTC${sign}${absValue}`;
-      },
-
-      // Format power value with unit
-      formatPower(power) {
-        if (power === undefined || power === null) return "N/A";
-        return `${power} kW`;
-      },
-
-      // Format energy value with unit
-      formatEnergy(energy) {
-        if (energy === undefined || energy === null) return "N/A";
-        return `${energy} kWh`;
-      },
-
-      // Get status text
-      getStatusText(status) {
-        const statusMap = {
-          active: "Active",
-          inactive: "Inactive",
-          maintenance: "Maintenance",
-          error: "Error",
-        };
-        return statusMap[status] || "Unknown";
-      },
-
-      // Get status CSS class
-      getStatusClass(status) {
-        const classMap = {
-          active: "status-active",
-          inactive: "status-inactive",
-          maintenance: "status-maintenance",
-          error: "status-error",
-        };
-        return classMap[status] || "status-inactive";
-      },
-    };
-  }
-</script>
 {% endblock %}
