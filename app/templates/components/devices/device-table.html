@@ -1,0 +1,101 @@
+<div class="overflow-x-auto w-full">
+  <table class="w-full table-auto min-w-[640px]" x-ref="deviceTable">
+    <thead class="bg-eco-green">
+      <tr>
+        <template x-for="(column, index) in columns" :key="index">
+          <th
+            @click="sortTable(index)"
+            class="px-3 py-2.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-snow-white uppercase tracking-wider cursor-pointer hover:bg-deep-forest transition-colors relative touch-target"
+            :class="{'bg-deep-forest': sortColumn === index}"
+          >
+            <div class="flex items-center">
+              <span
+                x-text="column.label"
+                class="mr-2 sm:mr-4 whitespace-nowrap"
+              ></span>
+              <span
+                class="sort-icon opacity-60"
+                x-text="sortColumn === index ? (sortDirection === 'asc' ? '▲' : '▼') : ''"
+              ></span>
+            </div>
+          </th>
+        </template>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-light-gray">
+      <template x-for="(device, index) in paginatedDevices" :key="index">
+        <tr
+          class="hover:bg-eco-green-10 transition-colors"
+          :class="index % 2 === 0 ? 'bg-white' : 'bg-slate-50'"
+        >
+          <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
+            <span
+              class="text-charcoal font-medium text-xs sm:text-sm line-clamp-1"
+              x-text="device.plant_name || 'N/A'"
+              :title="device.plant_name || 'N/A'"
+            ></span>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
+            <span
+              class="text-charcoal text-xs sm:text-sm line-clamp-1"
+              x-text="device.alias || 'N/A'"
+              :title="device.alias || 'N/A'"
+            ></span>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
+            <span
+              class="text-slate-gray font-mono text-xs bg-slate-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded line-clamp-1"
+              x-text="device.serial_number || 'N/A'"
+              :title="device.serial_number || 'N/A'"
+            ></span>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3">
+            <span
+              class="status-indicator text-xs whitespace-nowrap px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full inline-block"
+              :class="getStatusClass(device.status)"
+              x-text="device.status || 'Unknown'"
+            ></span>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3">
+            <span
+              class="energy-value font-medium text-eco-green text-xs sm:text-sm whitespace-nowrap"
+              x-text="device.total_energy || '0 kWh'"
+            ></span>
+          </td>
+          <td
+            class="px-3 py-2 sm:px-4 sm:py-3 text-slate-gray text-xs sm:text-sm whitespace-nowrap"
+            x-text="formatDate(device.last_update_time)"
+          ></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+<!-- No Results Message -->
+<div
+  x-show="!isLoading && filteredDevices.length === 0"
+  class="p-8 text-center bg-snow-white"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="h-12 w-12 mx-auto text-slate-gray mb-4 opacity-80"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.5"
+      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+    />
+  </svg>
+  <h3 class="text-lg font-medium text-deep-forest mb-2 font-headings">
+    No Devices Found
+  </h3>
+  <p class="text-slate-gray max-w-sm mx-auto">
+    No devices match the current filter criteria or no devices are available for
+    this account.
+  </p>
+</div>
