@@ -1,0 +1,859 @@
+<!-- Data Analysis Component -->
+<div class="space-y-6">
+  <!-- Header with actions -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+    <h2 class="text-xl font-semibold text-gray-800">Energy Data Analysis</h2>
+    <div class="flex space-x-2">
+      <button
+        @click="refreshData"
+        class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        aria-label="Refresh data"
+      >
+        <span class="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Refresh
+        </span>
+      </button>
+      <button
+        @click="exportCurrentData"
+        class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+        aria-label="Export data"
+      >
+        <span class="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export
+        </span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Filter Bar -->
+  <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+    <div class="flex flex-col sm:flex-row gap-4 flex-wrap">
+      <div class="w-full sm:w-auto">
+        <label
+          for="timeRangeFilter"
+          class="block text-sm font-medium text-gray-700 mb-1"
+          >Time Range</label
+        >
+        <select
+          id="timeRangeFilter"
+          x-model="analysisFilters.timeRange"
+          @change="filterAnalysisData()"
+          class="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        >
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="custom">Custom Range</option>
+        </select>
+      </div>
+      <div
+        class="w-full sm:w-auto"
+        x-show="analysisFilters.timeRange === 'custom'"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform scale-90"
+        x-transition:enter-end="opacity-100 transform scale-100"
+      >
+        <label
+          for="startDateFilter"
+          class="block text-sm font-medium text-gray-700 mb-1"
+          >Start Date</label
+        >
+        <input
+          type="date"
+          id="startDateFilter"
+          x-model="analysisFilters.startDate"
+          @change="filterAnalysisData()"
+          class="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+      <div
+        class="w-full sm:w-auto"
+        x-show="analysisFilters.timeRange === 'custom'"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform scale-90"
+        x-transition:enter-end="opacity-100 transform scale-100"
+      >
+        <label
+          for="endDateFilter"
+          class="block text-sm font-medium text-gray-700 mb-1"
+          >End Date</label
+        >
+        <input
+          type="date"
+          id="endDateFilter"
+          x-model="analysisFilters.endDate"
+          @change="filterAnalysisData()"
+          class="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+      <div class="w-full sm:w-auto">
+        <label
+          for="dataTypeFilter"
+          class="block text-sm font-medium text-gray-700 mb-1"
+          >Data Type</label
+        >
+        <select
+          id="dataTypeFilter"
+          x-model="analysisFilters.dataType"
+          @change="filterAnalysisData()"
+          class="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        >
+          <option value="energy">Energy Production</option>
+          <option value="power">Power Output</option>
+          <option value="efficiency">System Efficiency</option>
+          <option value="performance">Performance Ratio</option>
+        </select>
+      </div>
+      <div class="w-full sm:w-auto">
+        <label
+          for="plantFilter"
+          class="block text-sm font-medium text-gray-700 mb-1"
+          >Plant</label
+        >
+        <select
+          id="plantFilter"
+          x-model="analysisFilters.plantId"
+          @change="filterAnalysisData()"
+          class="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        >
+          <option value="all">All Plants</option>
+          <template x-for="plant in plants" :key="plant.id">
+            <option :value="plant.id" x-text="plant.name"></option>
+          </template>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Daily Production Chart -->
+  <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Daily Energy Production</h3>
+    <div class="relative h-64" :class="{'opacity-50': isLoadingChartData}">
+      <canvas id="dailyProductionAnalyticsChart" aria-label="Daily energy production chart" role="img"></canvas>
+      <div x-show="isLoadingChartData" class="absolute inset-0 flex items-center justify-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      </div>
+    </div>
+    <template x-init="
+      setTimeout(() => {
+        initializeCharts();
+      }, 100);
+    "></template>
+  </div>
+
+  <!-- Analysis Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Main Chart -->
+    <div class="bg-white rounded-lg shadow p-4 lg:col-span-2">
+      <h3 class="text-md font-medium text-gray-700 mb-3">Production Trends</h3>
+      <div class="h-80 relative" :class="{'opacity-50': isLoadingChartData}">
+        <canvas id="mainAnalysisChart" aria-label="Production trends chart" role="img"></canvas>
+        <div x-show="isLoadingChartData" class="absolute inset-0 flex items-center justify-center">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Chart -->
+    <div class="bg-white rounded-lg shadow p-4">
+      <h3 class="text-md font-medium text-gray-700 mb-3">Plant Comparison</h3>
+      <div class="h-64 relative" :class="{'opacity-50': isLoadingChartData}">
+        <canvas id="comparisonChart" aria-label="Plant comparison chart" role="img"></canvas>
+        <div x-show="isLoadingChartData" class="absolute inset-0 flex items-center justify-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distribution Chart -->
+    <div class="bg-white rounded-lg shadow p-4">
+      <h3 class="text-md font-medium text-gray-700 mb-3">Data Distribution</h3>
+      <div class="h-64 relative" :class="{'opacity-50': isLoadingChartData}">
+        <canvas id="distributionChart" aria-label="Data distribution chart" role="img"></canvas>
+        <div x-show="isLoadingChartData" class="absolute inset-0 flex items-center justify-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysis Statistics -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Key Metrics</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">
+        Statistical analysis of production data based on selected filters.
+      </p>
+    </div>
+    <div class="px-4 py-5 sm:p-6">
+      <div x-show="isLoadingStats" class="flex justify-center py-4">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      </div>
+      <div x-show="!isLoadingStats" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <p class="text-sm font-medium text-gray-500">Total Production</p>
+          <p
+            class="mt-1 text-3xl font-semibold text-gray-900"
+            x-text="formatEnergy(analysisStats.totalProduction)"
+          ></p>
+          <div class="mt-1 flex items-center text-sm">
+            <span
+              :class="{
+                'text-green-600': analysisStats.productionChange > 0,
+                'text-red-600': analysisStats.productionChange < 0,
+                'text-gray-500': analysisStats.productionChange === 0
+              }"
+              x-text="formatChangePercent(analysisStats.productionChange)"
+            ></span>
+            <span class="text-gray-500 ml-1">vs previous period</span>
+          </div>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <p class="text-sm font-medium text-gray-500">
+            Average Daily Production
+          </p>
+          <p
+            class="mt-1 text-3xl font-semibold text-gray-900"
+            x-text="formatEnergy(analysisStats.avgDailyProduction)"
+          ></p>
+          <div class="mt-1 flex items-center text-sm">
+            <span
+              :class="{
+                'text-green-600': analysisStats.avgDailyChange > 0,
+                'text-red-600': analysisStats.avgDailyChange < 0,
+                'text-gray-500': analysisStats.avgDailyChange === 0
+              }"
+              x-text="formatChangePercent(analysisStats.avgDailyChange)"
+            ></span>
+            <span class="text-gray-500 ml-1">vs previous period</span>
+          </div>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <p class="text-sm font-medium text-gray-500">Peak Production</p>
+          <p
+            class="mt-1 text-3xl font-semibold text-gray-900"
+            x-text="formatEnergy(analysisStats.peakProduction)"
+          ></p>
+          <p
+            class="mt-1 text-sm text-gray-500"
+            x-text="'on ' + formatDate(analysisStats.peakDate)"
+          ></p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <p class="text-sm font-medium text-gray-500">Performance Ratio</p>
+          <p
+            class="mt-1 text-3xl font-semibold text-gray-900"
+            x-text="formatPercentage(analysisStats.performanceRatio)"
+          ></p>
+          <div class="mt-1 flex items-center text-sm">
+            <span
+              :class="{
+                'text-green-600': analysisStats.performanceChange > 0,
+                'text-red-600': analysisStats.performanceChange < 0,
+                'text-gray-500': analysisStats.performanceChange === 0
+              }"
+              x-text="formatChangePercent(analysisStats.performanceChange)"
+            ></span>
+            <span class="text-gray-500 ml-1">vs previous period</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="bg-white rounded-lg shadow overflow-hidden mt-6">
+    <div
+      class="px-4 py-5 sm:px-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0"
+    >
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Detailed Data
+        </h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">
+          Raw data points based on current filters.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <input
+          type="text"
+          placeholder="Search data..."
+          x-model="analysisFilters.searchQuery"
+          @input="filterAnalysisData()"
+          class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          aria-label="Search data"
+        />
+        <select 
+          x-model="analysisPageSize" 
+          @change="changePageSize()"
+          class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          aria-label="Items per page"
+        >
+          <option value="10">10 per page</option>
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <div x-show="isLoadingTableData" class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+      <table x-show="!isLoadingTableData" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              @click="sortAnalysisData('date')"
+            >
+              Date
+              <span x-show="analysisFilters.sortField === 'date'" class="ml-1">
+                <span x-show="analysisFilters.sortDirection === 'asc'">↑</span>
+                <span x-show="analysisFilters.sortDirection === 'desc'">↓</span>
+              </span>
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              @click="sortAnalysisData('plantId')"
+            >
+              Plant
+              <span x-show="analysisFilters.sortField === 'plantId'" class="ml-1">
+                <span x-show="analysisFilters.sortDirection === 'asc'">↑</span>
+                <span x-show="analysisFilters.sortDirection === 'desc'">↓</span>
+              </span>
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              @click="sortAnalysisData('energy')"
+            >
+              Energy (kWh)
+              <span x-show="analysisFilters.sortField === 'energy'" class="ml-1">
+                <span x-show="analysisFilters.sortDirection === 'asc'">↑</span>
+                <span x-show="analysisFilters.sortDirection === 'desc'">↓</span>
+              </span>
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              @click="sortAnalysisData('peakPower')"
+            >
+              Peak Power (kW)
+              <span x-show="analysisFilters.sortField === 'peakPower'" class="ml-1">
+                <span x-show="analysisFilters.sortDirection === 'asc'">↑</span>
+                <span x-show="analysisFilters.sortDirection === 'desc'">↓</span>
+              </span>
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              @click="sortAnalysisData('performanceRatio')"
+            >
+              Performance Ratio
+              <span x-show="analysisFilters.sortField === 'performanceRatio'" class="ml-1">
+                <span x-show="analysisFilters.sortDirection === 'asc'">↑</span>
+                <span x-show="analysisFilters.sortDirection === 'desc'">↓</span>
+              </span>
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Weather Condition
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <template
+            x-for="(dataPoint, index) in paginatedAnalysisData"
+            :key="index"
+          >
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                x-text="formatDate(dataPoint.date)"
+              ></td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                x-text="getPlantName(dataPoint.plantId)"
+              ></td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                x-text="formatEnergy(dataPoint.energy)"
+              ></td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                x-text="formatPower(dataPoint.peakPower)"
+              ></td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2.5">
+                    <div
+                      class="bg-blue-600 h-2.5 rounded-full"
+                      :style="'width: ' + (dataPoint.performanceRatio * 100) + '%'"
+                    ></div>
+                  </div>
+                  <span
+                    class="ml-2 text-sm text-gray-900"
+                    x-text="formatPercentage(dataPoint.performanceRatio)"
+                  ></span>
+                </div>
+              </td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                x-text="dataPoint.weather || 'N/A'"
+              ></td>
+            </tr>
+          </template>
+          <!-- Empty state when no data -->
+          <tr x-show="analysisData.length === 0 && !isLoadingTableData">
+            <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">
+              <div class="flex flex-col items-center space-y-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <p>No data available with the current filters.</p>
+                <button 
+                  @click="resetFilters()" 
+                  class="text-blue-600 hover:text-blue-800 transition-colors underline"
+                >
+                  Reset filters
+                </button>
+              </div>
+            </td>
+          </tr>
+          <!-- Error state -->
+          <tr x-show="dataError && !isLoadingTableData">
+            <td colspan="6" class="px-6 py-8 text-center text-sm text-red-500">
+              <div class="flex flex-col items-center space-y-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p x-text="dataError"></p>
+                <button 
+                  @click="refreshData()" 
+                  class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6"
+      x-show="analysisData.length > 0 && !isLoadingTableData"
+    >
+      <div class="flex-1 flex justify-between sm:hidden">
+        <button
+          @click="analysisCurrentPage > 1 ? analysisCurrentPage-- : null"
+          :disabled="analysisCurrentPage === 1"
+          class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          :class="{'opacity-50 cursor-not-allowed': analysisCurrentPage === 1}"
+        >
+          Previous
+        </button>
+        <button
+          @click="analysisCurrentPage < analysisTotalPages ? analysisCurrentPage++ : null"
+          :disabled="analysisCurrentPage === analysisTotalPages"
+          class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+          :class="{'opacity-50 cursor-not-allowed': analysisCurrentPage === analysisTotalPages}"
+        >
+          Next
+        </button>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing
+            <span
+              class="font-medium"
+              x-text="((analysisCurrentPage - 1) * analysisPageSize) + 1"
+            ></span>
+            to
+            <span
+              class="font-medium"
+              x-text="Math.min(analysisCurrentPage * analysisPageSize, analysisData.length)"
+            ></span>
+            of
+            <span class="font-medium" x-text="analysisData.length"></span>
+            results
+          </p>
+        </div>
+        <div>
+          <nav
+            class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+            aria-label="Pagination"
+          >
+            <button
+              @click="analysisCurrentPage > 1 ? analysisCurrentPage-- : null"
+              :disabled="analysisCurrentPage === 1"
+              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+              :class="{'opacity-50 cursor-not-allowed': analysisCurrentPage === 1}"
+              aria-label="Previous page"
+            >
+              <span class="sr-only">Previous</span>
+              <svg
+                class="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+            <template x-for="page in analysisPageNumbers" :key="page">
+              <button
+                @click="goToAnalysisPage(page)"
+                :class="{'bg-blue-50 border-blue-500 text-blue-600': page === analysisCurrentPage, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== analysisCurrentPage}"
+                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors"
+                x-text="page"
+                :aria-label="'Page ' + page"
+                :aria-current="page === analysisCurrentPage ? 'page' : null"
+              ></button>
+            </template>
+            <button
+              @click="analysisCurrentPage < analysisTotalPages ? analysisCurrentPage++ : null"
+              :disabled="analysisCurrentPage === analysisTotalPages"
+              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+              :class="{'opacity-50 cursor-not-allowed': analysisCurrentPage === analysisTotalPages}"
+              aria-label="Next page"
+            >
+              <span class="sr-only">Next</span>
+              <svg
+                class="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4-4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alpine.js Function for Data Analysis Component initialization -->
+<script>
+  function dataAnalysis() {
+    return {
+      isLoadingChartData: true,
+      isLoadingStats: true,
+      isLoadingTableData: true,
+      dataError: null,
+      analysisFilters: {
+        timeRange: 'month',
+        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        dataType: 'energy',
+        plantId: 'all',
+        searchQuery: '',
+        sortField: 'date',
+        sortDirection: 'desc'
+      },
+      analysisData: [],
+      analysisStats: {
+        totalProduction: 0,
+        productionChange: 0,
+        avgDailyProduction: 0,
+        avgDailyChange: 0,
+        peakProduction: 0,
+        peakDate: null,
+        performanceRatio: 0,
+        performanceChange: 0
+      },
+      analysisCurrentPage: 1,
+      analysisPageSize: 10,
+      analysisTotalPages: 1,
+
+      // Methods
+      initializeCharts() {
+        try {
+          this.isLoadingChartData = true;
+          
+          // Initialize the daily production chart
+          const dailyCtx = document.getElementById('dailyProductionAnalyticsChart').getContext('2d');
+          if (dailyCtx) {
+            new Chart(dailyCtx, {
+              type: 'line',
+              data: {
+                labels: systemData?.analytics?.daily_production?.map(item => item.date) || [],
+                datasets: [{
+                  label: 'Daily Production (kWh)',
+                  data: systemData?.analytics?.daily_production?.map(item => item.value) || [],
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                  borderColor: '#3b82f6',
+                  borderWidth: 2,
+                  pointBackgroundColor: '#3b82f6',
+                  pointRadius: 4,
+                  tension: 0.1
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Energy (kWh)'
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Date'
+                    }
+                  }
+                },
+                plugins: {
+                  tooltip: {
+                    mode: 'index',
+                    intersect: false
+                  },
+                  legend: {
+                    position: 'top'
+                  }
+                }
+              }
+            });
+          }
+          
+          // Initialize other charts
+          this.initializeMainAnalysisChart();
+          this.initializeComparisonChart();
+          this.initializeDistributionChart();
+          
+          this.isLoadingChartData = false;
+        } catch (error) {
+          console.error('Error initializing charts:', error);
+          this.dataError = 'Failed to initialize charts. Please try refreshing the page.';
+          this.isLoadingChartData = false;
+        }
+      },
+      
+      initializeMainAnalysisChart() {
+        const mainCtx = document.getElementById('mainAnalysisChart');
+        if (mainCtx) {
+          // Chart initialization code here
+        }
+      },
+      
+      initializeComparisonChart() {
+        const comparisonCtx = document.getElementById('comparisonChart');
+        if (comparisonCtx) {
+          // Chart initialization code here
+        }
+      },
+      
+      initializeDistributionChart() {
+        const distributionCtx = document.getElementById('distributionChart');
+        if (distributionCtx) {
+          // Chart initialization code here
+        }
+      },
+      
+      refreshData() {
+        this.isLoadingChartData = true;
+        this.isLoadingStats = true;
+        this.isLoadingTableData = true;
+        this.dataError = null;
+        
+        // Simulate API call
+        setTimeout(() => {
+          try {
+            // Fetch data based on filters
+            this.fetchAnalysisData();
+            this.calculateAnalysisStats();
+            this.updateCharts();
+          } catch (error) {
+            console.error('Error refreshing data:', error);
+            this.dataError = 'Failed to load data. Please try again.';
+          } finally {
+            this.isLoadingChartData = false;
+            this.isLoadingStats = false;
+            this.isLoadingTableData = false;
+          }
+        }, 1000);
+      },
+      
+      exportCurrentData() {
+        // Implementation for exporting data
+        alert('Export functionality will be implemented here');
+      },
+      
+      filterAnalysisData() {
+        this.isLoadingTableData = true;
+        this.analysisCurrentPage = 1;
+        
+        // Simulate API call with filters
+        setTimeout(() => {
+          try {
+            // Apply filters to data
+            this.fetchAnalysisData();
+            this.calculateAnalysisStats();
+          } catch (error) {
+            console.error('Error filtering data:', error);
+            this.dataError = 'Failed to filter data. Please try again.';
+          } finally {
+            this.isLoadingTableData = false;
+          }
+        }, 500);
+      },
+      
+      fetchAnalysisData() {
+        // This would be an API call in a real implementation
+        // For now, we'll just use dummy data
+        this.analysisData = [
+          // Dummy data would go here
+        ];
+        
+        // Update pagination
+        this.analysisTotalPages = Math.ceil(this.analysisData.length / this.analysisPageSize);
+      },
+      
+      calculateAnalysisStats() {
+        // Calculate statistics based on analysis data
+        // This would use real data in a production environment
+      },
+      
+      updateCharts() {
+        // Update chart data based on filters
+      },
+      
+      sortAnalysisData(field) {
+        if (this.analysisFilters.sortField === field) {
+          // Toggle direction if clicking the same field
+          this.analysisFilters.sortDirection = this.analysisFilters.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          // Set new field and default to descending
+          this.analysisFilters.sortField = field;
+          this.analysisFilters.sortDirection = 'desc';
+        }
+        
+        this.filterAnalysisData();
+      },
+      
+      resetFilters() {
+        this.analysisFilters = {
+          timeRange: 'month',
+          startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+          endDate: new Date().toISOString().split('T')[0],
+          dataType: 'energy',
+          plantId: 'all',
+          searchQuery: '',
+          sortField: 'date',
+          sortDirection: 'desc'
+        };
+        this.filterAnalysisData();
+      },
+      
+      changePageSize() {
+        this.analysisCurrentPage = 1;
+        this.analysisTotalPages = Math.ceil(this.analysisData.length / this.analysisPageSize);
+      },
+      
+      goToAnalysisPage(page) {
+        this.analysisCurrentPage = page;
+      },
+      
+      get paginatedAnalysisData() {
+        const start = (this.analysisCurrentPage - 1) * this.analysisPageSize;
+        const end = start + this.analysisPageSize;
+        return this.analysisData.slice(start, end);
+      },
+      
+      get analysisPageNumbers() {
+        const pageNumbers = [];
+        const maxPages = 5;
+        
+        if (this.analysisTotalPages <= maxPages) {
+          // Show all pages if there are fewer than maxPages
+          for (let i = 1; i <= this.analysisTotalPages; i++) {
+            pageNumbers.push(i);
+          }
+        } else {
+          // Show pages around current page
+          let startPage = Math.max(1, this.analysisCurrentPage - Math.floor(maxPages / 2));
+          let endPage = startPage + maxPages - 1;
+          
+          if (endPage > this.analysisTotalPages) {
+            endPage = this.analysisTotalPages;
+            startPage = Math.max(1, endPage - maxPages + 1);
+          }
+          
+          for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+          }
+        }
+        
+        return pageNumbers;
+      },
+      
+      // Formatting utilities
+      formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString();
+        } catch (e) {
+          return dateString;
+        }
+      },
+      
+      formatEnergy(value) {
+        if (value === null || value === undefined) return 'N/A';
+        return value.toFixed(2) + ' kWh';
+      },
+      
+      formatPower(value) {
+        if (value === null || value === undefined) return 'N/A';
+        return value.toFixed(2) + ' kW';
+      },
+      
+      formatPercentage(value) {
+        if (value === null || value === undefined) return 'N/A';
+        return (value * 100).toFixed(1) + '%';
+      },
+      
+      formatChangePercent(value) {
+        if (value === null || value === undefined) return '0%';
+        const prefix = value > 0 ? '+' : '';
+        return prefix + value.toFixed(1) + '%';
+      },
+      
+      getPlantName(plantId) {
+        const plant = plants.find(p => p.id === plantId);
+        return plant ? plant.name : 'Unknown Plant';
+      }
+    };
+  }
+</script>

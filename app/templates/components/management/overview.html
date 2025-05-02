@@ -1,0 +1,291 @@
+<!-- Overview Tab Content -->
+<div class="space-y-6">
+  <!-- Header with refresh button -->
+  <div class="flex justify-between items-center">
+    <h2 class="text-xl font-semibold text-gray-800">System Overview</h2>
+  </div>
+
+  <!-- System metrics overview cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Total Plants -->
+    <div class="bg-white rounded-lg shadow p-5 border border-gray-200">
+      <div class="flex justify-between">
+        <div>
+          <p class="text-gray-500 text-sm">Total Plants</p>
+          <p
+            class="text-2xl font-bold text-gray-800"
+            x-text="systemData?.overview?.total_plants || 0"
+          ></p>
+        </div>
+        <div class="rounded-full bg-green-100 p-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-green-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </div>
+      </div>
+      <div class="mt-2 flex justify-between items-center">
+        <div>
+          <span class="text-xs text-gray-500">Active:</span>
+          <span
+            class="text-xs font-medium ml-1"
+            x-text="systemData?.overview?.plants_by_status?.active || 0"
+          ></span>
+        </div>
+        <div>
+          <span class="text-xs text-gray-500">Inactive:</span>
+          <span
+            class="text-xs font-medium ml-1"
+            x-text="systemData?.overview?.plants_by_status?.inactive || 0"
+          ></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Devices -->
+    <div class="bg-white rounded-lg shadow p-5 border border-gray-200">
+      <div class="flex justify-between">
+        <div>
+          <p class="text-gray-500 text-sm">Total Devices</p>
+          <p
+            class="text-2xl font-bold text-gray-800"
+            x-text="systemData?.overview?.total_devices || 0"
+          ></p>
+        </div>
+        <div class="rounded-full bg-blue-100 p-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-blue-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+            />
+          </svg>
+        </div>
+      </div>
+      <div class="mt-2 flex justify-between items-center">
+        <div>
+          <span class="text-xs text-gray-500">Online:</span>
+          <span
+            class="text-xs font-medium ml-1"
+            x-text="systemData?.overview?.devices_by_status?.online || 0"
+          ></span>
+        </div>
+        <div>
+          <span class="text-xs text-gray-500">Offline:</span>
+          <span
+            class="text-xs font-medium ml-1"
+            x-text="systemData?.overview?.devices_by_status?.offline || 0"
+          ></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Capacity -->
+    <div class="bg-white rounded-lg shadow p-5 border border-gray-200">
+      <div class="flex justify-between">
+        <div>
+          <p class="text-gray-500 text-sm">Total Capacity</p>
+          <p class="text-2xl font-bold text-gray-800">
+            <span x-text="systemData?.overview?.total_capacity || 0"></span>
+            <span class="text-lg font-normal">kW</span>
+          </p>
+        </div>
+        <div class="rounded-full bg-amber-100 p-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-amber-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Uptime -->
+    <div class="bg-white rounded-lg shadow p-5 border border-gray-200">
+      <div class="flex justify-between">
+        <div>
+          <p class="text-gray-500 text-sm">System Uptime</p>
+          <p class="text-2xl font-bold text-gray-800">
+            <span x-text="systemData?.overview?.system_uptime || 0"></span>
+            <span class="text-lg font-normal">%</span>
+          </p>
+        </div>
+        <div class="rounded-full bg-purple-100 p-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-purple-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </div>
+      <div class="mt-2 text-xs text-gray-500">
+        <span>Last Update: </span>
+        <span
+          x-text="systemData?.overview?.last_update ? new Date(systemData.overview.last_update).toLocaleString() : 'Not available'"
+        ></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plants/Devices Status -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Devices by Status -->
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">
+        Devices by Status
+      </h3>
+      <div class="relative h-64">
+        <canvas id="devicesStatusChart"></canvas>
+      </div>
+      <template
+        x-init="
+        setTimeout(() => {
+          const ctx = document.getElementById('devicesStatusChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Online', 'Offline', 'Maintenance'],
+              datasets: [{
+                data: [
+                  systemData?.overview?.devices_by_status?.online || 0,
+                  systemData?.overview?.devices_by_status?.offline || 0,
+                  systemData?.overview?.devices_by_status?.maintenance || 0
+                ],
+                backgroundColor: ['#22c55e', '#6b7280', '#f59e0b']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }, 100);
+      "
+      ></template>
+    </div>
+
+    <!-- Plants by Status -->
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Plants by Status</h3>
+      <div class="relative h-64">
+        <canvas id="plantsStatusChart"></canvas>
+      </div>
+      <template
+        x-init="
+        setTimeout(() => {
+          const ctx = document.getElementById('plantsStatusChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Active', 'Inactive'],
+              datasets: [{
+                data: [
+                  systemData?.overview?.plants_by_status?.active || 0,
+                  systemData?.overview?.plants_by_status?.inactive || 0
+                ],
+                backgroundColor: ['#22c55e', '#6b7280']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }, 100);
+      "
+      ></template>
+    </div>
+  </div>
+
+  <!-- Energy Production -->
+  <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+      Daily Energy Production (Last 7 Days)
+    </h3>
+    <div class="relative h-64">
+      <canvas id="dailyProductionChart"></canvas>
+    </div>
+    <template
+      x-init="
+      setTimeout(() => {
+        const ctx = document.getElementById('dailyProductionChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: systemData?.analytics?.daily_production?.map(item => item.date) || [],
+            datasets: [{
+              label: 'Daily Production (kWh)',
+              data: systemData?.analytics?.daily_production?.map(item => item.value) || [],
+              backgroundColor: '#3b82f6'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Energy (kWh)'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Date'
+                }
+              }
+            }
+          }
+        });
+      }, 100);
+    "
+    ></template>
+  </div>
+</div>

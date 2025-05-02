@@ -1,0 +1,1074 @@
+<div class="space-y-6">
+  <!-- Settings Management Header -->
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3"
+  >
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">
+      System Settings
+    </h2>
+    <div class="flex space-x-2">
+      <button
+        @click="saveSettings()"
+        class="flex items-center space-x-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-sm font-medium"
+        :disabled="savingSettings"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          :class="{'animate-spin': savingSettings}"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+        <span x-text="savingSettings ? 'Saving...' : 'Save Changes'"></span>
+      </button>
+      <button
+        @click="resetSettings()"
+        class="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        <span>Reset</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs for different settings categories -->
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Settings categories">
+      <button
+        @click="activeTab = 'general'"
+        class="py-4 px-1 border-b-2 font-medium text-sm"
+        :class="activeTab === 'general' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+        aria-current="page"
+      >
+        General
+      </button>
+      <button
+        @click="activeTab = 'api'"
+        class="py-4 px-1 border-b-2 font-medium text-sm"
+        :class="activeTab === 'api' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+      >
+        API Configuration
+      </button>
+      <button
+        @click="activeTab = 'notifications'"
+        class="py-4 px-1 border-b-2 font-medium text-sm"
+        :class="activeTab === 'notifications' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+      >
+        Notifications
+      </button>
+      <button
+        @click="activeTab = 'database'"
+        class="py-4 px-1 border-b-2 font-medium text-sm"
+        :class="activeTab === 'database' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+      >
+        Database
+      </button>
+      <button
+        @click="activeTab = 'advanced'"
+        class="py-4 px-1 border-b-2 font-medium text-sm"
+        :class="activeTab === 'advanced' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+      >
+        Advanced
+      </button>
+    </nav>
+  </div>
+
+  <!-- General Settings Tab -->
+  <div
+    x-show="activeTab === 'general'"
+    class="bg-white rounded-lg shadow p-6 space-y-6"
+  >
+    <div>
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        General Settings
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure basic system settings and preferences.
+      </p>
+    </div>
+
+    <div class="border-t border-gray-200 pt-6">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+          <label for="app-name" class="block text-sm font-medium text-gray-700">
+            Application Name
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="app-name"
+              x-model="settings.general.appName"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Name displayed in the application header.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label for="timezone" class="block text-sm font-medium text-gray-700">
+            Default Timezone
+          </label>
+          <div class="mt-1">
+            <select
+              id="timezone"
+              x-model="settings.general.timezone"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="UTC">UTC</option>
+              <option value="Asia/Bangkok">Asia/Bangkok (UTC+7)</option>
+              <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+              <option value="Europe/London">Europe/London (UTC+0/+1)</option>
+              <option value="America/New_York">
+                America/New_York (UTC-5/-4)
+              </option>
+              <option value="America/Los_Angeles">
+                America/Los_Angeles (UTC-8/-7)
+              </option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Default timezone for date/time display.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="default-language"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Default Language
+          </label>
+          <div class="mt-1">
+            <select
+              id="default-language"
+              x-model="settings.general.language"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="en">English</option>
+              <option value="th">Thai (ภาษาไทย)</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Default language for the user interface.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label for="theme" class="block text-sm font-medium text-gray-700">
+            Color Theme
+          </label>
+          <div class="mt-1">
+            <select
+              id="theme"
+              x-model="settings.general.theme"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System Preference</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Default color theme for the application.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="data-refresh"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Data Refresh Interval (minutes)
+          </label>
+          <div class="mt-1">
+            <select
+              id="data-refresh"
+              x-model="settings.general.dataRefreshInterval"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="60">1 hour</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How often data is automatically refreshed.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                id="enable-live-updates"
+                type="checkbox"
+                x-model="settings.general.enableLiveUpdates"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div class="ml-3 text-sm">
+              <label
+                for="enable-live-updates"
+                class="font-medium text-gray-700"
+              >
+                Enable Live Updates
+              </label>
+              <p class="text-gray-500">
+                When enabled, data will be updated in real-time without page
+                refresh.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Configuration Tab -->
+  <div
+    x-show="activeTab === 'api'"
+    class="bg-white rounded-lg shadow p-6 space-y-6"
+  >
+    <div>
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        API Configuration
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure Growatt API connection settings.
+      </p>
+    </div>
+
+    <div class="border-t border-gray-200 pt-6">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-6">
+          <label for="api-url" class="block text-sm font-medium text-gray-700">
+            Growatt API URL
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="api-url"
+              x-model="settings.api.baseUrl"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="https://server.growatt.com"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            The base URL of the Growatt API.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="api-timeout"
+            class="block text-sm font-medium text-gray-700"
+          >
+            API Request Timeout (seconds)
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="api-timeout"
+              x-model="settings.api.timeout"
+              min="5"
+              max="60"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Maximum time to wait for API responses.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="api-retry"
+            class="block text-sm font-medium text-gray-700"
+          >
+            API Retry Attempts
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="api-retry"
+              x-model="settings.api.maxRetries"
+              min="0"
+              max="5"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Number of times to retry failed API requests.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                id="cache-responses"
+                type="checkbox"
+                x-model="settings.api.cacheResponses"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="cache-responses" class="font-medium text-gray-700">
+                Cache API Responses
+              </label>
+              <p class="text-gray-500">
+                When enabled, API responses will be cached to reduce API calls
+                and improve performance.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.api.cacheResponses">
+          <label
+            for="cache-duration"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Cache Duration (minutes)
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="cache-duration"
+              x-model="settings.api.cacheDuration"
+              min="1"
+              max="60"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How long to cache API responses.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Tab -->
+  <div
+    x-show="activeTab === 'notifications'"
+    class="bg-white rounded-lg shadow p-6 space-y-6"
+  >
+    <div>
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        Notification Settings
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure alerts and notification preferences.
+      </p>
+    </div>
+
+    <div class="border-t border-gray-200 pt-6">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-6">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                id="enable-notifications"
+                type="checkbox"
+                x-model="settings.notifications.enabled"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div class="ml-3 text-sm">
+              <label
+                for="enable-notifications"
+                class="font-medium text-gray-700"
+              >
+                Enable Notifications
+              </label>
+              <p class="text-gray-500">
+                When enabled, the system will send notifications for alerts and
+                events.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.notifications.enabled">
+          <label
+            for="notification-method"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Primary Notification Method
+          </label>
+          <div class="mt-1">
+            <select
+              id="notification-method"
+              x-model="settings.notifications.method"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="line">LINE</option>
+              <option value="push">Push Notification</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Primary method for sending notifications.
+          </p>
+        </div>
+
+        <div
+          class="sm:col-span-3"
+          x-show="settings.notifications.enabled && settings.notifications.method === 'email'"
+        >
+          <label
+            for="notification-email"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Notification Email
+          </label>
+          <div class="mt-1">
+            <input
+              type="email"
+              id="notification-email"
+              x-model="settings.notifications.email"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Email address for receiving notifications.
+          </p>
+        </div>
+
+        <div
+          class="sm:col-span-3"
+          x-show="settings.notifications.enabled && settings.notifications.method === 'sms'"
+        >
+          <label
+            for="notification-phone"
+            class="block text-sm font-medium text-gray-700"
+          >
+            SMS Phone Number
+          </label>
+          <div class="mt-1">
+            <input
+              type="tel"
+              id="notification-phone"
+              x-model="settings.notifications.phone"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="+66812345678"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Phone number for receiving SMS notifications.
+          </p>
+        </div>
+
+        <div
+          class="sm:col-span-3"
+          x-show="settings.notifications.enabled && settings.notifications.method === 'line'"
+        >
+          <label
+            for="line-token"
+            class="block text-sm font-medium text-gray-700"
+          >
+            LINE Notify Token
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="line-token"
+              x-model="settings.notifications.lineToken"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Enter LINE Notify Token"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Token for LINE Notify integration.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6" x-show="settings.notifications.enabled">
+          <label class="block text-sm font-medium text-gray-700"
+            >Notification Events</label
+          >
+          <p class="text-sm text-gray-500 mb-4">
+            Select events that should trigger notifications.
+          </p>
+
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input
+                  id="notify-errors"
+                  type="checkbox"
+                  x-model="settings.notifications.events.errors"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="notify-errors" class="font-medium text-gray-700">
+                  System Errors
+                </label>
+                <p class="text-gray-500">
+                  Notifications for system errors and critical issues.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input
+                  id="notify-offline"
+                  type="checkbox"
+                  x-model="settings.notifications.events.deviceOffline"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="notify-offline" class="font-medium text-gray-700">
+                  Device Offline
+                </label>
+                <p class="text-gray-500">
+                  Notifications when a device goes offline.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input
+                  id="notify-production"
+                  type="checkbox"
+                  x-model="settings.notifications.events.lowProduction"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              <div class="ml-3 text-sm">
+                <label
+                  for="notify-production"
+                  class="font-medium text-gray-700"
+                >
+                  Low Production
+                </label>
+                <p class="text-gray-500">
+                  Notifications when energy production is lower than expected.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input
+                  id="notify-updates"
+                  type="checkbox"
+                  x-model="settings.notifications.events.systemUpdates"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="notify-updates" class="font-medium text-gray-700">
+                  System Updates
+                </label>
+                <p class="text-gray-500">
+                  Notifications about system updates and maintenance.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Tab -->
+  <div
+    x-show="activeTab === 'database'"
+    class="bg-white rounded-lg shadow p-6 space-y-6"
+  >
+    <div>
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        Database Settings
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure database connection and maintenance settings.
+      </p>
+    </div>
+
+    <div class="border-t border-gray-200 pt-6">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+          <label for="db-type" class="block text-sm font-medium text-gray-700">
+            Database Type
+          </label>
+          <div class="mt-1">
+            <select
+              id="db-type"
+              x-model="settings.database.type"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="sqlite">SQLite</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Type of database to use for data storage.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.database.type !== 'sqlite'">
+          <label for="db-host" class="block text-sm font-medium text-gray-700">
+            Database Host
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="db-host"
+              x-model="settings.database.host"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="localhost"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Hostname or IP address of the database server.
+          </p>
+        </div>
+
+        <div class="sm:col-span-2" x-show="settings.database.type !== 'sqlite'">
+          <label for="db-port" class="block text-sm font-medium text-gray-700">
+            Database Port
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="db-port"
+              x-model="settings.database.port"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="3306"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Port number for the database server.
+          </p>
+        </div>
+
+        <div class="sm:col-span-4" x-show="settings.database.type !== 'sqlite'">
+          <label for="db-name" class="block text-sm font-medium text-gray-700">
+            Database Name
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="db-name"
+              x-model="settings.database.name"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="growatt_monitor"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">Name of the database to use.</p>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.database.type !== 'sqlite'">
+          <label for="db-user" class="block text-sm font-medium text-gray-700">
+            Database Username
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="db-user"
+              x-model="settings.database.username"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="username"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Username for database authentication.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.database.type !== 'sqlite'">
+          <label
+            for="db-password"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Database Password
+          </label>
+          <div class="mt-1">
+            <input
+              type="password"
+              id="db-password"
+              x-model="settings.database.password"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="••••••••"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Password for database authentication.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6" x-show="settings.database.type === 'sqlite'">
+          <label for="db-path" class="block text-sm font-medium text-gray-700">
+            SQLite Database Path
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="db-path"
+              x-model="settings.database.path"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="data/growatt_data.db"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Path to the SQLite database file.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="db-backup-frequency"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Database Backup Frequency
+          </label>
+          <div class="mt-1">
+            <select
+              id="db-backup-frequency"
+              x-model="settings.database.backupFrequency"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="never">Never</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How often to backup the database.
+          </p>
+        </div>
+
+        <div
+          class="sm:col-span-3"
+          x-show="settings.database.backupFrequency !== 'never'"
+        >
+          <label
+            for="db-backup-location"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Backup Location
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="db-backup-location"
+              x-model="settings.database.backupLocation"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="backups/"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Directory where database backups will be stored.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="db-data-retention"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Data Retention Period (days)
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="db-data-retention"
+              x-model="settings.database.dataRetentionDays"
+              min="7"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How long to keep historical data before purging.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Settings Tab -->
+  <div
+    x-show="activeTab === 'advanced'"
+    class="bg-white rounded-lg shadow p-6 space-y-6"
+  >
+    <div>
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        Advanced Settings
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure advanced system settings.
+        <span class="text-red-600 font-medium">Use with caution.</span>
+      </p>
+    </div>
+
+    <div class="border-t border-gray-200 pt-6">
+      <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+          <label
+            for="log-level"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Log Level
+          </label>
+          <div class="mt-1">
+            <select
+              id="log-level"
+              x-model="settings.advanced.logLevel"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="DEBUG">Debug</option>
+              <option value="INFO">Info</option>
+              <option value="WARNING">Warning</option>
+              <option value="ERROR">Error</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Minimum log level to record in application logs.
+          </p>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label
+            for="log-retention"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Log Retention Period (days)
+          </label>
+          <div class="mt-1">
+            <input
+              type="number"
+              id="log-retention"
+              x-model="settings.advanced.logRetentionDays"
+              min="1"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How long to keep log files before rotating.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                id="debug-mode"
+                type="checkbox"
+                x-model="settings.advanced.debugMode"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="debug-mode" class="font-medium text-gray-700">
+                Debug Mode
+              </label>
+              <p class="text-gray-500">
+                When enabled, additional debugging information will be
+                displayed.
+                <span class="text-red-600"
+                  >Not recommended for production.</span
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-6">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                id="enable-ml"
+                type="checkbox"
+                x-model="settings.advanced.enableML"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="enable-ml" class="font-medium text-gray-700">
+                Enable ML Predictions
+              </label>
+              <p class="text-gray-500">
+                When enabled, machine learning will be used to predict energy
+                production. May increase system resource usage.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-3" x-show="settings.advanced.enableML">
+          <label
+            for="ml-update-frequency"
+            class="block text-sm font-medium text-gray-700"
+          >
+            ML Model Update Frequency
+          </label>
+          <div class="mt-1">
+            <select
+              id="ml-update-frequency"
+              x-model="settings.advanced.mlUpdateFrequency"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            How often to retrain machine learning models.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6">
+          <label
+            for="custom-script-path"
+            class="block text-sm font-medium text-gray-700"
+          >
+            Custom Scripts Directory
+          </label>
+          <div class="mt-1">
+            <input
+              type="text"
+              id="custom-script-path"
+              x-model="settings.advanced.customScriptPath"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="scripts/"
+            />
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Directory containing custom Python scripts to run.
+          </p>
+        </div>
+
+        <div class="sm:col-span-6 border-t border-gray-200 pt-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-base font-medium text-gray-900">
+                System Maintenance
+              </h4>
+              <p class="mt-1 text-sm text-gray-500">
+                Perform system maintenance operations. These actions can be
+                disruptive.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <div class="flex items-center space-x-4">
+              <button
+                @click="purgeData()"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Purge Data
+              </button>
+              <span class="text-sm text-gray-500"
+                >Delete all historical data from the database.</span
+              >
+            </div>
+
+            <div class="flex items-center space-x-4">
+              <button
+                @click="clearCache()"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Clear Cache
+              </button>
+              <span class="text-sm text-gray-500"
+                >Remove all cached data and API responses.</span
+              >
+            </div>
+
+            <div class="flex items-center space-x-4">
+              <button
+                @click="rebuildDatabase()"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                Rebuild Database
+              </button>
+              <span class="text-sm text-gray-500"
+                >Rebuild database indexes and optimize performance.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Button (Fixed at Bottom) -->
+  <div class="fixed bottom-6 right-6 z-10" x-show="hasChanges">
+    <button
+      @click="saveSettings()"
+      class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      :disabled="savingSettings"
+    >
+      <svg
+        x-show="!savingSettings"
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 mr-2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M5 13l4 4L19 7"
+        />
+      </svg>
+      <svg
+        x-show="savingSettings"
+        xmlns="http://www.w3.org/2000/svg"
+        class="animate-spin h-5 w-5 mr-2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+        />
+      </svg>
+      <span x-text="savingSettings ? 'Saving...' : 'Save Changes'"></span>
+    </button>
+  </div>
+</div>

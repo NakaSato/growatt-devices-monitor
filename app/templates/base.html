@@ -97,10 +97,6 @@
               "3/4": "75%",
               xs: "20rem",
             },
-            minHeight: {
-              "screen-75": "75vh",
-              "screen-50": "50vh",
-            },
           },
         },
         variants: {
@@ -226,12 +222,12 @@
     {% endif %}
   </head>
 
-  <body class="min-h-screen">
+  <body class="h-lvh max-h-screen">
     <!-- Header and Navigation -->
     {% include 'components/navbar.html' %}
 
     <main
-      class="lg:container lg:mx-auto sm:px-0 lg:px-4 py-2 sm:py-2 lg:py-0 min-h-[60vh]"
+      class="lg:container lg:mx-auto sm:px-0 lg:px-4 py-2 sm:py-2 lg:py-0 flex-grow"
     >
       {% block content %}{% endblock %}
     </main>
@@ -244,6 +240,16 @@
     <script>
       // Function to handle API access with improved error handling and user feedback
       document.addEventListener("DOMContentLoaded", () => {
+        // Set CSS variable for viewport height to handle mobile browsers better
+        function setViewportHeight() {
+          let vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty("--vh", `${vh}px`);
+        }
+
+        // Set initial viewport height and update on resize
+        setViewportHeight();
+        window.addEventListener("resize", setViewportHeight);
+
         const apiAccessLink = document.getElementById("api-access-link");
         if (apiAccessLink) {
           apiAccessLink.addEventListener("click", requestApiAccess);

@@ -117,3 +117,58 @@
 .bg-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234caf50' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
+
+/* Global styles for the Growatt Devices Monitor application */
+
+/* Base styles for height handling */
+:root {
+  --vh: 1vh; /* This will be set by JavaScript for mobile browsers */
+}
+
+html,
+body {
+  height: 100%; /* Fallback for older browsers */
+  height: 100lvh; /* Using logical viewport height for modern browsers */
+  max-height: 100lvh;
+  scroll-behavior: smooth;
+}
+
+/* For browsers that don't support lvh units */
+.h-screen-fallback {
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* Ensure flexbox column layout fills the screen properly */
+.flex-column-fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 100lvh;
+}
+
+/* Content area should grow to fill available space */
+.flex-grow {
+  flex: 1 0 auto;
+}
+
+/* Footer should not grow/shrink */
+footer {
+  flex-shrink: 0;
+}
+
+/* Better mobile handling for fixed position elements */
+@media (max-width: 640px) {
+  .fixed-mobile-adjust {
+    position: fixed;
+    bottom: env(safe-area-inset-bottom, 0);
+    height: auto;
+  }
+}
+
+/* Handle notched displays and safe areas */
+@supports (padding: max(0px)) {
+  .safe-area-padding {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}

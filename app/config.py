@@ -44,6 +44,26 @@ class Config:
     GROWATT_PASSWORD = os.getenv('GROWATT_PASSWORD', '')
     GROWATT_BASE_URL = os.getenv('GROWATT_BASE_URL', 'https://server.growatt.com')
     
+    # Notification settings
+    # Email notification settings
+    EMAIL_NOTIFICATIONS_ENABLED = os.getenv('EMAIL_NOTIFICATIONS_ENABLED', 'False').lower() in ('true', '1', 't')
+    EMAIL_FROM = os.getenv('EMAIL_FROM', '')
+    EMAIL_TO = os.getenv('EMAIL_TO', '').split(',') if os.getenv('EMAIL_TO') else []
+    SMTP_SERVER = os.getenv('SMTP_SERVER', '')
+    SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME', '')
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')
+    SMTP_USE_TLS = os.getenv('SMTP_USE_TLS', 'True').lower() in ('true', '1', 't')
+    
+    # Telegram notification settings
+    TELEGRAM_NOTIFICATIONS_ENABLED = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'False').lower() in ('true', '1', 't')
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '').split(',') if os.getenv('TELEGRAM_CHAT_ID') else []
+    
+    # Notification behavior settings
+    NOTIFICATION_COOLDOWN_SECONDS = int(os.getenv('NOTIFICATION_COOLDOWN_SECONDS', '3600'))  # Default 1 hour
+    DEVICE_OFFLINE_THRESHOLD_MINUTES = int(os.getenv('DEVICE_OFFLINE_THRESHOLD_MINUTES', '30'))
+    
     # Cache configuration
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))

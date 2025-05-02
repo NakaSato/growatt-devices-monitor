@@ -144,6 +144,86 @@ def get_plants_data():
         'plants': plants_data
     })
 
+@api_blueprint.route('/management/data', methods=['GET'])
+def api_management_data() -> Tuple[Response, int]:
+    """
+    API endpoint to get system management data for the management dashboard.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with management data and status code
+    """
+    try:
+        # Create a response with static management data since we're removing plant data fetching
+        management_data = {
+            'overview': {
+                'total_plants': 0,
+                'total_devices': 0,
+                'total_capacity': 0,
+                'devices_by_status': {
+                    'online': 0,
+                    'offline': 0,
+                    'maintenance': 0
+                },
+                'plants_by_status': {
+                    'active': 0,
+                    'inactive': 0,
+                },
+                'system_uptime': 99.2,  # Static placeholder value
+                'last_update': None
+            },
+            'plants': [],
+            'devices': [],
+            'health': {
+                'cpu_usage': 23.5,  # Static placeholder values
+                'memory_usage': 42.8,
+                'disk_usage': 38.6,
+                'api_status': 'operational',
+                'database_status': 'operational',
+                'data_collector_status': 'operational',
+                'last_backup': '2023-05-02 14:30:00'
+            },
+            'analytics': {
+                'daily_production': [
+                    {'date': '2023-04-27', 'value': 203.5},
+                    {'date': '2023-04-28', 'value': 198.2},
+                    {'date': '2023-04-29', 'value': 210.7},
+                    {'date': '2023-04-30', 'value': 205.3},
+                    {'date': '2023-05-01', 'value': 215.8},
+                    {'date': '2023-05-02', 'value': 207.4},
+                    {'date': '2023-05-03', 'value': 212.1}
+                ],
+                'monthly_production': [
+                    {'month': 'Jan', 'value': 5120},
+                    {'month': 'Feb', 'value': 5580},
+                    {'month': 'Mar', 'value': 6210},
+                    {'month': 'Apr', 'value': 6350},
+                    {'month': 'May', 'value': 3120}
+                ]
+            },
+            'settings': {
+                'data_collection_interval': 300,  # 5 minutes in seconds
+                'notification_channels': {
+                    'email': True,
+                    'telegram': True,
+                    'sms': False
+                },
+                'alert_thresholds': {
+                    'production_drop': 20,  # percentage
+                    'device_offline': 30  # minutes
+                }
+            }
+        }
+        
+        return jsonify(management_data), 200
+    except Exception as e:
+        logging.error(f"Error in api_management_data: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "code": "API_ERROR",
+            "ui_message": "An error occurred while fetching management data"
+        }), 500
+
 # ===== Authentication Routes =====
 @api_blueprint.route('/access', methods=['GET', 'POST', 'HEAD'])
 def access_api() -> Union[Response, WerkzeugResponse]:
@@ -362,4 +442,51 @@ def api_device_fault_logs() -> Tuple[Response, int]:
             "message": str(e),
             "code": "API_ERROR",
             "ui_message": "An error occurred while fetching fault logs"
+        }), 500
+
+@api_blueprint.route('/notifications/test', methods=['POST'])
+def test_notifications() -> Tuple[Response, int]:
+    """
+    API endpoint to test notification channels.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with status code and test results
+    """
+    try:
+        # Initialize device status tracker to access notification service
+        from app.services.device_status_tracker import DeviceStatusTracker
+        device_tracker = DeviceStatusTracker()
+        
+        # Test all configured notification channels
+        test_results = device_tracker.test_notifications()
+        
+        # Format the response
+        response = {
+            "status": "success",
+            "message": "Notification test completed",
+            "results": {
+                "email": {
+                    "success": test_results.get("email", False),
+                    "message": "Email notification test successful" if test_results.get("email", False) 
+                              else "Email notification test failed or not configured"
+                },
+                "telegram": {
+                    "success": test_results.get("telegram", False),
+                    "message": "Telegram notification test successful" if test_results.get("telegram", False)
+                              else "Telegram notification test failed or not configured"
+                }
+            },
+            "any_success": any(test_results.values())
+        }
+        
+        current_app.logger.info(f"Notification test results: {test_results}")
+        return jsonify(response), 200
+    except Exception as e:
+        error_message = f"Error testing notifications: {str(e)}"
+        current_app.logger.error(error_message)
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "code": "NOTIFICATION_TEST_ERROR",
+            "ui_message": "An error occurred while testing notifications"
         }), 500

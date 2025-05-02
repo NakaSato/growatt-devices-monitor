@@ -1,24 +1,26 @@
 {% extends "base.html" %} {% block title %}Devices - Growatt API{% endblock %}
 {% block content %}
-<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6">
+<div class="lg:container lg:mx-auto sm:px-4 md:px-4 sm:py-2 p-2">
   <div
-    class="bg-gradient-mint rounded-xl shadow-md p-4 sm:p-6"
+    class="bg-gradient-mint shadow-md sm:p-4 rounded border border-gray-500 p-2"
     x-data="devicesApp()"
   >
     <div
-      class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"
+      class="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3"
     >
       <h1
-        class="text-xl sm:text-2xl md:text-3xl font-bold text-deep-forest font-headings"
+        class="text-lg sm:text-2xl md:text-3xl font-bold text-deep-forest font-headings text-center sm:text-left w-full sm:w-auto mb-2 sm:mb-0"
       >
         Device Status
       </h1>
-      <div class="flex flex-wrap gap-2">
+      <div
+        class="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-1 w-full sm:w-auto"
+      >
         <button
           id="refresh-btn"
           @click="fetchDevices(true)"
-          :disabled="isLoading || devices.length === 0"
-          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full sm:w-auto order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isLoading"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center gap-2 text-sm sm:text-base px-3 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -41,7 +43,7 @@
           id="export-btn"
           @click="exportToCSV()"
           :disabled="isLoading || devices.length === 0"
-          class="flex items-center gap-2 text-sm sm:text-base px-3 py-1.5 rounded bg-white text-deep-forest transition-all duration-300 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-light-gray disabled:opacity-50 disabled:cursor-not-allowed border border-light-gray shadow-sm"
+          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center gap-2 text-sm sm:text-base px-3 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 w-full"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -54,15 +56,15 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
             />
           </svg>
-          <span>Export</span>
+          <span class="font-medium">Export</span>
         </button>
       </div>
     </div>
 
-    <div x-show="isLoading" class="flex justify-center py-8">
+    <div x-show="isLoading" class="flex justify-center py-2">
       <div
         class="spinner border-4 border-t-4 border-light-gray border-t-eco-green rounded-full w-10 h-10 animate-spin"
       ></div>
@@ -70,7 +72,7 @@
 
     <div
       x-show="errorMessage"
-      class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20"
+      class="bg-red-50 text-danger p-2 mb-4 rounded-lg shadow-sm border border-danger border-opacity-20"
     >
       <div class="flex items-center">
         <svg
@@ -95,34 +97,40 @@
     </div>
 
     <div
-      class="mb-6 bg-snow-white p-4 sm:p-5 rounded-lg shadow-sm border border-light-gray transition-all duration-300"
-      :class="{'border-eco-green bg-eco-green-5': statusFilter !== 'all' || searchQuery}"
+      class="mb-6 bg-snow-white p-3 sm:p-4 rounded-lg shadow-sm border border-light-gray transition-all duration-300"
+      :class="{'border-eco-green shadow-md bg-eco-green-5': statusFilter !== 'all' || searchQuery}"
     >
       <div
-        class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
+        class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-5"
       >
         <div class="flex flex-grow items-center">
           <label
             for="status-filter"
-            class="text-sm font-medium text-charcoal mr-3 whitespace-nowrap"
+            class="text-sm font-medium text-deep-forest mr-3 whitespace-nowrap"
             >Status:</label
           >
           <select
             id="status-filter"
             x-model="statusFilter"
             @change="applyFilters()"
-            class="flex-grow form-control text-sm rounded-md border-light-gray focus:border-fresh-mint"
+            class="flex-grow form-control border p-1 border-gray-400 text-sm rounded-md border-light-gray focus:border-fresh-mint focus:ring-2 focus:ring-fresh-mint focus:ring-opacity-30 transition-all duration-200"
           >
-            <option value="all">All Statuses</option>
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-            <option value="waiting">Waiting</option>
+            <option value="all" class="bg-white border">All Statuses</option>
+            <option value="online" class="bg-green-50 text-green-700">
+              Online
+            </option>
+            <option value="offline" class="bg-red-50 text-red-700">
+              Offline
+            </option>
+            <option value="waiting" class="bg-yellow-50 text-yellow-700">
+              Waiting
+            </option>
           </select>
         </div>
         <div class="flex flex-grow items-center">
           <label
             for="search-input"
-            class="text-sm font-medium text-charcoal mr-3 whitespace-nowrap"
+            class="text-sm font-medium text-deep-forest mr-3 whitespace-nowrap"
             >Search:</label
           >
           <div class="relative flex-grow">
@@ -132,7 +140,7 @@
               x-model="searchQuery"
               @input="debounceSearch()"
               placeholder="Search devices..."
-              class="w-full form-control text-sm rounded-md pr-8 border-light-gray focus:border-fresh-mint"
+              class="w-full form-control border border-gray-400 p-1 text-sm rounded-md pr-8 border-light-gray focus:border-fresh-mint focus:ring-2 focus:ring-fresh-mint focus:ring-opacity-30 transition-all duration-200"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -148,6 +156,27 @@
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
+            <button
+              x-show="searchQuery"
+              @click="searchQuery = ''; applyFilters()"
+              class="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-gray hover:text-deep-forest"
+              title="Clear search"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -156,8 +185,8 @@
     <div
       class="bg-snow-white rounded-lg shadow-md overflow-hidden border border-light-gray"
     >
-      <div class="table-responsive table-overflow-scroll">
-        <table class="w-full table-auto" x-ref="deviceTable">
+      <div class="overflow-x-auto w-full">
+        <table class="w-full table-auto min-w-[640px]" x-ref="deviceTable">
           <thead class="bg-eco-green">
             <tr>
               <template x-for="(column, index) in columns" :key="index">
@@ -430,6 +459,25 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  /* Status indicator styles */
+  .status-online {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: rgb(4, 120, 87);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  .status-offline {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: rgb(185, 28, 28);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+  }
+
+  .status-waiting {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: rgb(180, 83, 9);
+    border: 1px solid rgba(245, 158, 11, 0.4);
   }
 
   /* For custom scrollbar */

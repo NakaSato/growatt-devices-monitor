@@ -1,88 +1,67 @@
 /**
- * Export Utilities
- * Utility functions for data export
+ * Utility functions for exporting data
  */
-
 const ExportUtils = {
   /**
-   * Export data to CSV/Excel file
-   * @param {Array} data - Array of objects to export
-   * @param {Array} headers - Array of column headers
-   * @param {function} rowFormatter - Function to format a row of data
-   * @param {string} filenamePrefix - Prefix for the generated filename
-   * @param {HTMLElement} buttonElement - Button element to show loading state
-   * @param {function} errorCallback - Function to call on error
+   * Export data to JSON file
+   * @param {Object} data - Data to export
+   * @param {string} filename - Name for the exported file
    */
-  exportToCsv(
-    data,
-    headers,
-    rowFormatter,
-    filenamePrefix,
-    buttonElement,
-    errorCallback
-  ) {
-    if (!data || data.length === 0) {
-      if (errorCallback) errorCallback("No data to export.");
-      return;
-    }
+  exportToJSON(data, filename = "export.json") {
+    const dataStr = JSON.stringify(data, null, 2);
+    this._downloadFile(dataStr, filename, "application/json");
+  },
 
-    // Get current date and time for filename and header
-    const now = new Date();
-    const exportTime = now.toLocaleString();
-    const timestamp = now.toISOString().replace(/[:.]/g, "-").substring(0, 19);
-    const filename = `${filenamePrefix}_${timestamp}.csv`;
+  /**
+   * Export data to CSV file
+   * @param {Array} data - Array of objects to export as CSV
+   * @param {string} filename - Name for the exported file
+   */
+  exportToCSV(data, filename = "export.csv") {
+    if (!data || !data.length) return;
 
-    // Show visual feedback when exporting
-    let originalButtonHtml = "";
-    if (buttonElement) {
-      originalButtonHtml = buttonElement.innerHTML;
-      buttonElement.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg><span>Exporting...</span>';
-      buttonElement.disabled = true;
-    }
+    // Get headers from the first item
+    const headers = Object.keys(data[0]);
 
-    try {
-      // Create CSV content with BOM for UTF-8 (helps Excel recognize UTF-8)
-      let csvContent = "\uFEFF";
+    // Create CSV rows
+    const csvRows = [
+      headers.join(","), // Header row
+      ...data.map((row) =>
+        headers
+          .map((field) => {
+            // Handle special characters in CSV
+            const value = row[field] !== null ? row[field] : "";
+            return typeof value === "string"
+              ? `"${value.replace(/"/g, '""')}"`
+              : value;
+          })
+          .join(",")
+      ),
+    ];
 
-      // Add header information with export time
-      csvContent += `"Export - ${exportTime}"\n`;
-      csvContent += `"Export Time: ${exportTime}"\n`;
-      csvContent += `"Total Items: ${data.length}"\n\n`;
+    const csvString = csvRows.join("\n");
+    this._downloadFile(csvString, filename, "text/csv");
+  },
 
-      // Add data table headers
-      csvContent += headers.map((header) => `"${header}"`).join(",") + "\n";
+  /**
+   * Helper method to trigger file download
+   * @private
+   */
+  _downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
 
-      // Add data rows
-      data.forEach((item) => {
-        const row = rowFormatter(item);
-        csvContent += row + "\n";
-      });
+    const a = document.createElement("a");
+    a.setAttribute("href", url);
+    a.setAttribute("download", filename);
+    a.style.display = "none";
 
-      // Create download link with proper encoding
-      const blob = new Blob([csvContent], {
-        type: "text/csv;charset=utf-8",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-      // Trigger download and clean up
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error exporting to CSV:", error);
-      if (errorCallback) errorCallback(`Failed to export: ${error.message}`);
-    } finally {
-      // Restore button state
-      if (buttonElement) {
-        buttonElement.innerHTML = originalButtonHtml;
-        buttonElement.disabled = false;
-      }
-    }
+    // Clean up
+    URL.revokeObjectURL(url);
   },
 };
 

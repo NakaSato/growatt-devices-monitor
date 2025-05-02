@@ -8,8 +8,8 @@ import time
 # Fix the imports from app.core.growatt - use Growatt class instead of GrowattAPI
 from app.core.growatt import Growatt
 from app.config import Config  # Import the Config class
-
 from app.database import DatabaseConnector
+from app.services.device_status_tracker import DeviceStatusTracker
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -33,6 +33,9 @@ class GrowattDataCollector:
         self.retry_delay = 2  # seconds
         # Initialize the API client
         self.api = Growatt()
+        
+        # Initialize the device status tracker for notifications
+        self.device_tracker = DeviceStatusTracker()
         
         # Store credentials
         self.username = username or Config.GROWATT_USERNAME
@@ -281,6 +284,7 @@ class GrowattDataCollector:
                 results["plants"] = len(plants)
             
             # For each plant, collect and store devices, energy data, and weather
+            all_devices = []  # Store all device data for status tracking
             for plant_index, plant in enumerate(plants):
                 plant_id = plant.get('id')
                 plant_name = plant.get('name', 'Unknown')
@@ -313,13 +317,17 @@ class GrowattDataCollector:
                     # Transform device data to match database schema
                     transformed_devices = []
                     for device in device_data:
-                        transformed_devices.append({
+                        device_entry = {
                             "serial_number": device.get('sn'),
                             "plant_id": plant_id,
+                            "plant_name": plant_name,
                             "alias": device.get('alias', ''),
                             "type": device.get('deviceTypeName', ''),
-                            "status": device.get('status', '')
-                        })
+                            "status": device.get('status', ''),
+                            "last_update_time": device.get('lastUpdateTime', datetime.now().isoformat())
+                        }
+                        transformed_devices.append(device_entry)
+                        all_devices.append(device_entry)
                     
                     if transformed_devices:
                         device_store_result = self.db.save_device_data(transformed_devices)
@@ -365,6 +373,20 @@ class GrowattDataCollector:
             if self.collect_json:
                 results["json_data"] = self.json_data
                 logger.info(f"Collected {len(self.json_data)} JSON data items")
+            
+            # Check device status and send notifications if needed
+            if all_devices:
+                logger.info(f"Checking status of {len(all_devices)} devices for notifications")
+                notification_results = self.device_tracker.check_and_notify_status_changes(all_devices)
+                
+                # Add notification results to the overall results
+                results["notifications"] = {
+                    "offline_notifications": notification_results.get('offline', 0),
+                    "online_notifications": notification_results.get('online', 0)
+                }
+                
+                logger.info(f"Notification check completed: {notification_results.get('offline', 0)} offline notifications, "
+                           f"{notification_results.get('online', 0)} online notifications sent")
             
             # Data collection is a success if we got any data, even with some errors
             success = results["plants"] > 0 or results["devices"] > 0 or results["energy_stats"] > 0

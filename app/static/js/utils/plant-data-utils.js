@@ -11,7 +11,10 @@ const PlantDataUtils = {
    */
   formatPower(power) {
     if (power === undefined || power === null) return "N/A";
-    return `${power} kW`;
+    if (power >= 1000) {
+      return `${(power / 1000).toFixed(2)} MW`;
+    }
+    return `${power.toFixed(2)} kW`;
   },
 
   /**
@@ -21,7 +24,10 @@ const PlantDataUtils = {
    */
   formatEnergy(energy) {
     if (energy === undefined || energy === null) return "N/A";
-    return `${energy} kWh`;
+    if (energy >= 1000) {
+      return `${(energy / 1000).toFixed(2)} MWh`;
+    }
+    return `${energy.toFixed(2)} kWh`;
   },
 
   /**
@@ -85,6 +91,18 @@ const PlantDataUtils = {
       error: "bg-red-600",
     };
     return classMap[status] || "bg-gray-500";
+  },
+
+  /**
+   * Calculate efficiency percentage
+   * @param {number} actual - Actual production
+   * @param {number} expected - Expected production
+   * @returns {string} Formatted efficiency percentage
+   */
+  calculateEfficiency(actual, expected) {
+    if (!expected || expected === 0) return "N/A";
+    const efficiency = (actual / expected) * 100;
+    return `${efficiency.toFixed(1)}%`;
   },
 };
 

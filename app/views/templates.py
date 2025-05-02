@@ -114,6 +114,20 @@ def render_analytics() -> Tuple[str, int]:
     
     return render_template('analytics.html', authenticated=authenticated), 200
 
+
+def render_management() -> Tuple[str, int]:
+    """
+    Render the management template for system administration.
+    
+    Returns:
+        Tuple[str, int]: Rendered HTML template for the management page with HTTP 200 status
+    """
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    logger.debug("Rendering management page with authentication status: %s", authenticated)
+    return render_template('management.html', authenticated=authenticated), 200
+
 def render_error_404() -> Tuple[str, int]:
     """
     Render the 404 error template.

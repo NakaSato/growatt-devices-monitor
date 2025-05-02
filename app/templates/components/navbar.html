@@ -210,6 +210,20 @@
                   {% endif %}
                 </a>
               </li>
+              <li class="my-0">
+                <a
+                  href="/management"
+                  class="flex items-center font-medium text-sm py-2 px-3 rounded-md relative group {{ 'text-emerald-600 bg-emerald-50' if request.path == '/analytics' else 'text-slate-700 hover:text-slate-900 hover:bg-slate-50' }}"
+                  aria-current="{{ 'page' if request.path == '/management' else 'false' }}"
+                >
+                  <i class="fas fa-cogs mr-1.5 text-sm"></i>
+                  Management {% if request.path == '/management' %}
+                  <span
+                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                  ></span>
+                  {% endif %}
+                </a>
+              </li>
             </ul>
           </nav>
         </div>
