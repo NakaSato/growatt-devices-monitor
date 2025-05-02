@@ -1,212 +1,212 @@
-# Growatt Devices Monitor - System Architecture
+# ระบบติดตามอุปกรณ์ Growatt - สถาปัตยกรรมระบบ
 
-## 1. System Overview
+## 1. ภาพรวมระบบ
 
-The Growatt Devices Monitor is a web-based application designed to monitor and visualize data from Growatt solar energy devices. It provides real-time monitoring, historical data analysis, visualization tools, and predictive analytics for solar energy production. The system follows a modern web application architecture with a clean separation of concerns between backend, frontend, and data processing components.
+ระบบติดตามอุปกรณ์ Growatt เป็นแอปพลิเคชันเว็บที่ออกแบบมาเพื่อติดตามและแสดงข้อมูลจากอุปกรณ์พลังงานแสงอาทิตย์ Growatt ระบบนี้ให้บริการการติดตามแบบเรียลไทม์ การวิเคราะห์ข้อมูลในอดีต เครื่องมือการแสดงผลข้อมูล และการวิเคราะห์เชิงคาดการณ์สำหรับการผลิตพลังงานแสงอาทิตย์ ระบบนี้ใช้สถาปัตยกรรมแอปพลิเคชันเว็บสมัยใหม่ที่มีการแยกส่วนความรับผิดชอบอย่างชัดเจนระหว่างส่วนแบ็กเอนด์ ฟรอนต์เอนด์ และส่วนประมวลผลข้อมูล
 
-## 2. Architecture Components
+## 2. องค์ประกอบของสถาปัตยกรรม
 
-### 2.1 Backend Architecture
+### 2.1 สถาปัตยกรรมแบ็กเอนด์
 
-#### 2.1.1 Core Application Framework
+#### 2.1.1 เฟรมเวิร์กแอปพลิเคชันหลัก
 
-- **Flask Web Framework**: The application is built using Flask, a lightweight Python web framework that serves as the foundation for handling HTTP requests, routing, and responses.
-- **Modular Blueprint Structure**: The application uses Flask Blueprints for modular organization of routes:
-  - `main_routes.py`: Primary application routes for web pages
-  - `api_routes.py`: API endpoints for data retrieval
-  - `data_routes.py`: Endpoints for data collection and management
-  - `prediction_routes.py`: ML-based prediction services
+- **เฟรมเวิร์ก Flask**: แอปพลิเคชันนี้สร้างขึ้นโดยใช้ Flask ซึ่งเป็นเฟรมเวิร์กเว็บ Python แบบเบาที่ทำหน้าที่เป็นพื้นฐานสำหรับการจัดการคำขอ HTTP การกำหนดเส้นทาง และการตอบสนอง
+- **โครงสร้างบลูพรินท์แบบโมดูลาร์**: แอปพลิเคชันใช้ Flask Blueprints สำหรับการจัดระเบียบเส้นทางแบบโมดูลาร์:
+  - `main_routes.py`: เส้นทางแอปพลิเคชันหลักสำหรับหน้าเว็บ
+  - `api_routes.py`: จุดสิ้นสุด API สำหรับการดึงข้อมูล
+  - `data_routes.py`: จุดสิ้นสุดสำหรับการเก็บรวบรวมและการจัดการข้อมูล
+  - `prediction_routes.py`: บริการคาดการณ์ที่ใช้ ML
 
-#### 2.1.2 Data Access Layer
+#### 2.1.2 เลเยอร์การเข้าถึงข้อมูล
 
-- **API Integration**: The `core/growatt.py` module provides a client for interacting with the Growatt API, handling authentication, data retrieval, and transformations.
-- **Database Layer**: The `database.py` module handles database connections, schema management, and data persistence using SQLite.
-- **Service Layer**: Services like `plant_service.py` act as intermediaries between the web routes and data storage, implementing business logic.
+- **การรวม API**: โมดูล `core/growatt.py` ให้บริการไคลเอ็นต์สำหรับการโต้ตอบกับ API ของ Growatt การจัดการการตรวจสอบสิทธิ์ การดึงข้อมูล และการแปลงข้อมูล
+- **เลเยอร์ฐานข้อมูล**: โมดูล `database.py` จัดการการเชื่อมต่อฐานข้อมูล การจัดการสคีมา และการเก็บข้อมูลโดยใช้ SQLite
+- **เลเยอร์บริการ**: บริการเช่น `plant_service.py` ทำหน้าที่เป็นตัวกลางระหว่างเส้นทางเว็บและการจัดเก็บข้อมูล ซึ่งใช้ตรรกะทางธุรกิจ
 
-#### 2.1.3 ML Capabilities
+#### 2.1.3 ความสามารถด้าน ML
 
-- **Energy Predictor**: The `ml/energy_predictor.py` module implements machine learning capabilities for energy production forecasting based on historical data, seasonal patterns, and environmental factors.
-- **Prediction API**: Exposed through dedicated endpoints that allow frontend components to access predictive analytics.
+- **ตัวทำนายพลังงาน**: โมดูล `ml/energy_predictor.py` ใช้ความสามารถในการเรียนรู้ของเครื่องสำหรับการคาดการณ์การผลิตพลังงานโดยอิงจากข้อมูลในอดีต รูปแบบตามฤดูกาล และปัจจัยด้านสิ่งแวดล้อม
+- **API การทำนาย**: เปิดให้บริการผ่านจุดสิ้นสุดเฉพาะที่อนุญาตให้ส่วนประกอบฟรอนต์เอนด์เข้าถึงการวิเคราะห์เชิงคาดการณ์
 
-### 2.2 Frontend Architecture
+### 2.2 สถาปัตยกรรมฟรอนต์เอนด์
 
-#### 2.2.1 UI Framework
+#### 2.2.1 เฟรมเวิร์ก UI
 
-- **Template System**: Uses Flask's Jinja2 templating with a component-based approach, organized in the `templates/` directory.
-- **Base Layout**: `base.html` provides the application shell with common elements and responsive behavior.
-- **Components**: Modular UI components in `templates/components/` for reusability:
-  - General components (navbar, footer)
-  - Dashboard components (cards, metrics)
-  - Data visualization (charts, maps)
+- **ระบบเทมเพลต**: ใช้ระบบเทมเพลต Jinja2 ของ Flask ด้วยวิธีการแบบองค์ประกอบ ซึ่งจัดระเบียบในไดเรกทอรี `templates/`
+- **เลย์เอาต์พื้นฐาน**: `base.html` ให้เปลือกแอปพลิเคชันที่มีองค์ประกอบทั่วไปและพฤติกรรมที่ตอบสนอง
+- **องค์ประกอบ**: องค์ประกอบ UI แบบโมดูลาร์ใน `templates/components/` เพื่อการนำกลับมาใช้ใหม่:
+  - องค์ประกอบทั่วไป (แถบนำทาง ส่วนท้าย)
+  - องค์ประกอบแดชบอร์ด (การ์ด เมตริก)
+  - การแสดงผลข้อมูล (แผนภูมิ แผนที่)
 
-#### 2.2.2 JavaScript Architecture
+#### 2.2.2 สถาปัตยกรรม JavaScript
 
-- **Alpine.js Framework**: Lightweight JavaScript framework for declarative UI behavior without a build step.
-- **Component Management**: `component-loader.js` provides dynamic loading of components with caching.
-- **Chart Rendering**: Integration with Chart.js for data visualization in various formats.
-- **Interactivity Modules**:
-  - `map-interaction.js`: Handles interactive maps of solar installations
-  - `alpine-extensions.js`: Custom extensions to enhance Alpine.js functionality
-  - App-specific components like `plants-app.js` for managing plant data
+- **เฟรมเวิร์ก Alpine.js**: เฟรมเวิร์ก JavaScript แบบเบาสำหรับพฤติกรรม UI แบบประกาศโดยไม่ต้องมีขั้นตอนการสร้าง
+- **การจัดการองค์ประกอบ**: `component-loader.js` ให้การโหลดองค์ประกอบแบบไดนามิกพร้อมการแคช
+- **การเรนเดอร์แผนภูมิ**: การรวมเข้ากับ Chart.js สำหรับการแสดงผลข้อมูลในรูปแบบต่างๆ
+- **โมดูลการโต้ตอบ**:
+  - `map-interaction.js`: จัดการแผนที่แบบโต้ตอบของการติดตั้งพลังงานแสงอาทิตย์
+  - `alpine-extensions.js`: ส่วนขยายที่กำหนดเองเพื่อเพิ่มฟังก์ชันการทำงานของ Alpine.js
+  - องค์ประกอบเฉพาะแอป เช่น `plants-app.js` สำหรับการจัดการข้อมูลพืช
 
-#### 2.2.3 Responsive Design
+#### 2.2.3 การออกแบบที่ตอบสนอง
 
-- **TailwindCSS Framework**: Utility-first CSS approach for consistent styling
-- **Responsive Breakpoints**: Defined in `base.html` and managed through JavaScript for adaptive layouts
-- **Device Detection**: Responsive state object (`window.responsive`) tracks device characteristics and triggers layout adjustments
+- **เฟรมเวิร์ก TailwindCSS**: วิธีการ CSS แบบ utility-first สำหรับการจัดแต่งทรงที่สอดคล้องกัน
+- **จุดพักที่ตอบสนอง**: กำหนดใน `base.html` และจัดการผ่าน JavaScript สำหรับเลย์เอาต์ที่ปรับเปลี่ยนได้
+- **การตรวจจับอุปกรณ์**: วัตถุสถานะที่ตอบสนอง (`window.responsive`) ติดตามลักษณะของอุปกรณ์และเรียกการปรับเลย์เอาต์
 
-### 2.3 Data Flow Architecture
+### 2.3 สถาปัตยกรรมการไหลของข้อมูล
 
-#### 2.3.1 Data Collection
+#### 2.3.1 การเก็บรวบรวมข้อมูล
 
-- **Data Collector**: `data_collector.py` handles scheduled data retrieval from Growatt API
-- **Cron Integration**: Scheduled tasks for regular data synchronization
-- **Manual Collection**: API endpoints for on-demand data collection
+- **ตัวเก็บรวบรวมข้อมูล**: `data_collector.py` จัดการการดึงข้อมูลตามกำหนดเวลาจาก API ของ Growatt
+- **การรวม Cron**: งานที่กำหนดเวลาไว้สำหรับการซิงโครไนซ์ข้อมูลเป็นประจำ
+- **การเก็บรวบรวมด้วยตนเอง**: จุดสิ้นสุด API สำหรับการเก็บรวบรวมข้อมูลตามความต้องการ
 
-#### 2.3.2 Data Storage
+#### 2.3.2 การจัดเก็บข้อมูล
 
-- **SQLite Database**: Local storage using SQLite for device data, energy statistics, and weather information
-- **Table Structure**:
-  - Plants: Solar installation information
-  - Devices: Individual device details linked to plants
-  - Energy Stats: Production statistics over time
-  - Weather Data: Environmental conditions
+- **ฐานข้อมูล SQLite**: การจัดเก็บข้อมูลในเครื่องโดยใช้ SQLite สำหรับข้อมูลอุปกรณ์ สถิติพลังงาน และข้อมูลสภาพอากาศ
+- **โครงสร้างตาราง**:
+  - Plants: ข้อมูลการติดตั้งพลังงานแสงอาทิตย์
+  - Devices: รายละเอียดอุปกรณ์แต่ละรายการที่เชื่อมโยงกับ Plants
+  - Energy Stats: สถิติการผลิตในช่วงเวลา
+  - Weather Data: สภาพแวดล้อม
 
-#### 2.3.3 Data Caching
+#### 2.3.3 การแคชข้อมูล
 
-- **Browser-side Caching**: Implemented in frontend components using localStorage
-- **Server-side Caching**: Flask-Caching integration for API responses
-- **Cache Invalidation**: Both time-based expiration and explicit refresh mechanisms
+- **การแคชฝั่งเบราว์เซอร์**: ใช้ในส่วนประกอบฟรอนต์เอนด์โดยใช้ localStorage
+- **การแคชฝั่งเซิร์ฟเวอร์**: การรวม Flask-Caching สำหรับการตอบสนอง API
+- **การทำให้แคชเป็นโมฆะ**: ทั้งการหมดอายุตามเวลาและกลไกการรีเฟรชโดยชัดแจ้ง
 
-## 3. Key Features and Implementations
+## 3. คุณสมบัติและการใช้งานที่สำคัญ
 
-### 3.1 Dashboard and Monitoring
+### 3.1 แดชบอร์ดและการติดตาม
 
-- **Real-time Updates**: Dynamic data refresh for current production values
-- **System Status Overview**: Displays key metrics, alerts, and performance indicators
-- **Device Status Tracking**: Monitoring online/offline status of connected devices
+- **การอัปเดตแบบเรียลไทม์**: การรีเฟรชข้อมูลแบบไดนามิกสำหรับค่าการผลิตปัจจุบัน
+- **ภาพรวมสถานะระบบ**: แสดงเมตริกสำคัญ การแจ้งเตือน และตัวบ่งชี้ประสิทธิภาพ
+- **การติดตามสถานะอุปกรณ์**: การตรวจสอบสถานะออนไลน์/ออฟไลน์ของอุปกรณ์ที่เชื่อมต่อ
 
-### 3.2 Data Visualization
+### 3.2 การแสดงผลข้อมูล
 
-- **Energy Yield Charts**: Customizable charts for viewing production data across different time periods
-- **Power Flow Visualization**: Interactive representation of energy flow between components
-- **Thailand Solar Map**: Geographic visualization of plant locations with status indicators
-- **Performance Analytics**: Charts for efficiency, distribution, and other key metrics
+- **แผนภูมิผลผลิตพลังงาน**: แผนภูมิที่ปรับแต่งได้สำหรับการดูข้อมูลการผลิตในช่วงเวลาต่างๆ
+- **การแสดงผลการไหลของพลังงาน**: การแสดงผลแบบโต้ตอบของการไหลของพลังงานระหว่างส่วนประกอบ
+- **แผนที่พลังงานแสงอาทิตย์ประเทศไทย**: การแสดงผลทางภูมิศาสตร์ของตำแหน่ง Plants พร้อมตัวบ่งชี้สถานะ
+- **การวิเคราะห์ประสิทธิภาพ**: แผนภูมิสำหรับประสิทธิภาพ การกระจาย และเมตริกสำคัญอื่นๆ
 
-### 3.3 Predictive Analytics
+### 3.3 การวิเคราะห์เชิงคาดการณ์
 
-- **Energy Production Forecasting**: ML-based predictions of future energy production
-- **Seasonal Adjustments**: Accounting for seasonal variations in production estimates
-- **Performance Ratio Analysis**: Comparing actual vs. theoretical output for system evaluation
+- **การคาดการณ์การผลิตพลังงาน**: การคาดการณ์การผลิตพลังงานในอนาคตโดยใช้ ML
+- **การปรับตามฤดูกาล**: การคำนึงถึงความแปรปรวนตามฤดูกาลในประมาณการการผลิต
+- **การวิเคราะห์อัตราส่วนประสิทธิภาพ**: การเปรียบเทียบผลลัพธ์จริงกับผลลัพธ์ทางทฤษฎีสำหรับการประเมินระบบ
 
-### 3.4 Weather Integration
+### 3.4 การรวมสภาพอากาศ
 
-- **Weather Data Correlation**: Integration of weather data with energy production
-- **Condition Visualization**: Charts showing relationship between weather and system performance
-- **Historical Weather Data**: Stored alongside production data for analysis
+- **การเชื่อมโยงข้อมูลสภาพอากาศ**: การรวมข้อมูลสภาพอากาศกับการผลิตพลังงาน
+- **การแสดงผลสภาพ**: แผนภูมิที่แสดงความสัมพันธ์ระหว่างสภาพอากาศและประสิทธิภาพของระบบ
+- **ข้อมูลสภาพอากาศในอดีต**: เก็บไว้พร้อมกับข้อมูลการผลิตเพื่อการวิเคราะห์
 
-## 4. System Interaction Flow
+## 4. การไหลของการโต้ตอบระบบ
 
-### 4.1 Authentication Flow
+### 4.1 การไหลของการตรวจสอบสิทธิ์
 
-1. User accesses the application
-2. Application checks for existing session
-3. If not authenticated, login form is presented
-4. Credentials sent to Growatt API via secure endpoint
-5. On success, session is created and user is redirected to dashboard
+1. ผู้ใช้เข้าถึงแอปพลิเคชัน
+2. แอปพลิเคชันตรวจสอบเซสชันที่มีอยู่
+3. หากไม่ได้รับการตรวจสอบสิทธิ์ จะมีการแสดงแบบฟอร์มเข้าสู่ระบบ
+4. ส่งข้อมูลรับรองไปยัง API ของ Growatt ผ่านจุดสิ้นสุดที่ปลอดภัย
+5. เมื่อสำเร็จ เซสชันจะถูกสร้างขึ้นและผู้ใช้จะถูกเปลี่ยนเส้นทางไปยังแดชบอร์ด
 
-### 4.2 Data Retrieval Flow
+### 4.2 การไหลของการดึงข้อมูล
 
-1. Frontend components request data through API endpoints
-2. Server-side routes handle requests and validate authentication
-3. Service layer retrieves data from local database or external API
-4. Data is formatted and returned as JSON
-5. Frontend components render visualizations based on received data
+1. ส่วนประกอบฟรอนต์เอนด์ร้องขอข้อมูลผ่านจุดสิ้นสุด API
+2. เส้นทางฝั่งเซิร์ฟเวอร์จัดการคำขอและตรวจสอบการตรวจสอบสิทธิ์
+3. เลเยอร์บริการดึงข้อมูลจากฐานข้อมูลในเครื่องหรือ API ภายนอก
+4. ข้อมูลถูกจัดรูปแบบและส่งคืนเป็น JSON
+5. ส่วนประกอบฟรอนต์เอนด์แสดงการแสดงผลตามข้อมูลที่ได้รับ
 
-### 4.3 Prediction Flow
+### 4.3 การไหลของการทำนาย
 
-1. User requests prediction through UI
-2. Frontend sends request to prediction endpoint
-3. ML model processes request with appropriate parameters
-4. Prediction results returned to frontend
-5. Results displayed in charts with confidence indicators
+1. ผู้ใช้ร้องขอการทำนายผ่าน UI
+2. ฟรอนต์เอนด์ส่งคำขอไปยังจุดสิ้นสุดการทำนาย
+3. โมเดล ML ประมวลผลคำขอด้วยพารามิเตอร์ที่เหมาะสม
+4. ผลลัพธ์การทำนายส่งคืนไปยังฟรอนต์เอนด์
+5. ผลลัพธ์แสดงในแผนภูมิพร้อมตัวบ่งชี้ความมั่นใจ
 
-## 5. Cross-cutting Concerns
+## 5. ความกังวลที่ครอบคลุม
 
-### 5.1 Responsive Design
+### 5.1 การออกแบบที่ตอบสนอง
 
-- Adaptive layouts for mobile, tablet, and desktop devices
-- Breakpoint-based component rendering
-- Touch-friendly interactions for mobile users
+- เลย์เอาต์ที่ปรับเปลี่ยนได้สำหรับอุปกรณ์มือถือ แท็บเล็ต และเดสก์ท็อป
+- การเรนเดอร์องค์ประกอบตามจุดพัก
+- การโต้ตอบที่เป็นมิตรต่อการสัมผัสสำหรับผู้ใช้มือถือ
 
-### 5.2 Error Handling
+### 5.2 การจัดการข้อผิดพลาด
 
-- Graceful degradation when API is unavailable
-- User-friendly error messages
-- Automatic retry mechanisms with exponential backoff
+- การลดระดับอย่างสง่างามเมื่อ API ไม่พร้อมใช้งาน
+- ข้อความแสดงข้อผิดพลาดที่เป็นมิตรต่อผู้ใช้
+- กลไกการลองใหม่อัตโนมัติพร้อมการถอยกลับแบบเอ็กซ์โพเนนเชียล
 
-### 5.3 Performance Optimization
+### 5.3 การเพิ่มประสิทธิภาพประสิทธิภาพ
 
-- Data caching at multiple levels
-- Lazy loading of components
-- Throttled API requests
-- Client-side data processing where appropriate
+- การแคชข้อมูลในหลายระดับ
+- การโหลดองค์ประกอบแบบ Lazy
+- คำขอ API ที่มีการควบคุม
+- การประมวลผลข้อมูลฝั่งไคลเอ็นต์เมื่อเหมาะสม
 
-### 5.4 Security Measures
+### 5.4 มาตรการรักษาความปลอดภัย
 
-- Secure authentication flow
-- Session management
-- CORS configuration
-- Error output sanitization in production
+- การไหลของการตรวจสอบสิทธิ์ที่ปลอดภัย
+- การจัดการเซสชัน
+- การกำหนดค่า CORS
+- การล้างผลลัพธ์ข้อผิดพลาดในโปรดักชัน
 
-## 6. Deployment Architecture
+## 6. สถาปัตยกรรมการปรับใช้
 
-### 6.1 Development Environment
+### 6.1 สภาพแวดล้อมการพัฒนา
 
-- Local Flask development server
-- Live reload for rapid iteration
-- Local database for testing
+- เซิร์ฟเวอร์การพัฒนา Flask ในเครื่อง
+- การรีโหลดสดสำหรับการทำซ้ำอย่างรวดเร็ว
+- ฐานข้อมูลในเครื่องสำหรับการทดสอบ
 
-### 6.2 Production Deployment
+### 6.2 การปรับใช้โปรดักชัน
 
-- Containerization with Docker and docker-compose
-- Nginx as reverse proxy with SSL termination
-- Gunicorn as WSGI server for Flask application
-- Persistent volume for database and logs
+- การทำคอนเทนเนอร์ด้วย Docker และ docker-compose
+- Nginx เป็น reverse proxy พร้อมการยกเลิก SSL
+- Gunicorn เป็นเซิร์ฟเวอร์ WSGI สำหรับแอปพลิเคชัน Flask
+- ปริมาณงานที่คงอยู่สำหรับฐานข้อมูลและบันทึก
 
-## 7. External Integrations
+## 7. การรวมภายนอก
 
-### 7.1 Growatt API
+### 7.1 API ของ Growatt
 
-- Authentication mechanism
-- Data retrieval endpoints
-- Command interfaces for device control
+- กลไกการตรวจสอบสิทธิ์
+- จุดสิ้นสุดการดึงข้อมูล
+- อินเทอร์เฟซคำสั่งสำหรับการควบคุมอุปกรณ์
 
-### 7.2 Weather Services
+### 7.2 บริการสภาพอากาศ
 
-- Integration with weather data providers
-- Historical weather data correlation
-- Weather forecasting for prediction enhancement
+- การรวมเข้ากับผู้ให้บริการข้อมูลสภาพอากาศ
+- การเชื่อมโยงข้อมูลสภาพอากาศในอดีต
+- การพยากรณ์สภาพอากาศเพื่อเพิ่มการคาดการณ์
 
-## 8. Future Architecture Considerations
+## 8. การพิจารณาสถาปัตยกรรมในอนาคต
 
-### 8.1 Scalability Improvements
+### 8.1 การปรับปรุงความสามารถในการปรับขนาด
 
-- Migration to PostgreSQL for larger installations
-- Redis for improved caching and session management
-- Microservice decomposition for specialized components
+- การย้ายไปยัง PostgreSQL สำหรับการติดตั้งขนาดใหญ่
+- Redis สำหรับการปรับปรุงการแคชและการจัดการเซสชัน
+- การแยกส่วนไมโครเซอร์วิสสำหรับส่วนประกอบเฉพาะ
 
-### 8.2 Feature Expansions
+### 8.2 การขยายคุณสมบัติ
 
-- Mobile application with push notifications
-- Advanced anomaly detection
-- Integration with smart home systems
-- Expanded ML capabilities for maintenance prediction
+- แอปพลิเคชันมือถือพร้อมการแจ้งเตือนแบบพุช
+- การตรวจจับความผิดปกติขั้นสูง
+- การรวมเข้ากับระบบสมาร์ทโฮม
+- ความสามารถ ML ที่ขยายสำหรับการคาดการณ์การบำรุงรักษา
 
-## 9. Technology Stack Summary
+## 9. สรุปเทคโนโลยีที่ใช้
 
-- **Backend**: Python, Flask, SQLite
-- **Frontend**: HTML, Alpine.js, TailwindCSS, Chart.js
-- **Data Visualization**: Chart.js, SVG interactive maps
-- **Machine Learning**: NumPy, custom prediction models
-- **Deployment**: Docker, Nginx, Gunicorn
+- **แบ็กเอนด์**: Python, Flask, SQLite
+- **ฟรอนต์เอนด์**: HTML, Alpine.js, TailwindCSS, Chart.js
+- **การแสดงผลข้อมูล**: Chart.js, แผนที่ SVG แบบโต้ตอบ
+- **การเรียนรู้ของเครื่อง**: NumPy, โมเดลการทำนายที่กำหนดเอง
+- **การปรับใช้**: Docker, Nginx, Gunicorn

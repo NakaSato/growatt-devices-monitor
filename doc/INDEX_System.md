@@ -4,6 +4,58 @@
 
 The Growatt Devices Monitor is a web-based application designed to monitor and visualize data from Growatt solar energy devices. It provides real-time monitoring, historical data analysis, visualization tools, and predictive analytics for solar energy production. The system follows a modern web application architecture with a clean separation of concerns between backend, frontend, and data processing components.
 
+### 1.1 Architecture Diagram
+
+```
++----------------------------------+
+|                                  |
+|       Client Web Browser         |
+|                                  |
++---------------+------------------+
+                |
+                | HTTP/HTTPS
+                |
++---------------v------------------+
+|                                  |
+|          Nginx (Proxy)           |
+|                                  |
++---------------+------------------+
+                |
+                | WSGI
+                |
++---------------v------------------+
+|        Flask Application         |
++----------------------------------+
+|                                  |
+|  +--------+  +---------------+   |
+|  |  Views |  | API Endpoints |   |
+|  +---+----+  +-------+-------+   |
+|      |               |           |
+|  +---v----+  +-------v-------+   |
+|  |Template|  |Service Layer  |   |
+|  |Renderer|  +-------+-------+   |
+|  +---+----+          |           |
+|      |       +-------v-------+   |
+|      |       |Data Access    |   |
+|      |       |Layer          |   |
+|      |       +-------+-------+   |
+|      |               |           |
+|  +---v----+  +-------v-------+   |
+|  |Static  |  |ML Prediction  |   |
+|  |Assets  |  |Engine         |   |
+|  +--------+  +---------------+   |
+|                                  |
++---------------+------------------+
+                |
+    +-----------+-----------+
+    |                       |
++---v---+           +------v------+
+|       |           |             |
+|SQLite |           | Growatt API |
+|       |           |             |
++-------+           +-------------+
+```
+
 ## 2. Architecture Components
 
 ### 2.1 Backend Architecture
