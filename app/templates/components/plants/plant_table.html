@@ -1,13 +1,13 @@
-<div class="overflow-x-auto bg-white rounded-lg shadow-md">
-  <table class="min-w-full divide-y divide-light-gray">
-    <thead class="bg-snow-white">
+<div class="overflow-x-auto bg-white rounded-lg shadow-md border border-gray-200">
+  <table class="min-w-full divide-y divide-gray-300">
+    <thead class="bg-gray-100">
       <tr>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
+          class="px-3 sm:px-6 py-4 text-right text-xs font-bold text-deep-forest uppercase tracking-wider cursor-pointer border-b-2 border-gray-200"
           @click="sortBy('id')"
         >
-          <div class="flex items-center">
+          <div class="flex items-center justify-end">
             <span class="whitespace-nowrap">Plant ID</span>
             <svg
               x-show="sortField === 'id'"
@@ -29,7 +29,7 @@
         </th>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
+          class="px-3 sm:px-6 py-4 text-left text-xs font-bold text-deep-forest uppercase tracking-wider cursor-pointer border-b-2 border-gray-200"
           @click="sortBy('plantName')"
         >
           <div class="flex items-center">
@@ -54,13 +54,7 @@
         </th>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider hidden md:table-cell"
-        >
-          <div class="flex items-center">Timezone</div>
-        </th>
-        <th
-          scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer"
+          class="px-3 sm:px-6 py-4 text-left text-xs font-bold text-deep-forest uppercase tracking-wider cursor-pointer border-b-2 border-gray-200"
           @click="sortBy('totalPower')"
         >
           <div class="flex items-center">
@@ -85,7 +79,7 @@
         </th>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider cursor-pointer hidden sm:table-cell"
+          class="px-3 sm:px-6 py-4 text-left text-xs font-bold text-deep-forest uppercase tracking-wider cursor-pointer hidden sm:table-cell border-b-2 border-gray-200"
           @click="sortBy('todayEnergy')"
         >
           <div class="flex items-center">
@@ -110,64 +104,62 @@
         </th>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-gray uppercase tracking-wider"
+          class="px-3 sm:px-6 py-4 text-center text-xs font-bold text-deep-forest uppercase tracking-wider border-b-2 border-gray-200 bg-gray-200"
         >
           Status
         </th>
         <th
           scope="col"
-          class="px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-gray uppercase tracking-wider"
+          class="px-3 sm:px-6 py-4 text-right text-xs font-bold text-deep-forest uppercase tracking-wider border-b-2 border-gray-200 bg-gray-200"
         >
           Actions
         </th>
       </tr>
     </thead>
-    <tbody class="bg-white divide-y divide-light-gray">
+    <tbody class="bg-white divide-y divide-gray-200">
       <template x-for="(plant, index) in paginatedPlants" :key="plant.id">
-        <tr class="hover:bg-snow-white">
+        <tr
+          :class="{'bg-gray-50': index % 2 === 0, 'bg-white': index % 2 !== 0}"
+          class="transition-all duration-200 ease-in-out hover:bg-snow-white hover:shadow-md"
+        >
           <td
-            class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-mono text-slate-gray"
+            class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-mono text-slate-gray group-hover:text-deep-forest text-right border-r border-gray-100"
           >
-            <span x-text="plant.id"></span>
+            <span x-text="plant.id" class="font-semibold"></span>
           </td>
-          <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+          <td class="px-3 sm:px-6 py-4 whitespace-nowrap border-r border-gray-100">
             <div
-              class="text-xs sm:text-sm font-medium text-deep-forest"
+              class="text-xs sm:text-sm font-medium text-deep-forest transition-colors duration-200"
               x-text="plant.plantName"
             ></div>
           </td>
-          <td
-            class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-gray hidden md:table-cell"
-          >
-            <span x-text="formatTimezone(plant.timezone)"></span>
-          </td>
-          <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+          <td class="px-3 sm:px-6 py-4 whitespace-nowrap border-r border-gray-100">
             <span
-              class="text-xs sm:text-sm font-semibold text-eco-green"
+              class="text-xs sm:text-sm font-semibold text-eco-green transition-colors duration-200"
               x-text="formatPower(plant.totalPower)"
             ></span>
           </td>
           <td
-            class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell"
+            class="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell border-r border-gray-100"
           >
             <span
-              class="text-xs sm:text-sm font-semibold text-eco-green"
+              class="text-xs sm:text-sm font-semibold text-eco-green transition-colors duration-200"
               x-text="formatEnergy(plant.todayEnergy)"
             ></span>
           </td>
-          <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+          <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-center border-r border-gray-100">
             <span
-              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+              class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-all duration-200"
               :class="getStatusClass(plant.status || 'active')"
               x-text="getStatusText(plant.status || 'active')"
             ></span>
           </td>
           <td
-            class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium"
+            class="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium"
           >
             <a
               :href="'/plant/' + plant.id"
-              class="text-eco-green hover:text-deep-forest transition-colors px-2 py-1"
+              class="text-blue-600 hover:text-blue-800 transition-colors duration-200 px-3 py-1.5 rounded border border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-sm hover:shadow"
             >
               View
             </a>

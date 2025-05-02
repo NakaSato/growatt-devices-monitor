@@ -1,5 +1,5 @@
 <div
-  class="plant-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1"
+  class="plant-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1 border border-gray-200"
   :id="'plant-' + plant.id"
 >
   <div
@@ -15,10 +15,10 @@
       class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"
     ></div>
     <div
-      class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium text-white"
+      class="absolute top-2 right-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-white/20"
       :class="getStatusBadgeClass(plant.status || 'active')"
     >
-      <span x-text="getStatusText(plant.status || 'active')"></span>
+      <span x-text="getStatusText(plant.status || 'active')" class="tracking-wide"></span>
     </div>
     <h3
       class="absolute bottom-2 left-3 text-white font-bold text-lg line-clamp-1 pr-3"
@@ -27,10 +27,10 @@
       <span x-text="plant.plantName || 'Unnamed Plant'"></span>
     </h3>
   </div>
-  <div class="p-3 sm:p-4 flex-grow flex flex-col justify-between">
+  <div class="p-4 sm:p-5 flex-grow flex flex-col justify-between">
     <div>
-      <div class="flex items-baseline justify-between mb-3">
-        <div class="text-xs sm:text-sm text-slate-gray">
+      <div class="flex items-baseline justify-between mb-4">
+        <div class="text-xs sm:text-sm text-slate-gray bg-gray-50 px-2 py-1 rounded">
           <i class="fas fa-map-marker-alt mr-1 text-eco-green"></i>
           <span
             x-text="plant.location || 'Unknown Location'"
@@ -39,32 +39,32 @@
           ></span>
         </div>
         <div
-          class="text-xs bg-eco-green-5 text-eco-green px-2 py-0.5 rounded-full"
+          class="text-xs bg-eco-green-5 text-eco-green px-2 py-1 rounded-full font-mono font-semibold border border-eco-green/10"
           x-text="'ID: ' + plant.id"
         ></div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 text-xs sm:text-sm mb-3">
-        <div class="flex flex-col">
-          <span class="text-slate-gray mb-1">Power</span>
+      <div class="grid grid-cols-2 gap-3 text-xs sm:text-sm mb-4">
+        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
+          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Power</span>
           <span class="font-medium text-deep-forest">
             <span x-text="formatPower(plant.totalPower)"></span>
           </span>
         </div>
-        <div class="flex flex-col">
-          <span class="text-slate-gray mb-1">Today</span>
+        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
+          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Today</span>
           <span class="font-medium text-deep-forest">
             <span x-text="formatEnergy(plant.todayEnergy)"></span>
           </span>
         </div>
-        <div class="flex flex-col">
-          <span class="text-slate-gray mb-1">Month</span>
+        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
+          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Month</span>
           <span class="font-medium text-deep-forest">
             <span x-text="formatEnergy(plant.monthEnergy)"></span>
           </span>
         </div>
-        <div class="flex flex-col">
-          <span class="text-slate-gray mb-1">Total</span>
+        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
+          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Total</span>
           <span class="font-medium text-deep-forest">
             <span x-text="formatEnergy(plant.totalEnergy)"></span>
           </span>
@@ -72,11 +72,14 @@
       </div>
     </div>
 
-    <a
-      :href="'/plant/' + plant.id"
-      class="mt-2 w-full flex items-center justify-center py-2 px-3 bg-eco-green text-white text-xs sm:text-sm font-medium rounded hover:bg-deep-forest transition-colors duration-200 touch-target"
-    >
-      <i class="fas fa-chart-line mr-2"></i> View Details
-    </a>
+    <div class="mt-2 pt-3 border-t border-gray-200">
+      <div class="text-xs uppercase font-bold text-deep-forest mb-2 tracking-wider">Actions</div>
+      <a
+        :href="'/plant/' + plant.id"
+        class="w-full flex items-center justify-center py-2.5 px-3 bg-eco-green text-white text-xs sm:text-sm font-medium rounded hover:bg-deep-forest transition-colors duration-200 touch-target shadow-sm"
+      >
+        <i class="fas fa-chart-line mr-2"></i> View Details
+      </a>
+    </div>
   </div>
 </div>

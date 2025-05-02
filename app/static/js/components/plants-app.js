@@ -96,7 +96,17 @@ document.addEventListener("alpine:init", () => {
         })
         .then((data) => {
           // Process the data
-          this.plants = Array.isArray(data) ? data : [];
+          this.plants = Array.isArray(data) ? data.map(plant => {
+            // Normalize property names to ensure consistency
+            return {
+              ...plant,
+              // Ensure these properties exist with expected names
+              totalPower: plant.totalPower || plant.power || plant.current_power || 0,
+              todayEnergy: plant.todayEnergy || plant.today_energy || plant.energy_today || 0,
+              monthEnergy: plant.monthEnergy || plant.month_energy || plant.energy_month || 0,
+              totalEnergy: plant.totalEnergy || plant.total_energy || plant.energy_total || 0
+            };
+          }) : [];
           this.filteredPlants = [...this.plants]; // Initialize filtered plants
           this.sortPlants(); // Apply initial sort
           console.log("Plants data:", this.plants);

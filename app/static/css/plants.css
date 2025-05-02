@@ -11,16 +11,59 @@
   animation: spin 1s linear infinite;
 }
 
-/* Responsive card hover effect enhancement */
+/* Card styling enhancements */
+.plant-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
 @media (hover: hover) {
-  .card:hover {
+  .plant-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }
 
-/* Improved card transitions */
-.card {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+/* Enhanced table styling */
+.divide-y > tr.hover\:bg-snow-white:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 10;
+  position: relative;
+}
+
+/* Table row focus state for accessibility */
+.divide-y > tr:focus-within {
+  outline: 2px solid rgba(76, 175, 80, 0.3);
+  outline-offset: -2px;
+}
+
+/* Enhanced hover effect for the View button */
+.text-blue-600.hover\:text-blue-800:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Table responsive design */
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
 }
 
 /* Solar icon glow animation for active plants */
@@ -44,21 +87,25 @@
 .status-active {
   background-color: #d1fae5;
   color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .status-inactive {
   background-color: #f3f4f6;
   color: #4b5563;
+  border: 1px solid #e5e7eb;
 }
 
 .status-maintenance {
   background-color: #fef3c7;
   color: #92400e;
+  border: 1px solid #fde68a;
 }
 
 .status-error {
   background-color: #fee2e2;
   color: #b91c1c;
+  border: 1px solid #fca5a5;
 }
 
 /* Better table responsiveness for small screens */
@@ -72,6 +119,24 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
+
+  /* Add visual hint that table is scrollable on mobile */
+  .overflow-x-auto::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 30px;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0),
+      rgba(0, 0, 0, 0.05)
+    );
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.7;
+  }
 }
 
 /* Add extra small breakpoint for view toggle buttons */
@@ -79,4 +144,9 @@
   .xs\:inline {
     display: inline;
   }
+}
+
+/* Zebra striping enhancement */
+tr:nth-child(even) {
+  background-color: rgba(249, 250, 251, 0.7);
 }
