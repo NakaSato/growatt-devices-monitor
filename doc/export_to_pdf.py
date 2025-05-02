@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-export_to_pdf.py - Convert Markdown documentation to PDF
-
-This script converts all Markdown (.md) files in the doc directory to PDF files
-and saves them in the pdf/ subdirectory. It uses WeasyPrint to render HTML to PDF
-and Markdown2 to convert Markdown to HTML.
-"""
 
 import os
 import sys
@@ -43,24 +36,25 @@ HTML_TEMPLATE = """
             font-style: normal;
         }
         
+        /* Document properties and page setup */
         @page {
-            margin: 1.5cm 2cm;
+            margin: 2cm 2.5cm; /* Standard engineering report margins */
             @top-center {
-                content: "Devices Monitor System";
+                content: "{{ title }}";
                 font-weight: 600;
-                color: #15803d;
-                font-size: 10pt;
+                color: #333333;
+                font-size: 9pt;
                 font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
             @bottom-left {
-                content: "© {{ year }} Devices Monitor System";
+                content: "Growatt Devices Monitor System";
                 font-size: 8pt;
                 color: #4b5563;
                 font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
             @bottom-right {
                 content: "Page " counter(page) " of " counter(pages);
-                font-size: 9pt;
+                font-size: 8pt;
                 color: #1f2937;
                 font-family: 'Sarabun', 'Noto Sans Thai', sans-serif;
             }
@@ -73,48 +67,74 @@ HTML_TEMPLATE = """
         }
         body {
             font-family: 'Sarabun', 'Noto Sans Thai', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            line-height: 1.8;  /* Increased line height for better readability */
+            line-height: 1.5; /* Increased from 1.4 for better readability */
             color: #1f2937;
             margin: 0;
             padding: 0;
-            font-size: 10.5pt;
+            font-size: 11pt; /* Standard size for technical documents */
             text-align: justify;
             background-color: #ffffff;
-            letter-spacing: 0.01em;  /* Slightly increased letter spacing */
-        }
-        h1, h2, h3, h4 {
-            font-family: 'Sarabun', 'Noto Sans Thai', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            font-weight: 600;
-            line-height: 1.3;
-            margin-top: 2em;  /* Increased top margin */
-            margin-bottom: 1em;  /* Increased bottom margin */
+            letter-spacing: 0.01em; /* Slightly increased letter spacing for improved legibility */
+            word-spacing: 0.05em; /* Added word spacing for better text flow */
+            counter-reset: section;
         }
         h1 {
             page-break-before: always;
             border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 0.5em;
-            font-size: 22pt;
-            color: #15803d;
-            letter-spacing: -0.01em;  /* Tighter spacing for headings */
+            padding-bottom: 0.8em; /* Increased padding below heading */
+            font-size: 20pt; /* Increased from 14pt for better hierarchy */
+            color: #111827; /* Changed to dark gray/almost black color */
+            font-weight: bold; /* Bold as specified in style guide */
+            letter-spacing: 0.01em; /* Slight letter spacing for improved readability */
+            word-spacing: 0.05em; /* Added word spacing for better flow */
+            counter-reset: subsection;
+            margin-bottom: 1em; /* Increased bottom margin for better spacing */
         }
         h1:first-of-type {
             page-break-before: avoid;
         }
+        h1::before {
+            counter-increment: section;
+            content: counter(section) ". ";
+        }
         h2 {
-            font-size: 16pt;
+            font-size: 18pt;
             border-bottom: 1px solid #e5e7eb;
-            color: #166534;
+            color: #1f2937;
+            counter-reset: subsubsection;
+            padding-bottom: 0.5em; /* Added padding below h2 */
+            margin-top: 1.8em; /* Increased top margin for better section separation */
+            letter-spacing: 0.01em; /* Slight letter spacing */
+        }
+        h2::before {
+            counter-increment: subsection;
+            content: counter(section) "." counter(subsection) " ";
         }
         h3 {
-            font-size: 13pt;
-            color: #16a34a;
+            font-size: 16pt; /* Increased from 15pt */
+            color: #374151;
+            margin-top: 1.6em; /* Increased spacing before h3 */
+            letter-spacing: 0.01em; /* Slight letter spacing */
+        }
+        h3::before {
+            counter-increment: subsubsection;
+            content: counter(section) "." counter(subsection) "." counter(subsubsection) " ";
         }
         h4 {
-            font-size: 11.5pt;
-            color: #22c55e;
+            font-size: 14pt; /* Increased from 13pt */
+            color: #4b5563;
+            margin-top: 1.4em; /* Increased spacing before h4 */
+            letter-spacing: 0.01em; /* Slight letter spacing */
         }
         p {
             margin: 1em 0 1.4em 0;  /* Increased bottom margin for paragraphs */
+            line-height: 1.8;  /* Better line height for paragraph text */
+            text-align: justify;
+            hyphens: auto;
+            orphans: 3;
+            widows: 3;
+            letter-spacing: 0.01em; /* Slight letter spacing for better readability */
+            word-spacing: 0.03em; /* Add word spacing for text flow */
         }
         a {
             color: #2563eb;
@@ -125,18 +145,18 @@ HTML_TEMPLATE = """
             border: 1px solid #e5e7eb;
             border-radius: 4px;
             font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
-            font-size: 0.9em;
-            padding: 0.3em 0.5em;  /* Increased padding for inline code */
-            line-height: 1.5;  /* Better line height for code blocks */
+            font-size: 10pt; /* Increased from 0.9em for better readability */
+            letter-spacing: 0.01em; /* Slight letter spacing for code readability */
         }
         code {
+            padding: 0.3em 0.5em;  /* Increased padding for inline code */
             white-space: nowrap;
             color: #166534;
         }
         pre {
-            padding: 1.2em;  /* Increased padding for code blocks */
+            padding: 1.2em 1.4em;  /* Increased horizontal padding for code blocks */
             overflow-x: auto;
-            line-height: 1.45;
+            line-height: 1.6;  /* Improved line height for code blocks */
             page-break-inside: avoid;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin: 1.5em 0;  /* Increased margins */
@@ -165,13 +185,27 @@ HTML_TEMPLATE = """
             border-top: none;
             border-right: none;
         }
+        ul, ol {
+            margin: 1.2em 0 1.2em 1.8em;  /* Increased margins for lists */
+            padding: 0;
+            line-height: 1.7;  /* Improved line height for list items */
+            letter-spacing: 0.01em; /* Slight letter spacing for readability */
+        }
+        li {
+            margin-bottom: 0.7em;  /* Increased spacing between list items */
+            padding-left: 0.3em;  /* Added left padding for list items */
+        }
+        li > ul, li > ol {
+            margin-top: 0.5em; /* Increased spacing for nested lists */
+            margin-bottom: 0.5em;
+        }
         table {
             border-collapse: collapse;
             width: 100%;
             margin: 1.5em 0;
             border: 1px solid #e5e7eb;
             page-break-inside: avoid;
-            font-size: 0.95em;
+            font-size: 10.5pt; /* Increased from 0.95em for better readability */
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         th, td {
@@ -196,7 +230,6 @@ HTML_TEMPLATE = """
             border-radius: 6px;
         }
         blockquote {
-            border-left: 4px solid #15803d;
             padding: 1em 1.5em;  /* Increased padding */
             margin: 1.5em 0;  /* Increased margins */
             background-color: #f0fdf4;
@@ -204,15 +237,7 @@ HTML_TEMPLATE = """
             font-style: italic;
             border-radius: 0 6px 6px 0;
             line-height: 1.7;  /* Better line height for quotes */
-        }
-        ul, ol {
-            margin: 1.2em 0 1.2em 1.8em;  /* Increased margins for lists */
-            padding: 0;
-            line-height: 1.7;  /* Increased line height for list items */
-        }
-        li {
-            margin-bottom: 0.7em;  /* Increased spacing between list items */
-            padding-left: 0.3em;  /* Added left padding for list items */
+            border-left: 4px solid #15803d;
         }
         hr {
             border: none;
@@ -227,22 +252,26 @@ HTML_TEMPLATE = """
             justify-content: center;
             align-items: center;
             page-break-after: always;
-            background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+            background: #ffffff;
             padding: 2em;
             position: relative;
+            border: 1px solid #e5e7eb;
+            margin: 2cm;
         }
         .cover-page h1 {
-            font-size: 32pt;
+            font-size: 20pt;
+            font-weight: bold;
             border: none;
-            margin-bottom: 0.2em;
-            color: #15803d;
-            letter-spacing: -0.03em;
+            margin-bottom: 0.5em;
+            color: #111827;
+            letter-spacing: 0;
             line-height: 1.2;
+            text-align: center;
         }
         .cover-page .subtitle {
-            font-size: 16pt;
+            font-size: 14pt;
             margin-bottom: 3em;
-            color: #166534;
+            color: #374151;
             max-width: 80%;
             line-height: 1.4;
         }
@@ -259,8 +288,7 @@ HTML_TEMPLATE = """
         }
         .cover-page .logo {
             margin-bottom: 3em;
-            max-width: 200px;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+            max-width: 180px;
         }
         .footer {
             text-align: center;
@@ -274,7 +302,7 @@ HTML_TEMPLATE = """
         /* Technical documentation specific elements */
         .toc {
             background-color: #f9fafb;
-            padding: 1.8em;
+            padding: 1.8em 2em;  /* Increased horizontal padding */
             margin: 2em 0;
             border: 1px solid #e5e7eb;
             border-radius: 6px;
@@ -283,16 +311,25 @@ HTML_TEMPLATE = """
         }
         .toc h2 {
             margin-top: 0;
-            font-size: 14pt;
+            font-size: 16pt;  /* Increased from 14pt */
             border: none;
             color: #15803d;
+            margin-bottom: 1em;  /* Added bottom margin */
+            letter-spacing: 0.01em;  /* Added slight letter spacing */
         }
         .toc ul {
-            margin-left: 1em;
+            margin-left: 1.2em;  /* Increased left margin */
+            margin-bottom: 0.8em;  /* Added bottom margin */
+        }
+        .toc li {
+            margin-bottom: 0.5em;  /* Adjusted spacing between TOC items */
+            line-height: 1.5;  /* Better line height for TOC items */
         }
         .toc a {
             color: #1f2937;
             text-decoration: none;
+            letter-spacing: 0.01em;  /* Added letter spacing */
+            word-spacing: 0.03em;  /* Added word spacing */
         }
         
         /* Technical diagram styles */
@@ -558,6 +595,77 @@ HTML_TEMPLATE = """
         }
         .avoid-break {
             page-break-inside: avoid;
+        }
+        
+        /* Document Metadata Section */
+        .document-metadata {
+            border: 1px solid #e5e7eb;
+            background-color: #f8fafc;
+            padding: 1.5em;
+            margin: 2em 0;
+            page-break-inside: avoid;
+            font-size: 10pt;
+        }
+        .document-metadata h3 {
+            margin-top: 0;
+            font-size: 12pt;
+            border-bottom: 1px solid #d1d5db;
+            padding-bottom: 0.5em;
+            color: #111827;
+        }
+        .metadata-table {
+            width: 100%;
+            margin: 1em 0 0 0;
+            border-collapse: collapse;
+        }
+        .metadata-table td {
+            padding: 0.5em;
+            vertical-align: top;
+            border: none;
+        }
+        .metadata-table tr td:first-child {
+            font-weight: 600;
+            width: 30%;
+            color: #374151;
+        }
+        
+        /* Table and Figure Captions */
+        .figure {
+            text-align: center;
+            margin: 2em 0;
+            page-break-inside: avoid;
+        }
+        .table-caption, .figure-caption {
+            font-size: 10pt;
+            color: #4b5563;
+            margin-top: 0.5em;
+            font-style: italic;
+            text-align: center;
+        }
+        .table-caption {
+            margin-bottom: 0.5em;
+        }
+        .figure-caption {
+            margin-top: 0.8em;
+        }
+        
+        /* References Section */
+        .references {
+            margin: 2em 0;
+            padding: 1em;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+        }
+        .references h2 {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5em;
+            margin-top: 0;
+        }
+        .references ol {
+            margin-left: 1.5em;
+        }
+        .reference-item {
+            margin-bottom: 0.8em;
         }
     </style>
 </head>
