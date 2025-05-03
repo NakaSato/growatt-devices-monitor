@@ -9,15 +9,75 @@ from flask import (
 )
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from app.services.plant_service import get_maps_plants
+from app.services.plant_service import get_maps_plants, PlantService
 
 from .api_helpers import (
     get_plant_fault_logs, get_plants, get_devices_for_plant, get_weather_list,
-    get_access_api, get_logout
+    get_access_api, get_logout, get_plant_by_id
 )
 
 # Create a blueprint for the API routes
 api_blueprint = Blueprint('api_routes', __name__, url_prefix='/api')
+
+# Helper function to log API requests
+def log_api_request(endpoint):
+    """
+    Helper function to log API requests with consistent formatting
+    
+    Args:
+        endpoint (str): The API endpoint being accessed
+    """
+    client_ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', 'Unknown')
+    method = request.method
+    query_params = request.args.to_dict() if request.args else {}
+    
+    # Remove sensitive data if present in query params
+    if 'password' in query_params:
+        query_params['password'] = '******'
+    
+    # Log request details
+    current_app.logger.info(
+        f"API Request: {method} {endpoint} - "
+        f"Client IP: {client_ip}, User-Agent: {user_agent}, "
+        f"Query Params: {json.dumps(query_params)}"
+    )
+    
+    return datetime.datetime.now()  # Return start time for response timing
+
+# Helper function to log API responses
+def log_api_response(endpoint, start_time, status_code, response_data=None, error=None):
+    """
+    Helper function to log API responses with consistent formatting
+    
+    Args:
+        endpoint (str): The API endpoint being accessed
+        start_time (datetime): The start time of the request
+        status_code (int): The HTTP status code of the response
+        response_data (any, optional): Data returned in the response
+        error (Exception, optional): Exception that occurred during processing
+    """
+    response_time = (datetime.datetime.now() - start_time).total_seconds() * 1000  # in milliseconds
+    
+    if error:
+        current_app.logger.error(
+            f"API Error: {endpoint} - "
+            f"Status: {status_code} - Error: {str(error)} - "
+            f"Response time: {response_time:.2f}ms"
+        )
+    else:
+        # For successful responses, log basic info about the response
+        response_info = ""
+        if isinstance(response_data, list):
+            response_info = f"{len(response_data)} items returned"
+        elif isinstance(response_data, dict):
+            response_info = f"{len(response_data)} keys in response"
+            
+        current_app.logger.info(
+            f"API Response: {endpoint} - "
+            f"Status: {status_code} - {response_info} - "
+            f"Response time: {response_time:.2f}ms"
+        )
 
 # ===== API Data Routes =====
 
@@ -29,6 +89,8 @@ def activity_data() -> Tuple[Response, int]:
     Returns:
         Tuple[Response, int]: JSON response with activities and status code
     """
+    start_time = log_api_request('/api/activities')
+    
     try:
         # In a real implementation, you would fetch this from a database
         # For now, we're generating mock data
@@ -73,9 +135,11 @@ def activity_data() -> Tuple[Response, int]:
             }
         ]
         
-        return jsonify({"activities": activities}), 200
+        response = {"activities": activities}
+        log_api_response('/api/activities', start_time, 200, response)
+        return jsonify(response), 200
     except Exception as e:
-        logging.error(f"Error in activity_data: {str(e)}")
+        log_api_response('/api/activities', start_time, 500, error=e)
         return jsonify({
             "status": "error", 
             "message": str(e),
@@ -90,22 +154,85 @@ def api_plants() -> Tuple[Response, int]:
     Returns:
         Tuple[Response, int]: JSON response with status code
     """
+    start_time = datetime.datetime.now()
+    client_ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', 'Unknown')
+    
+    # Log the API request
+    current_app.logger.info(f"API Request: /api/plants - Client IP: {client_ip}, User-Agent: {user_agent}")
+    
     try:
         plants = get_plants()
         # Add authentication status to the response
         if isinstance(plants, list):
             for plant in plants:
                 plant['authenticated'] = True
+                
+        # Calculate response time and log the successful response
+        response_time = (datetime.datetime.now() - start_time).total_seconds() * 1000  # in milliseconds
+        current_app.logger.info(f"API Response: /api/plants - Success - {len(plants) if isinstance(plants, list) else 0} plants returned - Response time: {response_time:.2f}ms")
+        
         return jsonify(json.loads(json.dumps(plants, ensure_ascii=False))), 200
     except Exception as e:
         error_message = f"Error in api_plants: {str(e)}"
-        current_app.logger.error(error_message)
+        # Log detailed error information including client details
+        response_time = (datetime.datetime.now() - start_time).total_seconds() * 1000  # in milliseconds
+        current_app.logger.error(f"API Error: /api/plants - Client IP: {client_ip} - Error: {error_message} - Response time: {response_time:.2f}ms")
+        
         return jsonify([{
             "error": str(e), 
             "code": "API_ERROR", 
             "ui_message": "An error occurred while fetching plant data",
             "authenticated": False
         }]), 500
+
+@api_blueprint.route('/plants/<int:plant_id>', methods=['GET'])
+def api_plant_detail(plant_id: int) -> Tuple[Response, int]:
+    """
+    API endpoint to get details for a specific plant.
+    
+    Args:
+        plant_id (int): The ID of the plant to fetch
+    
+    Returns:
+        Tuple[Response, int]: JSON response with plant data and status code
+    """
+    start_time = log_api_request(f'/api/plants/{plant_id}')
+    
+    try:
+        # Get the plant detail using the get_plant_by_id helper function
+        plant_data = get_plant_by_id(str(plant_id))
+        
+        # Check if plant exists or if we got an error
+        if not plant_data:
+            error_msg = f"Plant with ID {plant_id} not found"
+            log_api_response(f'/api/plants/{plant_id}', start_time, 404, error=error_msg)
+            return jsonify({
+                "status": "error",
+                "message": error_msg,
+                "code": "PLANT_NOT_FOUND",
+                "ui_message": "The requested plant could not be found. It may have been removed or you may not have access to it."
+            }), 404
+        
+        # Check if we got an error response
+        if isinstance(plant_data, dict) and plant_data.get('status') == 'error':
+            error_code = plant_data.get('code', 'API_ERROR')
+            error_message = plant_data.get('message', f"Error fetching plant ID {plant_id}")
+            status_code = 401 if error_code == 'AUTH_ERROR' else 500
+            
+            log_api_response(f'/api/plants/{plant_id}', start_time, status_code, error=error_message)
+            return jsonify(plant_data), status_code
+        
+        log_api_response(f'/api/plants/{plant_id}', start_time, 200, plant_data)
+        return jsonify(plant_data), 200
+    except Exception as e:
+        log_api_response(f'/api/plants/{plant_id}', start_time, 500, error=e)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "code": "API_ERROR",
+            "ui_message": "An error occurred while fetching plant details."
+        }), 500
 
 @api_blueprint.route('/devices', methods=['GET'])
 def api_get_devices() -> Tuple[Response, int]:
@@ -115,6 +242,8 @@ def api_get_devices() -> Tuple[Response, int]:
     Returns:
         Tuple[Response, int]: JSON response with status code
     """
+    start_time = log_api_request('/api/devices')
+    
     try:
         plants = get_plants()
         plant_ids = [plant['id'] for plant in plants]
@@ -144,10 +273,11 @@ def api_get_devices() -> Tuple[Response, int]:
                     "last_update_time": device.get('lastUpdateTime', ''),
                     "status": status
                 })
-                
+        
+        log_api_response('/api/devices', start_time, 200, devices)
         return jsonify(json.loads(json.dumps(devices, ensure_ascii=False))), 200
     except Exception as e:
-        logging.error(f"Error in api_get_devices: {str(e)}")
+        log_api_response('/api/devices', start_time, 500, error=e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/weather', methods=['GET'])
@@ -158,10 +288,14 @@ def api_weather() -> Tuple[Response, int]:
     Returns:
         Tuple[Response, int]: JSON response with status code
     """
+    start_time = log_api_request('/api/weather')
+    
     try:
         plants = get_plants()
         if plants and isinstance(plants, list) and len(plants) > 0 and plants[0].get('error'):
-            return jsonify({"status": "error", "message": plants[0]['error']}), 401
+            error_msg = plants[0].get('error', 'Authentication error')
+            log_api_response('/api/weather', start_time, 401, error=error_msg)
+            return jsonify({"status": "error", "message": error_msg}), 401
             
         plant_ids = [plant['id'] for plant in plants]
         weather_list = []
@@ -177,34 +311,46 @@ def api_weather() -> Tuple[Response, int]:
                     "weather": weather
                 })
                 
+        log_api_response('/api/weather', start_time, 200, weather_list)
         return jsonify(json.loads(json.dumps(weather_list, ensure_ascii=False))), 200
     except Exception as e:
-        logging.error(f"Error in api_weather: {str(e)}")
+        log_api_response('/api/weather', start_time, 500, error=e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/maps')
 def get_plants_data():
     """API endpoint to get all plants data for the map"""
-    plants = get_maps_plants()
+    start_time = log_api_request('/api/maps')
     
-    # Format data for the map
-    plants_data = [{
-        'id': plant.id,
-        'name': plant.name,
-        'status': plant.status,
-        'latitude': plant.latitude,
-        'longitude': plant.longitude,
-        'capacity': plant.capacity,
-        'currentOutput': plant.current_output,
-        'todayEnergy': plant.today_energy,
-        'peakOutput': plant.peak_output,
-        'installDate': plant.install_date.strftime('%Y-%m-%d') if plant.install_date else 'N/A',
-        'location': plant.location
-    } for plant in plants]
-    
-    return jsonify({
-        'plants': plants_data
-    })
+    try:
+        plants = get_maps_plants()
+        
+        # Format data for the map
+        plants_data = [{
+            'id': plant.id,
+            'name': plant.name,
+            'status': plant.status,
+            'latitude': plant.latitude,
+            'longitude': plant.longitude,
+            'capacity': plant.capacity,
+            'currentOutput': plant.current_output,
+            'todayEnergy': plant.today_energy,
+            'peakOutput': plant.peak_output,
+            'installDate': plant.install_date.strftime('%Y-%m-%d') if plant.install_date else 'N/A',
+            'location': plant.location
+        } for plant in plants]
+        
+        response_data = {'plants': plants_data}
+        log_api_response('/api/maps', start_time, 200, response_data)
+        return jsonify(response_data)
+    except Exception as e:
+        log_api_response('/api/maps', start_time, 500, error=e)
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "code": "API_ERROR", 
+            "ui_message": "An error occurred while fetching map data"
+        }), 500
 
 @api_blueprint.route('/management/data', methods=['GET'])
 def api_management_data() -> Tuple[Response, int]:
@@ -214,6 +360,8 @@ def api_management_data() -> Tuple[Response, int]:
     Returns:
         Tuple[Response, int]: JSON response with management data and status code
     """
+    start_time = log_api_request('/api/management/data')
+    
     try:
         # Create a response with static management data since we're removing plant data fetching
         management_data = {
@@ -276,9 +424,10 @@ def api_management_data() -> Tuple[Response, int]:
             }
         }
         
+        log_api_response('/api/management/data', start_time, 200, management_data)
         return jsonify(management_data), 200
     except Exception as e:
-        logging.error(f"Error in api_management_data: {str(e)}")
+        log_api_response('/api/management/data', start_time, 500, error=e)
         return jsonify({
             "status": "error", 
             "message": str(e),
@@ -295,9 +444,10 @@ def access_api() -> Union[Response, WerkzeugResponse]:
     Returns:
         Union[Response, WerkzeugResponse]: JSON response or redirect
     """
+    start_time = log_api_request('/api/access')
+    
     try:
         result = get_access_api()
-        logging.info("Access credentials retrieved successfully")
         
         if result.get("success", False):
             # Create success response
@@ -315,13 +465,15 @@ def access_api() -> Union[Response, WerkzeugResponse]:
                 samesite='Lax'
             )
             
+            log_api_response('/api/access', start_time, 200, {"status": "success"})
+            
             if request.method == 'GET':
                 return make_response(jsonify({"status": "success"}), 302, {"Location": "/plants"})
             return response
         else:
             # Log the detailed authentication failure
             error_msg = result.get("message", "Failed to authenticate")
-            logging.warning(f"Authentication failed: {error_msg}")
+            log_api_response('/api/access', start_time, 401, error=error_msg)
             
             # Return 401 Unauthorized with error message when authentication fails
             return jsonify({
@@ -331,7 +483,7 @@ def access_api() -> Union[Response, WerkzeugResponse]:
             }), 401
             
     except Exception as e:
-        logging.error(f"Access error: {str(e)}")
+        log_api_response('/api/access', start_time, 500, error=e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/logout', methods=['GET', 'POST'])
@@ -342,10 +494,13 @@ def logout() -> Union[Response, WerkzeugResponse]:
     Returns:
         Union[Response, WerkzeugResponse]: JSON response or redirect
     """
+    start_time = log_api_request('/api/logout')
+    
     try:
         # Call the logout API function
         logout_result = get_logout()
         if not logout_result['success']:
+            log_api_response('/api/logout', start_time, 500, error=logout_result['message'])
             return jsonify({"status": "error", "message": logout_result['message']}), 500
         
         # Clear Flask session data - safely handle the case where session might not be available
@@ -355,9 +510,6 @@ def logout() -> Union[Response, WerkzeugResponse]:
             current_app.logger.warning(f"Session clear failed: {e}")
             # Continue with logout process even if session clear fails
         
-        # Log the successful logout
-        current_app.logger.info("User logged out successfully and cache cleared")
-        
         response = make_response(jsonify({
             "status": "success", 
             "message": "Logout successful, all cache cleared"
@@ -366,12 +518,14 @@ def logout() -> Union[Response, WerkzeugResponse]:
         # Clear the session cookie
         response.delete_cookie('GROWATT_API_ACCESS')
         
+        log_api_response('/api/logout', start_time, 200, {"status": "success"})
+        
         # Redirect to index page for GET requests
         if request.method == 'GET':
             return make_response('', 302, {"Location": "/"})
         return response
     except Exception as e:
-        current_app.logger.error(f"Error in logout: {str(e)}")
+        log_api_response('/api/logout', start_time, 500, error=e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/debug-env', methods=['GET'])
@@ -392,6 +546,61 @@ def debug_env():
         })
     else:
         return jsonify({"error": "Debug endpoint only available in development mode"}), 403
+
+@api_blueprint.route('/connection-status', methods=['GET'])
+def api_connection_status() -> Tuple[Response, int]:
+    """
+    API endpoint to check the connection status to the Growatt API.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with connection status
+    """
+    try:
+        from .api_helpers import growatt_api, is_session_valid, ensure_login
+        
+        # Check if growatt_api has been initialized
+        if growatt_api is None:
+            return jsonify({
+                "status": "error",
+                "message": "Growatt API has not been initialized",
+                "authenticated": False,
+                "initialized": False
+            }), 500
+        
+        # Check if session is valid
+        session_valid = is_session_valid()
+        
+        # If session is not valid, try to login
+        login_result = {"success": False, "attempted": False}
+        if not session_valid:
+            login_result = ensure_login()
+            login_result["attempted"] = True
+        
+        # Get API attributes
+        api_attributes = {
+            "has_login_method": hasattr(growatt_api, 'login'),
+            "has_is_logged_in_property": hasattr(growatt_api, 'is_logged_in'),
+            "is_logged_in": getattr(growatt_api, 'is_logged_in', False),
+            "api_type": str(type(growatt_api))
+        }
+        
+        return jsonify({
+            "status": "success" if session_valid or login_result.get("success", False) else "error",
+            "message": "Connection check completed",
+            "session_valid": session_valid,
+            "login_attempt": login_result,
+            "api_info": api_attributes,
+            "authenticated": session_valid or login_result.get("success", False),
+            "initialized": True
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error checking API connection: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Error checking API connection: {str(e)}",
+            "authenticated": False,
+            "initialized": False
+        }), 500
 
 # Helper rendering functions
 def render_plants(plants_data: List[Dict[str, Any]]) -> str:

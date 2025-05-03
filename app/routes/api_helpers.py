@@ -290,3 +290,80 @@ def get_plant_fault_logs(plant_id: str, date: str = None, device_sn: str = "", p
         return [{"error": str(e), "code": "API_ERROR", 
                 "ui_message": "An error occurred while fetching fault logs for this plant.",
                 "authenticated": False}]
+
+def get_plant_by_id(plant_id: str) -> Union[Dict[str, Any], None]:
+    """
+    Fetch details for a specific plant by ID from the Growatt API.
+    
+    Args:
+        plant_id (str): The ID of the plant to retrieve
+    
+    Returns:
+        Union[Dict[str, Any], None]: Plant data dictionary or None if not found/error
+    """
+    try:
+        # Ensure login before making API call
+        login_status = ensure_login()
+        if not login_status.get("success", False):
+            current_app.logger.error(f"Failed to establish session before fetching plant ID {plant_id}")
+            return {
+                "status": "error", 
+                "message": "Authentication failed", 
+                "code": "AUTH_ERROR", 
+                "ui_message": "Please log in to access plant details",
+                "authenticated": False
+            }
+        
+        # Convert ID to string if it's not already
+        plant_id_str = str(plant_id)
+        
+        # Call the API object's get_plant method
+        try:
+            plant_data = growatt_api.get_plant(plantId=plant_id_str)
+            
+            if not plant_data:
+                current_app.logger.warning(f"No data found for plant ID {plant_id}")
+                return None
+                
+            current_app.logger.info(f"Retrieved details for plant ID {plant_id}")
+            
+            # Add additional fields for consistent API response
+            plant_data['authenticated'] = True
+            
+            # Get status into a consistent format
+            status_str = plant_data.get('status')
+            if status_str == '1':
+                plant_data['status'] = 'active'
+            elif status_str == '2':
+                plant_data['status'] = 'warning'
+            elif status_str == '3':
+                plant_data['status'] = 'error'
+            elif status_str == '0':
+                plant_data['status'] = 'offline'
+            
+            # Calculate current output and add additional fields
+            # (This would need more API calls in a real implementation)
+            plant_data['current_output'] = float(plant_data.get('currentPower', 0))
+            plant_data['today_energy'] = float(plant_data.get('eToday', 0))
+            plant_data['peak_output'] = float(plant_data.get('peakPower', 0))
+            
+            return plant_data
+            
+        except ValueError as ve:
+            current_app.logger.error(f"ValueError in get_plant for ID {plant_id}: {str(ve)}")
+            return {
+                "status": "error", 
+                "message": f"API Error: {str(ve)}", 
+                "code": "API_ERROR", 
+                "ui_message": "Unable to retrieve plant details",
+                "authenticated": True
+            }
+    except Exception as e:
+        current_app.logger.error(f"Error fetching plant ID {plant_id}: {e}")
+        return {
+            "status": "error", 
+            "message": str(e), 
+            "code": "API_ERROR", 
+            "ui_message": "An error occurred while fetching plant details",
+            "authenticated": False
+        }

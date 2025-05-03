@@ -14,6 +14,7 @@ from app.views.templates import (
 # Import the prediction routes
 # Import the data routes
 from app.routes.data_routes import data_routes
+from app.services.plant_service import PlantService
 
 # Create a Blueprint for routes
 api_blueprint = Blueprint('main_routes', __name__)
@@ -35,16 +36,28 @@ SESSION_TIMEOUT = 15 * 60
 @api_blueprint.route('/', methods=['GET'])
 def index() -> str:
     """
-    Index route to render the homepage.
+    Index route to render the dashboard homepage.
     
     Returns:
         str: Rendered HTML template
     """
     try:
-        return render_index()
+        # Check authentication status from session
+        from flask import session
+        authenticated = session.get('growatt_authenticated', False)
+        
+        # Fetch plants data to display on the dashboard
+        plants_data = get_plants() if authenticated else []
+        
+        # If plants_data contains an error, provide an empty list instead
+        if isinstance(plants_data, list) and len(plants_data) > 0 and 'error' in plants_data[0]:
+            plants_data = []
+            
+        # Render the dashboard template with plants data
+        return render_template('dashboard.html', authenticated=authenticated, plants=plants_data)
     except Exception as e:
-        current_app.logger.error(f"Error rendering index page: {str(e)}")
-        # Fallback to direct template rendering
+        current_app.logger.error(f"Error rendering dashboard page: {str(e)}")
+        # Fallback to direct template rendering of index
         return render_template('index.html')
 
 @api_blueprint.errorhandler(404)
@@ -149,6 +162,34 @@ def plants() -> Union[str, Tuple[str, int]]:
     except Exception as e:
         current_app.logger.error(f"Error in plants_page: {str(e)}")
         return render_plants([])  # Pass empty list instead of returning 404
+
+@api_blueprint.route('/plant/<int:plant_id>', methods=['GET'])
+def plant_detail(plant_id: int) -> Union[str, Tuple[str, int]]:
+    """
+    Get detailed information for a specific plant.
+    
+    Args:
+        plant_id (int): The ID of the plant to view
+        
+    Returns:
+        Union[str, Tuple[str, int]]: Rendered HTML template or error response
+    """
+    try:
+        # Get the plant detail using the PlantService
+        plant_service = PlantService()
+        plant = plant_service.get_plant_detail(plant_id)
+        
+        # Check if plant exists
+        if not plant:
+            current_app.logger.warning(f"Plant with ID {plant_id} not found.")
+            # Render the specific plant not found template instead of generic 404
+            return render_template('plant_not_found.html', plant_id=plant_id), 404
+        
+        # Render the plant detail template
+        return render_template('plant_detail.html', plant=plant)
+    except Exception as e:
+        current_app.logger.error(f"Error in plant_detail for plant ID {plant_id}: {str(e)}")
+        return render_error_404()
 
 @api_blueprint.route('/plants_page', methods=['GET'])
 def plants_page() -> Union[str, Tuple[str, int]]:
