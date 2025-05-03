@@ -1,0 +1,101 @@
+{% extends "base.html" %} {% block title %}Plant Not Found - Growatt API{%
+endblock %} {% block styles %}
+<style>
+  .error-container {
+    max-width: 600px;
+    margin: 3rem auto;
+    text-align: center;
+  }
+
+  .error-icon {
+    font-size: 4rem;
+    color: #f59e0b;
+    margin-bottom: 1rem;
+  }
+
+  .error-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+
+  .error-message {
+    color: #6b7280;
+    margin-bottom: 2rem;
+  }
+
+  .action-button {
+    background-color: #16a34a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .action-button:hover {
+    background-color: #15803d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .plant-id {
+    background-color: #f3f4f6;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: monospace;
+    font-weight: 600;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6">
+  <div class="error-container">
+    <div class="error-icon">
+      <i class="fas fa-solar-panel"></i>
+    </div>
+
+    <h1 class="error-title">Plant Not Found</h1>
+
+    <p class="error-message">
+      {% if plant_id %} The plant with ID
+      <span class="plant-id">{{ plant_id }}</span> could not be found. {% else
+      %} The plant you're looking for could not be found. {% endif %} This may
+      be because:
+    </p>
+
+    <ul class="text-left text-slate-600 mb-8 mx-auto max-w-lg">
+      <li class="mb-2 flex items-start">
+        <i class="fas fa-circle-exclamation text-amber-500 mr-2 mt-1"></i>
+        <span>The plant ID may be incorrect or may have been removed</span>
+      </li>
+      <li class="mb-2 flex items-start">
+        <i class="fas fa-circle-exclamation text-amber-500 mr-2 mt-1"></i>
+        <span>Your session may have expired and you need to log in again</span>
+      </li>
+      <li class="mb-2 flex items-start">
+        <i class="fas fa-circle-exclamation text-amber-500 mr-2 mt-1"></i>
+        <span>You may not have permission to access this plant</span>
+      </li>
+    </ul>
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <a href="{{ url_for('main_routes.plants') }}" class="action-button">
+        <i class="fas fa-arrow-left"></i>
+        <span>Return to Plants List</span>
+      </a>
+
+      <a
+        href="{{ url_for('main_routes.index') }}"
+        class="text-slate-600 hover:text-slate-800 flex items-center justify-center gap-2 mt-4 sm:mt-0"
+      >
+        <i class="fas fa-home"></i>
+        <span>Go to Homepage</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
