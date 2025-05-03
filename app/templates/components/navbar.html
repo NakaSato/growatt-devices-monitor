@@ -5,80 +5,82 @@
   <div class="absolute inset-0 bg-pattern opacity-5 z-0"></div>
   <!-- Status bar with enhanced responsive support -->
   <div
-    class="py-1 border-b border-gray-700/50 relative z-20 bg-gradient-to-r from-slate-800 to-slate-900 w-full"
+    class="py-1 sm:py-1.5 border-b border-gray-700/50 relative z-20 bg-gradient-to-r from-slate-800 to-slate-900 w-full"
   >
-    <div class="container mx-auto px-2 sm:px-4">
+    <div class="lg:container lg:mx-auto px-2 sm:px-4">
       <div class="flex justify-between items-center text-xs">
-        <div class="flex items-center space-x-1 sm:space-x-6">
-          <div class="flex items-center px-2 py-1">
+        <div
+          class="flex items-center justify-between sm:justify-start space-x-1 xs:space-x-3 sm:space-x-6 w-full pr-1 xs:pr-1"
+        >
+          <div class="flex items-center px-1.5 xs:px-2 py-1">
             <span
-              class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1.5 sm:mr-2 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              class="inline-block w-1.5 xs:w-2 h-1.5 xs:h-2 bg-emerald-500 rounded-full mr-1 xs:mr-1.5 sm:mr-2 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               aria-hidden="true"
             ></span>
             <span
-              class="text-emerald-200 font-medium tracking-wider text-[10px] xs:text-xs uppercase"
+              class="text-emerald-200 font-medium tracking-wider text-[9px] xxs:text-[10px] xs:text-xs uppercase whitespace-nowrap"
               >System Online</span
             >
           </div>
-          <div class="hidden xs:flex items-center gap-2 px-2 py-1">
+          <div class="flex items-center lg:gap-1 xs:gap-1 sm:px-2">
             <span
-              class="text-slate-400 text-xs font-light tracking-wide"
+              class="text-slate-400 text-[9px] xxs:text-[10px] xs:text-xs font-light tracking-wide whitespace-nowrap"
               id="current-date"
             ></span>
             <span
-              class="text-slate-300 font-mono font-medium tabular-nums text-xs tracking-tight"
+              class="text-slate-300 font-mono font-medium tabular-nums text-[9px] xxs:text-[10px] xs:text-xs tracking-tight"
               id="current-time"
             ></span>
           </div>
         </div>
         <div
-          class="hidden sm:flex items-center space-x-2 md:space-x-4"
+          class="flex items-center space-x-1 xs:space-x-2 md:space-x-4"
           aria-label="System Metrics"
         >
-          <!-- Metrics badges with better spacing for small/medium screens -->
+          <!-- Metrics badges with improved responsive design and consistent width -->
           <div
-            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-emerald-900/40 border-emerald-700/30 text-emerald-300"
+            class="flex items-center gap-1 px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-0.5 rounded-md border bg-emerald-900/40 border-emerald-700/30 text-emerald-300 w-[130px] min-w-[200px] sm:min-w-[100px]"
             aria-label="Generation"
           >
             <span
-              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              class="text-slate-400 text-[8px] xxs:text-[9px] xs:text-xs uppercase tracking-wider"
               id="generation-label"
               >Gen:</span
             >
             <span
-              class="font-medium tabular-nums text-xs sm:text-sm"
+              class="font-medium tabular-nums text-[9px] xxs:text-[10px] xs:text-xs sm:text-sm ml-auto"
               id="generation-value"
               aria-labelledby="generation-label"
               >9.7 kWh</span
             >
           </div>
           <div
-            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-blue-900/40 border-blue-700/30 text-blue-300"
+            class="flex items-center gap-1 px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-0.5 rounded-md border bg-blue-900/40 border-blue-700/30 text-blue-300 w-[130px] min-w-[200px] sm:min-w-[100px]"
             aria-label="Consumption"
           >
             <span
-              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              class="text-slate-400 text-[8px] xxs:text-[9px] xs:text-xs uppercase tracking-wider"
               id="consumption-label"
               >Cons:</span
             >
             <span
-              class="font-medium tabular-nums text-xs sm:text-sm"
+              class="font-medium tabular-nums text-[9px] xxs:text-[10px] xs:text-xs sm:text-sm ml-auto"
               id="consumption-value"
               aria-labelledby="consumption-label"
               >6.4 kWh</span
             >
           </div>
           <div
-            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-md border bg-amber-900/40 border-amber-700/30 text-amber-300"
+            class="flex items-center gap-1 sm:gap-2 px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-0.5 rounded-md border bg-amber-900/40 border-amber-700/30 text-amber-300 w-[100px] min-w-[200px] sm:min-w-[100px]"
             aria-label="Efficiency"
           >
             <span
-              class="text-slate-400 text-[10px] xs:text-xs uppercase tracking-wider"
+              class="text-slate-400 text-[8px] xxs:text-[9px] xs:text-xs uppercase tracking-wider"
               id="efficiency-label"
               >Eff:</span
             >
             <span
-              class="font-medium tabular-nums text-xs sm:text-sm"
+              class="font-medium tabular-nums text-[9px] xxs:text-[10px] xs:text-xs sm:text-sm ml-auto"
               id="efficiency-value"
               aria-labelledby="efficiency-label"
               >92.8%</span
@@ -342,7 +344,7 @@
           </ul>
 
           <!-- Mobile System Metrics -->
-          <div class="pt-2 mt-2 border-t border-slate-200 px-4">
+          <div class="pt-2 mt-2 border-t border-slate-200 px-4 hidden md:block">
             <div class="flex items-center justify-between py-2">
               <span class="text-sm font-medium text-slate-500"
                 >System Metrics</span

@@ -27,9 +27,18 @@
         type="text"
         x-model="searchQuery"
         @input="filterPlants()"
-        placeholder="Search plants by name or ID..."
+        placeholder="Search by name, ID or location..."
         class="block w-full pl-10 pr-4 py-2 border border-light-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-eco-green focus:border-eco-green text-sm sm:text-base"
       />
+      <div 
+        x-show="searchQuery" 
+        @click="searchQuery = ''; filterPlants()" 
+        class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-gray hover:text-deep-forest" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </div>
     </div>
 
     <!-- Filter options -->
@@ -45,12 +54,14 @@
         <option value="all">All</option>
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="error">Error</option>
       </select>
 
       <!-- Mobile view toggle - only visible on small screens -->
       <div class="sm:hidden flex items-center ml-2">
         <button
-          @click="viewMode = viewMode === 'table' ? 'cards' : 'table'"
+          @click="viewMode = viewMode === 'table' ? 'cards' : 'table'; localStorage.setItem('preferredViewMode', viewMode)"
           class="p-2 rounded-lg border border-light-gray bg-white text-slate-gray"
         >
           <svg
@@ -85,6 +96,29 @@
           </svg>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Results summary and filters -->
+  <div class="flex flex-col xs:flex-row justify-between items-start xs:items-center text-xs text-slate-500 pt-1 px-1">
+    <div>
+      <span>Showing </span>
+      <span class="font-semibold text-deep-forest" x-text="filteredPlants.length"></span>
+      <span> of </span>
+      <span class="font-semibold text-deep-forest" x-text="plants.length"></span>
+      <span> plants</span>
+      <span x-show="searchQuery || statusFilter !== 'all'"> (filtered)</span>
+    </div>
+    <div x-show="searchQuery || statusFilter !== 'all'" class="mt-2 xs:mt-0">
+      <button 
+        @click="searchQuery = ''; statusFilter = 'all'; filterPlants()"
+        class="text-blue-600 hover:text-blue-800 flex items-center"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Clear filters
+      </button>
     </div>
   </div>
 </div>

@@ -1,0 +1,329 @@
+<div
+  class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+  x-data="{ alerts: [], isLoading: true }"
+  x-init="await loadAlerts()"
+>
+  <div class="p-4 border-b border-gray-100">
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-charcoal">System Alerts</h3>
+      <div class="flex space-x-2">
+        <button
+          class="btn btn-sm btn-outline flex items-center"
+          @click="await loadAlerts(true)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>Refresh</span>
+        </button>
+        <button class="btn btn-sm btn-outline flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+            />
+          </svg>
+          <span>Filter</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div x-show="isLoading" class="p-8 flex justify-center">
+    <svg
+      class="animate-spin h-8 w-8 text-primary-500"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        class="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        stroke-width="4"
+      ></circle>
+      <path
+        class="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  </div>
+
+  <!-- Empty state -->
+  <div x-show="!isLoading && alerts.length === 0" class="p-8 text-center">
+    <div
+      class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success-50 mb-4"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-8 w-8 text-success-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M5 13l4 4L19 7"
+        />
+      </svg>
+    </div>
+    <h4 class="text-lg font-medium text-charcoal mb-1">
+      All Systems Operational
+    </h4>
+    <p class="text-sm text-slate-500">
+      There are currently no active alerts in the system.
+    </p>
+  </div>
+
+  <!-- Alerts list -->
+  <div
+    x-show="!isLoading && alerts.length > 0"
+    class="divide-y divide-gray-100"
+  >
+    <template x-for="alert in alerts" :key="alert.id">
+      <div class="p-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-start">
+          <div
+            :class="{
+            'bg-danger-50 text-danger-600': alert.severity === 'critical',
+            'bg-warning-50 text-warning-600': alert.severity === 'warning',
+            'bg-info-50 text-info-600': alert.severity === 'info'
+          }"
+            class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
+          >
+            <svg
+              x-show="alert.severity === 'critical'"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <svg
+              x-show="alert.severity === 'warning'"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <svg
+              x-show="alert.severity === 'info'"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h4 class="font-medium text-charcoal" x-text="alert.title"></h4>
+              <span
+                class="text-xs text-slate-500"
+                x-text="formatDate(alert.timestamp)"
+              ></span>
+            </div>
+            <p class="text-sm text-slate-600 mt-1" x-text="alert.message"></p>
+            <div class="mt-2 flex items-center">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                :class="{
+                  'bg-danger-50 text-danger-700': alert.severity === 'critical',
+                  'bg-warning-50 text-warning-700': alert.severity === 'warning',
+                  'bg-info-50 text-info-700': alert.severity === 'info'
+                }"
+                x-text="alert.severity"
+              >
+              </span>
+              <span class="mx-2 text-slate-300">•</span>
+              <span class="text-xs text-slate-500" x-text="alert.source"></span>
+              <button
+                class="ml-auto text-sm text-primary-600 hover:text-primary-700"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Pagination -->
+  <div
+    x-show="!isLoading && alerts.length > 0"
+    class="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between"
+  >
+    <div class="flex-1 flex justify-between sm:hidden">
+      <button class="btn btn-sm btn-outline">Previous</button>
+      <button class="btn btn-sm btn-outline">Next</button>
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-slate-700">
+          Showing <span class="font-medium">1</span> to
+          <span class="font-medium">3</span> of
+          <span class="font-medium">3</span> alerts
+        </p>
+      </div>
+      <div>
+        <nav
+          class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+          aria-label="Pagination"
+        >
+          <button
+            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-slate-500 hover:bg-gray-50"
+          >
+            <span class="sr-only">Previous</span>
+            <svg
+              class="h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <button
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-slate-700 hover:bg-gray-50"
+          >
+            1
+          </button>
+          <button
+            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-slate-500 hover:bg-gray-50"
+          >
+            <span class="sr-only">Next</span>
+            <svg
+              class="h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function loadAlerts(forceRefresh = false) {
+    this.isLoading = true;
+
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Mock alerts data
+    this.alerts = [
+      {
+        id: 1,
+        title: "Inverter Connection Lost",
+        message:
+          "Connection to the inverter ID#GW12345 has been lost. System will retry connection automatically.",
+        severity: "critical",
+        source: "Inverter #5",
+        timestamp: new Date(new Date().getTime() - 25 * 60000).toISOString(),
+      },
+      {
+        id: 2,
+        title: "Low Battery Warning",
+        message:
+          "Battery system reporting charge level below 15%. Consider increasing charging rate or reducing load.",
+        severity: "warning",
+        source: "Battery System",
+        timestamp: new Date(new Date().getTime() - 3 * 3600000).toISOString(),
+      },
+      {
+        id: 3,
+        title: "Scheduled Maintenance",
+        message:
+          "Routine maintenance scheduled for tomorrow at 10:00 AM. System may experience brief downtime.",
+        severity: "info",
+        source: "System",
+        timestamp: new Date(new Date().getTime() - 12 * 3600000).toISOString(),
+      },
+    ];
+
+    this.isLoading = false;
+  }
+
+  function formatDate(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 60) {
+      return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+    } else if (diffMins < 1440) {
+      const hours = Math.floor(diffMins / 60);
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    } else {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+</script>

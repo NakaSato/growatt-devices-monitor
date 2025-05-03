@@ -49,64 +49,23 @@
     <!-- Component Loader -->
     <script src="{{ url_for('static', filename='js/component-loader.js') }}"></script>
 
+    <!-- Responsive Utilities -->
+    <script src="{{ url_for('static', filename='js/utils/responsive-utils.js') }}"></script>
+
     <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
 
+    <!-- Tailwind Configuration -->
+    <script src="{{ url_for('static', filename='js/config/tailwind-config.js') }}"></script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script>
-      tailwind.config = {
-        theme: {
-          screens: {
-            xs: "320px",
-            sm: "640px",
-            md: "768px",
-            lg: "1024px",
-            xl: "1280px",
-            "2xl": "1536px",
-          },
-          extend: {
-            colors: {
-              primary: {
-                50: "#f0f9ff",
-                100: "#e0f2fe",
-                200: "#bae6fd",
-                300: "#7dd3fc",
-                400: "#38bdf8",
-                500: "#0ea5e9",
-                600: "#0284c7",
-                700: "#0369a1",
-                800: "#075985",
-                900: "#0c4a6e",
-              },
-            },
-            fontFamily: {
-              sans: ['"Noto Sans Thai"', "sans-serif"],
-            },
-            spacing: {
-              72: "18rem",
-              84: "21rem",
-              96: "24rem",
-            },
-            maxWidth: {
-              "1/4": "25%",
-              "1/2": "50%",
-              "3/4": "75%",
-              xs: "20rem",
-            },
-          },
-        },
-        variants: {
-          extend: {
-            display: ["responsive", "hover", "focus", "group-hover"],
-            opacity: ["responsive", "hover", "focus", "group-hover"],
-            scale: ["responsive", "hover", "focus", "active"],
-          },
-        },
-      };
+      // Set Tailwind configuration from our external file
+      tailwind.config = window.tailwindConfig || {};
     </script>
 
     <!-- Custom CSS -->

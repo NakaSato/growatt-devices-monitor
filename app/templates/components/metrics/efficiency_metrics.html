@@ -1,0 +1,158 @@
+<div
+  class="metric-card"
+  x-data="{ efficiencyData: {} }"
+  x-init="efficiencyData = await fetchEfficiencyData()"
+>
+  <div class="metric-header">
+    <div class="metric-icon bg-tertiary-50">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 text-tertiary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
+      </svg>
+    </div>
+    <div>
+      <h3 class="metric-title">System Efficiency</h3>
+      <p class="metric-subtitle">Performance metrics</p>
+    </div>
+  </div>
+  <div class="metric-body">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Current Performance</div>
+        <div
+          class="text-xl font-semibold text-charcoal"
+          x-text="`${efficiencyData.currentPerformance || 0}%`"
+        >
+          0%
+        </div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Avg Efficiency</div>
+        <div class="flex items-center">
+          <span
+            class="text-xl font-semibold text-charcoal"
+            x-text="`${efficiencyData.averageEfficiency || 0}%`"
+            >0%</span
+          >
+          <template x-if="efficiencyData.efficiencyChange !== undefined">
+            <div
+              class="ml-2 text-xs"
+              :class="{
+              'text-success': efficiencyData.efficiencyChange > 0,
+              'text-danger': efficiencyData.efficiencyChange < 0,
+              'text-slate-500': efficiencyData.efficiencyChange === 0
+            }"
+            >
+              <span x-text="formatChange(efficiencyData.efficiencyChange)"
+                >0%</span
+              >
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Performance Ratio</span>
+          <span
+            class="text-slate-500"
+            x-text="`${efficiencyData.performanceRatio || 0}%`"
+            >0%</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': efficiencyData.performanceRatio > 80,
+              'bg-warning-500': efficiencyData.performanceRatio <= 80 && efficiencyData.performanceRatio > 60,
+              'bg-danger-500': efficiencyData.performanceRatio <= 60
+            }"
+            :style="`width: ${efficiencyData.performanceRatio || 0}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Conversion Efficiency</span>
+          <span
+            class="text-slate-500"
+            x-text="`${efficiencyData.conversionEfficiency || 0}%`"
+            >0%</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': efficiencyData.conversionEfficiency > 90,
+              'bg-warning-500': efficiencyData.conversionEfficiency <= 90 && efficiencyData.conversionEfficiency > 75,
+              'bg-danger-500': efficiencyData.conversionEfficiency <= 75
+            }"
+            :style="`width: ${efficiencyData.conversionEfficiency || 0}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">System Uptime</span>
+          <span
+            class="text-slate-500"
+            x-text="`${efficiencyData.systemUptime || 0}%`"
+            >0%</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': efficiencyData.systemUptime > 95,
+              'bg-warning-500': efficiencyData.systemUptime <= 95 && efficiencyData.systemUptime > 85,
+              'bg-danger-500': efficiencyData.systemUptime <= 85
+            }"
+            :style="`width: ${efficiencyData.systemUptime || 0}%`"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // This would be replaced with actual API calls in production
+  async function fetchEfficiencyData() {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    // Mock data
+    return {
+      currentPerformance: 86.4,
+      averageEfficiency: 85.7,
+      efficiencyChange: 2.3,
+      performanceRatio: 83.2,
+      conversionEfficiency: 96.5,
+      systemUptime: 99.8,
+    };
+  }
+
+  function formatChange(value) {
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toLocaleString(undefined, {
+      maximumFractionDigits: 1,
+    })}%`;
+  }
+</script>

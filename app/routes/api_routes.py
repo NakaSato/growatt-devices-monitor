@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 from typing import Union, Tuple, List, Dict, Any
 
 from flask import (
@@ -19,6 +20,67 @@ from .api_helpers import (
 api_blueprint = Blueprint('api_routes', __name__, url_prefix='/api')
 
 # ===== API Data Routes =====
+
+@api_blueprint.route('/activities', methods=['GET'])
+def activity_data() -> Tuple[Response, int]:
+    """
+    API endpoint to get recent system activities.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with activities and status code
+    """
+    try:
+        # In a real implementation, you would fetch this from a database
+        # For now, we're generating mock data
+        current_time = datetime.datetime.now()
+        
+        activities = [
+            {
+                "id": 1,
+                "type": "energy",
+                "title": "Daily Production Record",
+                "message": 'Plant "Main Residence" achieved its highest daily production of 45.7 kWh.',
+                "source": "Plant: Main Residence",
+                "timestamp": (current_time - datetime.timedelta(hours=1.5)).isoformat(),
+                "actionText": "View Details"
+            },
+            {
+                "id": 2,
+                "type": "device",
+                "title": "Inverter Reconnected",
+                "message": 'Inverter "Growatt-7500" reconnected to the network after a temporary disconnection.',
+                "source": "Device: Growatt-7500",
+                "timestamp": (current_time - datetime.timedelta(hours=4)).isoformat(),
+                "actionText": "Check Status"
+            },
+            {
+                "id": 3,
+                "type": "system",
+                "title": "System Update Completed",
+                "message": "Monitoring system was updated to version 2.3.4 with improved performance metrics.",
+                "source": "System",
+                "timestamp": (current_time - datetime.timedelta(hours=10)).isoformat(),
+                "actionText": "See Changes"
+            },
+            {
+                "id": 4,
+                "type": "alert",
+                "title": "Low Battery Warning Cleared",
+                "message": 'The low battery warning for the "East Wing" battery system has been resolved.',
+                "source": "Battery System: East Wing",
+                "timestamp": (current_time - datetime.timedelta(hours=24)).isoformat(),
+                "actionText": None
+            }
+        ]
+        
+        return jsonify({"activities": activities}), 200
+    except Exception as e:
+        logging.error(f"Error in activity_data: {str(e)}")
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "activities": []
+        }), 500
 
 @api_blueprint.route('/plants', methods=['GET'])
 def api_plants() -> Tuple[Response, int]:

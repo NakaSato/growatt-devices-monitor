@@ -1,0 +1,308 @@
+<div
+  class="divide-y divide-gray-100"
+  x-data="{ activities: [], isLoading: true }"
+  x-init="await loadActivities()"
+>
+  <!-- Loading state -->
+  <div x-show="isLoading" class="p-8 flex justify-center">
+    <svg
+      class="animate-spin h-8 w-8 text-primary-500"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        class="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        stroke-width="4"
+      ></circle>
+      <path
+        class="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  </div>
+
+  <!-- Empty state -->
+  <div x-show="!isLoading && activities.length === 0" class="p-8 text-center">
+    <div
+      class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-50 mb-4"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-8 w-8 text-primary-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+    <h4 class="text-lg font-medium text-charcoal mb-1">No Recent Activity</h4>
+    <p class="text-sm text-slate-500">
+      There is no recent activity to display at this time.
+    </p>
+  </div>
+
+  <!-- Activity list -->
+  <template x-for="(activity, index) in activities" :key="activity.id">
+    <div class="p-4 hover:bg-gray-50 transition-colors">
+      <div class="flex items-start">
+        <div
+          :class="{
+          'bg-primary-50 text-primary-600': activity.type === 'energy',
+          'bg-purple-50 text-purple-600': activity.type === 'system',
+          'bg-blue-50 text-blue-600': activity.type === 'device',
+          'bg-yellow-50 text-yellow-600': activity.type === 'alert'
+        }"
+          class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3"
+        >
+          <!-- Energy icon -->
+          <svg
+            x-show="activity.type === 'energy'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+
+          <!-- System icon -->
+          <svg
+            x-show="activity.type === 'system'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+            />
+          </svg>
+
+          <!-- Device icon -->
+          <svg
+            x-show="activity.type === 'device'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+            />
+          </svg>
+
+          <!-- Alert icon -->
+          <svg
+            x-show="activity.type === 'alert'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-charcoal" x-text="activity.title"></h4>
+            <span
+              class="text-xs text-slate-500"
+              x-text="formatDate(activity.timestamp)"
+            ></span>
+          </div>
+          <p class="text-sm text-slate-600 mt-1" x-text="activity.message"></p>
+          <div class="mt-2 flex items-center">
+            <span
+              class="text-xs text-slate-500"
+              x-text="activity.source"
+            ></span>
+            <template x-if="activity.actionText">
+              <button
+                class="ml-auto text-sm text-primary-600 hover:text-primary-700"
+                x-text="activity.actionText"
+                @click="handleActivityAction(activity)"
+              ></button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- View more button -->
+  <div x-show="!isLoading && activities.length > 0" class="p-4 text-center">
+    <button
+      class="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center justify-center mx-auto"
+      @click="viewAllActivities()"
+    >
+      View all activity
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4 ml-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M14 5l7 7m0 0l-7 7m7-7H3"
+        />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  async function loadActivities() {
+    this.isLoading = true;
+    
+    try {
+      // Use the correct route endpoint - api.activity_data 
+      const response = await fetch('/api/activities');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      this.activities = data.activities || [];
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      // Fallback to mock data in case of error
+      this.activities = getMockActivities();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  function handleActivityAction(activity) {
+    // Handle activity action clicks
+    console.log('Activity action clicked:', activity);
+    
+    // Navigate based on activity type
+    switch(activity.type) {
+      case 'energy':
+        window.location.href = '/analytics';
+        break;
+      case 'device':
+        window.location.href = '/devices';
+        break;
+      case 'system':
+        window.location.href = '/management';
+        break;
+      case 'alert':
+        // For alerts, we might want to open a modal or navigate to a details page
+        window.location.href = '/management';
+        break;
+      default:
+        window.location.href = '/';
+    }
+  }
+  
+  function viewAllActivities() {
+    // Navigate to full activity history page
+    window.location.href = '/activities';
+  }
+
+  function formatDate(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 60) {
+      return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+    } else if (diffMins < 1440) {
+      const hours = Math.floor(diffMins / 60);
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    } else {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+  
+  // Fallback mock data function
+  function getMockActivities() {
+    return [
+      {
+        id: 1,
+        type: "energy",
+        title: "Daily Production Record",
+        message:
+          'Plant "Main Residence" achieved its highest daily production of 45.7 kWh.',
+        source: "Plant: Main Residence",
+        timestamp: new Date(new Date().getTime() - 1.5 * 3600000).toISOString(),
+        actionText: "View Details",
+      },
+      {
+        id: 2,
+        type: "device",
+        title: "Inverter Reconnected",
+        message:
+          'Inverter "Growatt-7500" reconnected to the network after a temporary disconnection.',
+        source: "Device: Growatt-7500",
+        timestamp: new Date(new Date().getTime() - 4 * 3600000).toISOString(),
+        actionText: "Check Status",
+      },
+      {
+        id: 3,
+        type: "system",
+        title: "System Update Completed",
+        message:
+          "Monitoring system was updated to version 2.3.4 with improved performance metrics.",
+        source: "System",
+        timestamp: new Date(new Date().getTime() - 10 * 3600000).toISOString(),
+        actionText: "See Changes",
+      },
+      {
+        id: 4,
+        type: "alert",
+        title: "Low Battery Warning Cleared",
+        message:
+          'The low battery warning for the "East Wing" battery system has been resolved.',
+        source: "Battery System: East Wing",
+        timestamp: new Date(new Date().getTime() - 24 * 3600000).toISOString(),
+        actionText: null,
+      },
+    ];
+  }
+</script>

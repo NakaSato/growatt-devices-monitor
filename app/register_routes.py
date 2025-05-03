@@ -4,12 +4,10 @@ Helper module to register all routes with the Flask application
 
 from flask import Flask
 
-from app.routes import (
-    api_blueprint, 
-    api_routes_blueprint, 
-    data_routes, 
-    prediction_routes
-)
+from app.routes.main_routes import api_blueprint as main_routes_blueprint
+from app.routes.api_routes import api_blueprint as api_routes_blueprint
+from app.routes.data_routes import data_routes
+from app.routes.prediction_routes import prediction_routes
 
 def register_all_routes(app: Flask) -> None:
     """
@@ -18,15 +16,15 @@ def register_all_routes(app: Flask) -> None:
     Args:
         app: The Flask application instance
     """
-    # Register the main API blueprint
-    app.register_blueprint(api_blueprint)
+    # Register the main routes blueprint
+    app.register_blueprint(main_routes_blueprint, name="main_routes")
     
     # Register the API routes blueprint
     app.register_blueprint(api_routes_blueprint)
     
-    # Note: The following blueprints are already registered with api_blueprint
-    # in main_routes.py, but we'll register them directly as well to ensure
-    # they're available even if the structure changes
+    # Register data and prediction routes
+    # (These are already registered with the main blueprint in main_routes.py)
+    # But we're registering them directly to ensure they're available
     app.register_blueprint(data_routes)
     app.register_blueprint(prediction_routes)
     

@@ -1,0 +1,165 @@
+<div
+  class="metric-card"
+  x-data="{ deviceData: {} }"
+  x-init="deviceData = await fetchDeviceData()"
+>
+  <div class="metric-header">
+    <div class="metric-icon bg-secondary-50">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 text-secondary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+        />
+      </svg>
+    </div>
+    <div>
+      <h3 class="metric-title">Device Status</h3>
+      <p class="metric-subtitle">Monitoring information</p>
+    </div>
+  </div>
+  <div class="metric-body">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Total Devices</div>
+        <div
+          class="text-xl font-semibold text-charcoal"
+          x-text="deviceData.totalDevices || 0"
+        >
+          0
+        </div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Status</div>
+        <div class="flex items-center">
+          <span
+            class="inline-flex h-2 w-2 rounded-full mr-1.5"
+            :class="{
+              'bg-success': deviceData.onlinePercentage > 80,
+              'bg-warning': deviceData.onlinePercentage <= 80 && deviceData.onlinePercentage > 50,
+              'bg-danger': deviceData.onlinePercentage <= 50
+            }"
+          >
+          </span>
+          <span
+            class="text-sm font-medium"
+            x-text="`${deviceData.onlineDevices || 0} Online`"
+            >0 Online</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Inverters</span>
+          <span
+            class="text-slate-500"
+            x-text="`${deviceData.invertersOnline || 0}/${deviceData.totalInverters || 0}`"
+            >0/0</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': deviceData.inverterPercentage > 80,
+              'bg-warning-500': deviceData.inverterPercentage <= 80 && deviceData.inverterPercentage > 50,
+              'bg-danger-500': deviceData.inverterPercentage <= 50
+            }"
+            :style="`width: ${deviceData.inverterPercentage || 0}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Data Loggers</span>
+          <span
+            class="text-slate-500"
+            x-text="`${deviceData.loggersOnline || 0}/${deviceData.totalLoggers || 0}`"
+            >0/0</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': deviceData.loggerPercentage > 80,
+              'bg-warning-500': deviceData.loggerPercentage <= 80 && deviceData.loggerPercentage > 50,
+              'bg-danger-500': deviceData.loggerPercentage <= 50
+            }"
+            :style="`width: ${deviceData.loggerPercentage || 0}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Battery Systems</span>
+          <span
+            class="text-slate-500"
+            x-text="`${deviceData.batteriesOnline || 0}/${deviceData.totalBatteries || 0}`"
+            >0/0</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill"
+            :class="{
+              'bg-success-500': deviceData.batteryPercentage > 80,
+              'bg-warning-500': deviceData.batteryPercentage <= 80 && deviceData.batteryPercentage > 50,
+              'bg-danger-500': deviceData.batteryPercentage <= 50
+            }"
+            :style="`width: ${deviceData.batteryPercentage || 0}%`"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // This would be replaced with actual API calls in production
+  async function fetchDeviceData() {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    // Mock data
+    const totalInverters = 12;
+    const invertersOnline = 10;
+    const totalLoggers = 8;
+    const loggersOnline = 7;
+    const totalBatteries = 4;
+    const batteriesOnline = 3;
+
+    const totalDevices = totalInverters + totalLoggers + totalBatteries;
+    const onlineDevices = invertersOnline + loggersOnline + batteriesOnline;
+
+    return {
+      totalDevices,
+      onlineDevices,
+      onlinePercentage: Math.round((onlineDevices / totalDevices) * 100),
+
+      totalInverters,
+      invertersOnline,
+      inverterPercentage: Math.round((invertersOnline / totalInverters) * 100),
+
+      totalLoggers,
+      loggersOnline,
+      loggerPercentage: Math.round((loggersOnline / totalLoggers) * 100),
+
+      totalBatteries,
+      batteriesOnline,
+      batteryPercentage: Math.round((batteriesOnline / totalBatteries) * 100),
+    };
+  }
+</script>

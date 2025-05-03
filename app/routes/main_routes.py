@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Tuple, Dict, Any, Union
 
-from flask import Blueprint, jsonify, request, Response, current_app, render_template
+from flask import Blueprint, jsonify, request, Response, current_app, render_template, url_for, redirect
 
 # Import Growatt class directly instead of utility functions
 from app.core.growatt import Growatt
@@ -16,7 +16,7 @@ from app.views.templates import (
 from app.routes.data_routes import data_routes
 
 # Create a Blueprint for routes
-api_blueprint = Blueprint('api', __name__)
+api_blueprint = Blueprint('main_routes', __name__)
 
 # Register the data routes blueprint
 api_blueprint.register_blueprint(data_routes)
@@ -120,7 +120,7 @@ def health_check() -> Tuple[Dict[str, Any], int]:
 # ===== Page Routes =====
 
 @api_blueprint.route('/plants', methods=['GET'])
-def plants_page() -> Union[str, Tuple[str, int]]:
+def plants() -> Union[str, Tuple[str, int]]:
     """
     Get the list of plants associated with the logged-in user.
     
@@ -149,6 +149,16 @@ def plants_page() -> Union[str, Tuple[str, int]]:
     except Exception as e:
         current_app.logger.error(f"Error in plants_page: {str(e)}")
         return render_plants([])  # Pass empty list instead of returning 404
+
+@api_blueprint.route('/plants_page', methods=['GET'])
+def plants_page() -> Union[str, Tuple[str, int]]:
+    """
+    Redirect to the plants endpoint for backward compatibility.
+    
+    Returns:
+        redirect: Redirects to the plants endpoint
+    """
+    return redirect(url_for('main_routes.plants'))
 
 @api_blueprint.route('/devices', methods=['GET'])
 def devices_page() -> Union[str, Tuple[str, int]]:
@@ -218,4 +228,18 @@ def management_page() -> Union[str, Tuple[str, int]]:
         return render_management()
     except Exception as e:
         logging.error(f"Error in management_page: {str(e)}")
+        return render_error_404()
+
+@api_blueprint.route('/activities', methods=['GET'])
+def activities_page() -> Union[str, Tuple[str, int]]:
+    """
+    Render the activities page showing system activity history.
+    
+    Returns:
+        Union[str, Tuple[str, int]]: Rendered HTML template or error response
+    """
+    try:
+        return render_template('activities.html')
+    except Exception as e:
+        logging.error(f"Error in activities_page: {str(e)}")
         return render_error_404()

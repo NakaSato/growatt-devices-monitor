@@ -24,6 +24,158 @@
   }
 }
 
+/* Card base styles */
+.card-plant {
+  @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.card-plant-header {
+  @apply px-4 py-3 border-b border-gray-100 flex items-center justify-between;
+}
+
+.card-plant-body {
+  @apply p-4 flex-grow flex flex-col;
+}
+
+.card-plant-footer {
+  @apply px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs text-slate-500;
+}
+
+/* Plant card grid layout */
+.plant-cards-grid {
+  @apply grid gap-4 sm:gap-5 md:gap-6;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+
+@screen md {
+  .plant-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
+  }
+}
+
+/* Plant status indicators */
+.plant-status {
+  @apply flex items-center;
+}
+
+.plant-status-indicator {
+  @apply inline-block h-2.5 w-2.5 rounded-full mr-2;
+}
+
+.plant-status-text {
+  @apply text-xs font-medium;
+}
+
+.status-online {
+  @apply bg-success-500;
+}
+
+.status-offline {
+  @apply bg-danger-500;
+}
+
+.status-warning {
+  @apply bg-warning-500;
+}
+
+.status-unknown {
+  @apply bg-gray-400;
+}
+
+/* Plant card animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Staggered animation for multiple cards */
+.plant-cards-grid > div {
+  opacity: 0;
+}
+
+.plant-cards-grid > div:nth-child(1) {
+  animation: fadeIn 0.3s ease-out 0.1s forwards;
+}
+.plant-cards-grid > div:nth-child(2) {
+  animation: fadeIn 0.3s ease-out 0.2s forwards;
+}
+.plant-cards-grid > div:nth-child(3) {
+  animation: fadeIn 0.3s ease-out 0.3s forwards;
+}
+.plant-cards-grid > div:nth-child(4) {
+  animation: fadeIn 0.3s ease-out 0.4s forwards;
+}
+.plant-cards-grid > div:nth-child(5) {
+  animation: fadeIn 0.3s ease-out 0.5s forwards;
+}
+.plant-cards-grid > div:nth-child(n + 6) {
+  animation: fadeIn 0.3s ease-out 0.6s forwards;
+}
+
+/* Energy metrics visualization */
+.energy-bar {
+  @apply h-3 rounded-full bg-gray-200 overflow-hidden relative;
+  width: 100%;
+}
+
+.energy-bar-fill {
+  @apply h-full absolute left-0 top-0 transition-all duration-500 ease-out;
+}
+
+.energy-bar-daily {
+  @apply bg-gradient-to-r from-primary-400 to-primary-500;
+}
+
+.energy-bar-monthly {
+  @apply bg-gradient-to-r from-secondary-400 to-secondary-500;
+}
+
+.energy-bar-total {
+  @apply bg-gradient-to-r from-tertiary-400 to-tertiary-500;
+}
+
+/* Plant card actions */
+.plant-card-actions {
+  @apply flex items-center gap-1.5 mt-auto pt-3;
+}
+
+.plant-card-action-btn {
+  @apply inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors duration-150;
+}
+
+.plant-card-action-btn-primary {
+  @apply bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100;
+}
+
+/* Plant card details */
+.plant-detail-label {
+  @apply text-xs text-gray-500 mb-1;
+}
+
+.plant-detail-value {
+  @apply text-sm font-medium text-gray-800;
+}
+
+/* Enhanced accessibility */
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+}
+
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
 /* Enhanced table styling */
 .divide-y > tr.hover\:bg-snow-white:hover {
   transform: translateY(-1px);

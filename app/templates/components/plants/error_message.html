@@ -2,9 +2,9 @@
   class="bg-red-50 text-danger p-4 mb-6 rounded-lg shadow-sm border border-danger border-opacity-20"
   x-transition
 >
-  <div class="flex items-center">
+  <div class="flex items-start">
     <svg
-      class="h-5 w-5 mr-2 flex-shrink-0 text-danger"
+      class="h-5 w-5 mt-0.5 mr-2 flex-shrink-0 text-danger"
       fill="currentColor"
       viewBox="0 0 20 20"
     >
@@ -14,12 +14,38 @@
         clip-rule="evenodd"
       ></path>
     </svg>
-    <span class="text-sm sm:text-base" x-text="errorMessage"></span>
+    <div class="flex-1">
+      <div class="text-sm sm:text-base font-medium mb-1" x-text="errorMessage"></div>
+      <p class="text-xs sm:text-sm text-red-700">
+        This could be due to network issues or server unavailability. We've tried to load cached data if available.
+      </p>
+      
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button
+          @click="fetchPlants()"
+          class="text-xs sm:text-sm px-3 py-1.5 bg-white border border-red-300 rounded-md shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Retry
+        </button>
+        <button
+          @click="errorMessage = ''"
+          class="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+        >
+          Dismiss
+        </button>
+        <a
+          href="/"
+          class="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Home
+        </a>
+      </div>
+    </div>
   </div>
-  <button
-    @click="errorMessage = ''"
-    class="text-sm text-danger hover:text-danger mt-2 ml-7 focus:outline-none focus:underline"
-  >
-    Dismiss
-  </button>
 </div>

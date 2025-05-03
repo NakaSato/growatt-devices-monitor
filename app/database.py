@@ -2,44 +2,23 @@
 Database utilities for Growatt API data storage
 
 This module provides database connection and operations for storing and retrieving
-Growatt solar panel monitoring data.
+Growatt solar panel monitoring data using PostgreSQL.
 """
 
-import sqlite3
 import os
 import logging
 from pathlib import Path
 from contextlib import contextmanager
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional, Union, Tuple, Generator
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+from app.config import Config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Database configuration
-DB_DIR = Path(__file__).parent / "data"
-# Create the directory if it doesn't exist
-os.makedirs(DB_DIR, exist_ok=True)
-DB_PATH = DB_DIR / "growatt_data.db"
-
-# Ensure the database file exists by creating it if needed
-def create_db_file() -> bool:
-    """
-    Explicitly create the database file if it doesn't exist
-    
-    Returns:
-        bool: True if a new database file was created, False otherwise
-    """
-    if not os.path.exists(DB_PATH):
-        logger.info(f"Creating new database file at {DB_PATH}")
-        # Connect to create the file
-        conn = sqlite3.connect(str(DB_PATH))
-        conn.close()
-        return True
-    return False
-
-# Call this function to ensure DB file exists
-create_db_file()
 
 @contextmanager
 def get_db_connection():
@@ -47,13 +26,24 @@ def get_db_connection():
     Context manager for database connections to ensure proper closing
     
     Yields:
-        sqlite3.Connection: A connection to the SQLite database
+        Connection: A connection to the PostgreSQL database
     """
     conn = None
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        conn.row_factory = sqlite3.Row  # Return rows as dictionary-like objects
+        # Use environment variables or config for connection parameters
+        conn = psycopg2.connect(
+            host=Config.POSTGRES_HOST,
+            port=Config.POSTGRES_PORT,
+            user=Config.POSTGRES_USER,
+            password=Config.POSTGRES_PASSWORD,
+            dbname=Config.POSTGRES_DB
+        )
+        # Enable dictionary-like row access
+        conn.cursor_factory = RealDictCursor
         yield conn
+    except psycopg2.Error as e:
+        logger.error(f"PostgreSQL connection error: {e}")
+        raise
     finally:
         if conn:
             conn.close()
@@ -95,7 +85,7 @@ def init_db():
             # Create energy_stats table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS energy_stats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     plant_id TEXT NOT NULL,
                     mix_sn TEXT NOT NULL,
                     date TEXT NOT NULL,
@@ -111,7 +101,7 @@ def init_db():
             # Create weather_data table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS weather_data (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     plant_id TEXT NOT NULL,
                     date TEXT NOT NULL,
                     temperature REAL,
@@ -122,17 +112,17 @@ def init_db():
                 )
             ''')
             
-            # Create index for faster queries
+            # Create indexes for faster queries
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_energy_date ON energy_stats(date)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_energy_mix_sn ON energy_stats(mix_sn)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_devices_plant_id ON devices(plant_id)')
             
             conn.commit()
-            logger.info("Database tables initialized successfully")
+            logger.info("Database tables initialized successfully for PostgreSQL database")
             return True
             
-    except sqlite3.Error as e:
-        logger.error(f"SQLite error initializing database: {e}")
+    except psycopg2.Error as e:
+        logger.error(f"PostgreSQL error initializing database: {e}")
         return False
     except Exception as e:
         logger.error(f"Unexpected error initializing database: {e}")
@@ -141,33 +131,15 @@ def init_db():
 # Initialize database tables when module is loaded
 init_db()
 
-def save_plants(plants_data):
-    """
-    Save plants data to database
-    """
-    pass
-
-def save_devices(devices_data, plant_id):
-    """
-    Save devices data for a plant to database
-    """
-    pass
-
-def save_energy_stats(stats_data, plant_id, device_id, stats_type):
-    """
-    Save energy statistics to database
-    """
-    pass
-
 # Add the DatabaseConnector class that's being imported
 class DatabaseConnector:
     """Database connector class for Growatt API data storage"""
     
     def __init__(self):
         """Initialize the database connector."""
-        self.db_path = DB_PATH
+        pass
         
-    def query(self, query_string: str, params: Optional[Union[Tuple, Dict[str, Any], List[Any]]] = None) -> List[sqlite3.Row]:
+    def query(self, query_string: str, params: Optional[Union[Tuple, Dict[str, Any], List[Any]]] = None) -> List[Dict[str, Any]]:
         """
         Execute a query and return results.
         
@@ -176,7 +148,7 @@ class DatabaseConnector:
             params: Parameters for the query (tuple, dict, or list)
             
         Returns:
-            List of query results as sqlite3.Row objects
+            List of query results as dictionary-like objects
         """
         try:
             with get_db_connection() as conn:
@@ -185,9 +157,13 @@ class DatabaseConnector:
                     cursor.execute(query_string, params)
                 else:
                     cursor.execute(query_string)
-                return cursor.fetchall()
-        except sqlite3.Error as e:
-            logger.error(f"SQLite error: {e}")
+                
+                # PostgreSQL returns a list of dictionaries already
+                results = cursor.fetchall()
+                return [dict(row) for row in results]
+                    
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error: {e}")
             return []
         except Exception as e:
             logger.error(f"Unexpected query error: {e}")
@@ -206,6 +182,7 @@ class DatabaseConnector:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
+                
                 for plant in plants:
                     plant_id = plant.get('id')
                     plant_name = plant.get('name', '')
@@ -213,19 +190,27 @@ class DatabaseConnector:
                     if not plant_id:
                         logger.warning(f"Skipping plant with no ID: {plant}")
                         continue
-                        
+                    
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO plants
+                        INSERT INTO plants
                         (id, name, status, last_updated)
-                        VALUES (?, ?, ?, datetime('now'))
+                        VALUES (%s, %s, %s, NOW())
+                        ON CONFLICT (id) DO UPDATE
+                        SET name = %s, status = %s, last_updated = NOW()
                         """,
-                        (plant_id, plant_name, plant.get('status', 'unknown'))
+                        (
+                            plant_id, 
+                            plant_name, 
+                            plant.get('status', 'unknown'),
+                            plant_name,
+                            plant.get('status', 'unknown')
+                        )
                     )
                 conn.commit()
             return True
-        except sqlite3.Error as e:
-            logger.error(f"SQLite error saving plants: {e}")
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving plants: {e}")
             return False
         except Exception as e:
             logger.error(f"Unexpected error saving plants: {e}")
@@ -252,15 +237,21 @@ class DatabaseConnector:
                     if not sn or not plant_id:
                         logger.warning(f"Skipping device with missing serial number or plant_id: {device}")
                         continue
-                        
+                    
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO devices
+                        INSERT INTO devices
                         (serial_number, plant_id, alias, type, status, last_updated)
-                        VALUES (?, ?, ?, ?, ?, datetime('now'))
+                        VALUES (%s, %s, %s, %s, %s, NOW())
+                        ON CONFLICT (serial_number) DO UPDATE
+                        SET plant_id = %s, alias = %s, type = %s, status = %s, last_updated = NOW()
                         """,
                         (
                             sn,
+                            plant_id,
+                            device.get('alias', ''),
+                            device.get('type', 'unknown'),
+                            device.get('status', 'unknown'),
                             plant_id,
                             device.get('alias', ''),
                             device.get('type', 'unknown'),
@@ -269,8 +260,8 @@ class DatabaseConnector:
                     )
                 conn.commit()
             return True
-        except sqlite3.Error as e:
-            logger.error(f"SQLite error saving devices: {e}")
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving devices: {e}")
             return False
         except Exception as e:
             logger.error(f"Unexpected error saving devices: {e}")
@@ -296,26 +287,30 @@ class DatabaseConnector:
                     if not all(key in data for key in ['plant_id', 'mix_sn', 'date', 'daily_energy']):
                         logger.warning(f"Skipping energy data with missing required fields: {data}")
                         continue
-                        
+                    
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO energy_stats 
+                        INSERT INTO energy_stats 
                         (plant_id, mix_sn, date, daily_energy, peak_power, last_updated) 
-                        VALUES (?, ?, ?, ?, ?, datetime('now'))
+                        VALUES (%s, %s, %s, %s, %s, NOW())
+                        ON CONFLICT (mix_sn, date) DO UPDATE
+                        SET daily_energy = %s, peak_power = %s, last_updated = NOW()
                         """, 
                         (
                             data['plant_id'], 
                             data['mix_sn'], 
                             data['date'], 
                             data['daily_energy'], 
+                            data.get('peak_power', 0),
+                            data['daily_energy'],
                             data.get('peak_power', 0)
                         )
                     )
                     count += 1
                 conn.commit()
             return count
-        except sqlite3.Error as e:
-            logger.error(f"SQLite error saving energy data batch: {e}")
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving energy data batch: {e}")
             return 0
         except Exception as e:
             logger.error(f"Unexpected error saving energy data batch: {e}")
@@ -337,18 +332,21 @@ class DatabaseConnector:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
+                
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO weather_data
+                    INSERT INTO weather_data
                     (plant_id, date, temperature, condition, last_updated)
-                    VALUES (?, ?, ?, ?, datetime('now'))
+                    VALUES (%s, %s, %s, %s, NOW())
+                    ON CONFLICT (plant_id, date) DO UPDATE
+                    SET temperature = %s, condition = %s, last_updated = NOW()
                     """,
-                    (plant_id, date, temperature, condition)
+                    (plant_id, date, temperature, condition, temperature, condition)
                 )
                 conn.commit()
             return True
-        except sqlite3.Error as e:
-            logger.error(f"SQLite error saving weather data: {e}")
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving weather data: {e}")
             return False
         except Exception as e:
             logger.error(f"Unexpected error saving weather data: {e}")

@@ -7,14 +7,21 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=False
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-growatt}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-growattpassword}
+      - POSTGRES_DB=${POSTGRES_DB:-growattdb}
     env_file: .env
     ports:
       - "8000:8000"
     volumes:
       - ./app:/app/app
-      - growatt-data:/app/app/data # Persistent volume for database
     networks:
       - growatt-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -26,6 +33,37 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: growatt-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-growatt}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-growattpassword}
+      - POSTGRES_DB=${POSTGRES_DB:-growattdb}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - growatt-network
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-growatt} -d ${POSTGRES_DB:-growattdb}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # Nginx reverse proxy
   nginx:
@@ -56,7 +94,7 @@ services:
       retries: 3
 
 volumes:
-  growatt-data: # Define persistent volume for database
+  postgres-data: # Persistent volume for PostgreSQL data
     driver: local
 
 networks:

@@ -1,131 +1,229 @@
-{% extends "base.html" %} {% block title %}Home - Growatt API{% endblock %} {%
-block content %}
-<div class="px-4 -mt-6 md:container md:mx-auto lg:px-0 lg:pt-4">
-  <!-- Dashboard content with enhanced responsive support -->
-  <div class="mt-6">
-    {% include "components/dashboard_layout.html" %}
-
-    <!-- Responsive quick actions bar -->
-    <div class="mt-6 pt-4 border-t border-gray-100">
-      <div
-        class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 md:max-w-3xl lg:max-w-4xl xl:max-w-none mx-auto"
-      >
-        <a
-          href="/plants"
-          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+{% extends "base.html" %} {% block title %}Dashboard - Growatt Solar
+Monitoring{% endblock %} {% block head_styles %} {{ super() }}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/metrics.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboard.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div
+      class="flex items-center justify-between w-full max-w-screen-xl mx-auto px-4 py-3"
+    >
+      <h1 class="text-xl md:text-2xl font-bold text-charcoal">
+        Solar Monitoring Dashboard
+      </h1>
+      <div class="hidden md:flex items-center space-x-2">
+        <span class="text-sm text-slate-600"
+          >Last updated: {{ last_update_time }}</span
         >
-          <i
-            class="fas fa-solar-panel text-amber-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Plants</span
-          >
-        </a>
-        <a
-          href="/devices"
-          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
+        <button
+          id="refresh-data"
+          class="btn btn-sm btn-primary-outline flex items-center"
+          aria-label="Refresh data"
         >
-          <i
-            class="fas fa-microchip text-blue-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Devices</span
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-        </a>
-        <a
-          href="/analytics"
-          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
-        >
-          <i
-            class="fas fa-chart-line text-purple-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Analytics</span
-          >
-        </a>
-        <a
-          href="/maps"
-          class="bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex flex-col items-center justify-center text-center transition-colors group"
-        >
-          <i
-            class="fas fa-map-marker-alt text-red-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Maps</span
-          >
-        </a>
-        <a
-          href="#"
-          class="hidden xs:flex bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex-col items-center justify-center text-center transition-colors group"
-        >
-          <i
-            class="fas fa-cog text-gray-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Settings</span
-          >
-        </a>
-        <a
-          href="#"
-          class="hidden xs:flex bg-white hover:bg-slate-50 border border-gray-200 rounded-lg p-3 flex-col items-center justify-center text-center transition-colors group"
-        >
-          <i
-            class="fas fa-download text-emerald-500 text-lg mb-2 group-hover:scale-110 transition-transform"
-          ></i>
-          <span class="text-xs sm:text-sm font-medium text-slate-700"
-            >Export</span
-          >
-        </a>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>Refresh</span>
+        </button>
       </div>
     </div>
-  </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="max-w-screen-xl mx-auto px-4 py-4 md:py-6">
+      <!-- System Status Component -->
+      {% include 'components/metrics/system_metrics.html' %}
+
+      <!-- System Overview Section -->
+      <section id="overview-section" x-show="activeTab === 'overview'" x-cloak>
+        <div class="metrics-grid mb-6">
+          {% include 'components/metrics/energy_metrics.html' %} {% include
+          'components/metrics/device_metrics.html' %} {% include
+          'components/metrics/efficiency_metrics.html' %}
+        </div>
+
+        <!-- Plants Card Section -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-charcoal">Solar Plants</h2>
+            <a
+              href="{{ url_for('main_routes.plants') }}"
+              class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center"
+            >
+              View all plants
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 ml-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </a>
+          </div>
+          <div class="plant-cards-grid">
+            {% for plant in plants[:4] %} {% include
+            'components/plants/plant_card.html' %} {% endfor %}
+          </div>
+        </div>
+
+        <!-- Recent Activity Section -->
+        <div>
+          <h2 class="text-lg font-semibold text-charcoal mb-4">
+            Recent Activity
+          </h2>
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            {% include 'components/activity/activity_feed.html' %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Alerts Section -->
+      <section id="alerts-section" x-show="activeTab === 'alerts'" x-cloak>
+        {% include 'components/alerts/alerts_panel.html' %}
+      </section>
+
+      <!-- Analytics Section -->
+      <section
+        id="analytics-section"
+        x-show="activeTab === 'analytics'"
+        x-cloak
+      >
+        {% include 'components/analytics/analytics_dashboard.html' %}
+      </section>
+    </div>
+  </main>
 </div>
-
-<!-- JavaScript for responsive dashboard -->
+{% endblock %} {% block scripts %} {{ super() }}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Update time and date in the dashboard
-    function updateDateTime() {
-      const now = new Date();
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("systemStatusInit", () => ({
+      activeTab: "overview",
+      systemStatus: "healthy",
+      mobileMenuOpen: false,
 
-      // Format date: May 1, 2025
-      const options = { year: "numeric", month: "short", day: "numeric" };
-      const dateElement = document.getElementById("dashboard-date");
-      if (dateElement) {
-        dateElement.textContent = now.toLocaleDateString(undefined, options);
-      }
+      init() {
+        this.checkSystemStatus();
+        this.setupEventListeners();
+      },
 
-      // Format time: 14:35:22
-      const timeElement = document.getElementById("dashboard-time");
-      if (timeElement) {
-        const hours = now.getHours().toString().padStart(2, "0");
-        const minutes = now.getMinutes().toString().padStart(2, "0");
-        timeElement.textContent = `${hours}:${minutes}`;
-      }
-    }
+      checkSystemStatus() {
+        // Simulate system status check
+        // In production, this would be an API call
+        setTimeout(() => {
+          // Demo: Set random status
+          const statuses = ["healthy", "warning", "critical"];
+          const randomStatus =
+            statuses[Math.floor(Math.random() * statuses.length)];
+          this.systemStatus = "healthy"; // For demo, set to healthy
+        }, 1000);
+      },
 
-    // Update time initially and then every minute
-    updateDateTime();
-    setInterval(updateDateTime, 60000);
+      setupEventListeners() {
+        document
+          .getElementById("refresh-data")
+          ?.addEventListener("click", () => {
+            this.refreshData();
+          });
+      },
 
-    // Apply responsive adjustments based on screen size
-    function applyResponsiveAdjustments() {
-      // This function will be triggered when the responsive state changes
-      // You can use the global window.responsive object we created earlier
+      getCurrentDate() {
+        const now = new Date();
+        return now.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+      },
 
-      // Example: Adjust layout based on device type
-      if (window.responsive && window.responsive.isMobile) {
-        // Mobile-specific adjustments (if needed)
-      }
-    }
+      refreshData() {
+        // Add loading indicator
+        const refreshButton = document.getElementById("refresh-data");
+        if (refreshButton) {
+          const originalContent = refreshButton.innerHTML;
+          refreshButton.innerHTML =
+            '<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
-    // Listen for responsive state changes
-    window.addEventListener("responsive-changed", applyResponsiveAdjustments);
+          // Simulate API call
+          setTimeout(() => {
+            refreshButton.innerHTML = originalContent;
+            // Show success notification
+            showNotification("Data refreshed successfully", "success");
+          }, 1500);
+        }
+      },
 
-    // Initial application
-    if (window.responsive) {
-      applyResponsiveAdjustments();
-    }
+      initAnalytics() {
+        console.log("Initializing analytics...");
+        // This would initialize charts and analytics data
+      },
+    }));
   });
+
+  function showNotification(message, type = "info") {
+    // Create notification element
+    const notification = document.createElement("div");
+    notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 z-50 ${
+      type === "success"
+        ? "bg-green-50 text-green-800 border border-green-200"
+        : type === "error"
+        ? "bg-red-50 text-red-800 border border-red-200"
+        : "bg-blue-50 text-blue-800 border border-blue-200"
+    }`;
+
+    notification.innerHTML = `
+      <div class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${
+            type === "success"
+              ? "M5 13l4 4L19 7"
+              : type === "error"
+              ? "M6 18L18 6M6 6l12 12"
+              : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          }" />
+        </svg>
+        <span class="text-sm font-medium">${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+      notification.style.transform = "translateY(-10px)";
+    }, 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      notification.style.opacity = "0";
+      notification.style.transform = "translateY(10px)";
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }, 3000);
+  }
 </script>
 {% endblock %}

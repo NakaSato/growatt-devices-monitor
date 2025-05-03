@@ -14,7 +14,16 @@ def render_index() -> str:
     """
     # Check authentication status from session
     authenticated = session.get('growatt_authenticated', False)
-    return render_template('index.html', authenticated=authenticated)
+    
+    # Fetch plants data to display on the index page
+    from app.routes.api_helpers import get_plants
+    plants_data = get_plants() if authenticated else []
+    
+    # If plants_data contains an error, provide an empty list instead
+    if isinstance(plants_data, list) and len(plants_data) > 0 and 'error' in plants_data[0]:
+        plants_data = []
+    
+    return render_template('index.html', authenticated=authenticated, plants=plants_data)
 
 def render_plants(plants: List[Dict[str, Any]]) -> str:
     """

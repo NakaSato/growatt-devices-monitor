@@ -8,11 +8,17 @@ document.addEventListener("alpine:init", () => {
     filteredPlants: [],
     isLoading: true,
     errorMessage: "",
+    lastFetchTime: null,
+    cacheDuration: 60000, // Cache duration in milliseconds (1 minute)
+    isRefreshing: false, // Track when refreshing data
     viewMode: window.innerWidth < 640 ? "cards" : "table", // Default to cards on smaller screens, table on larger ones
     searchQuery: "",
     statusFilter: "all",
     sortField: "plantName", // Default sort field
     sortAsc: true, // Default sort direction
+    fetchRetryCount: 0,
+    maxRetries: 3,
+    retryDelay: 2000, // Initial retry delay in milliseconds
 
     // Pagination
     currentPage: 1,
@@ -80,24 +86,134 @@ document.addEventListener("alpine:init", () => {
         this.viewMode = savedViewMode;
       }
 
-      this.fetchPlants();
+      // Check for cached data
+      const cachedPlants = this.getCachedPlants();
+      if (cachedPlants) {
+        this.plants = cachedPlants;
+        this.filteredPlants = [...this.plants];
+        this.sortPlants();
+        this.isLoading = false;
+
+        // Fetch fresh data in the background after rendering cached data
+        setTimeout(() => this.fetchPlants(true), 100);
+      } else {
+        this.fetchPlants();
+      }
+
+      // Set up a periodic refresh if the tab is visible
+      this.setupPeriodicRefresh();
     },
 
-    fetchPlants() {
-      this.isLoading = true;
-      this.errorMessage = "";
+    // Set up a periodic refresh if the tab is visible (every 5 minutes)
+    setupPeriodicRefresh() {
+      const refreshInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-      fetch("/api/management/data")
+      // Use setInterval for periodic refresh
+      setInterval(() => {
+        // Only refresh if the document is visible and we're not already loading
+        if (
+          document.visibilityState === "visible" &&
+          !this.isLoading &&
+          !this.isRefreshing
+        ) {
+          this.fetchPlants(true); // Silent refresh
+        }
+      }, refreshInterval);
+
+      // Also refresh when the tab becomes visible again
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && this.lastFetchTime) {
+          const timeSinceLastFetch = Date.now() - this.lastFetchTime;
+          if (
+            timeSinceLastFetch > refreshInterval &&
+            !this.isLoading &&
+            !this.isRefreshing
+          ) {
+            this.fetchPlants(true); // Silent refresh when tab becomes visible
+          }
+        }
+      });
+    },
+
+    // Get cached plants data
+    getCachedPlants() {
+      const cachedData = localStorage.getItem("plantsCache");
+      if (!cachedData) return null;
+
+      try {
+        const { timestamp, plants } = JSON.parse(cachedData);
+        const now = Date.now();
+
+        // Check if cache is still valid
+        if (
+          now - timestamp < this.cacheDuration &&
+          plants &&
+          plants.length > 0
+        ) {
+          this.lastFetchTime = timestamp;
+          return plants;
+        }
+      } catch (e) {
+        console.error("Error parsing cached plants data:", e);
+      }
+
+      return null;
+    },
+
+    // Cache plants data
+    cachePlants(plants) {
+      const timestamp = Date.now();
+      this.lastFetchTime = timestamp;
+
+      try {
+        localStorage.setItem(
+          "plantsCache",
+          JSON.stringify({
+            timestamp,
+            plants,
+          })
+        );
+      } catch (e) {
+        console.error("Error caching plants data:", e);
+      }
+    },
+
+    fetchPlants(silentRefresh = false) {
+      // If this is a silent refresh, don't show loading indicator
+      if (!silentRefresh) {
+        this.isLoading = true;
+      } else {
+        this.isRefreshing = true;
+      }
+
+      this.errorMessage = "";
+      this.fetchRetryCount = 0;
+
+      this.performFetch();
+    },
+
+    performFetch() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      fetch("/api/plants", {
+        signal: controller.signal,
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      })
         .then((response) => {
+          clearTimeout(timeoutId);
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
           return response.json();
         })
         .then((data) => {
-          // Extract plants from management data structure
-          const plantData = data.plants || [];
-          
+          // Extract plants from data structure
+          const plantData = Array.isArray(data) ? data : data.plants || [];
+
           // Process the data
           this.plants = plantData.map((plant) => {
             // Normalize property names to ensure consistency
@@ -121,20 +237,234 @@ document.addEventListener("alpine:init", () => {
                 plant.total_energy ||
                 plant.energy_total ||
                 0,
+              lastUpdateTime:
+                plant.lastUpdateTime || plant.last_update_time || "",
+              // Add a formatted last update time for easier display
+              formattedLastUpdate: this.formatLastUpdateTime(
+                plant.lastUpdateTime || plant.last_update_time || ""
+              ),
             };
           });
-          
+
+          // Cache the plant data for future use
+          this.cachePlants(this.plants);
+
           this.filteredPlants = [...this.plants]; // Initialize filtered plants
           this.sortPlants(); // Apply initial sort
-          console.log("Plants data:", this.plants);
+          console.log("Plants data refreshed:", this.plants);
+
+          // Check if we need to show a success message for manual refresh
+          if (!this.isRefreshing && !this.isLoading) {
+            // Show success toast or notification if needed for manual refresh
+            this.showToast("Plants data refreshed successfully");
+          }
         })
         .catch((error) => {
+          clearTimeout(timeoutId);
           console.error("Error fetching plants:", error);
-          this.errorMessage = `Failed to load plants: ${error.message}`;
+
+          // For network timeout or abort errors, retry
+          if (
+            error.name === "AbortError" ||
+            error.name === "TimeoutError" ||
+            error.message.includes("timeout") ||
+            error.message.includes("network")
+          ) {
+            if (this.fetchRetryCount < this.maxRetries) {
+              this.fetchRetryCount++;
+              const delay =
+                this.retryDelay * Math.pow(2, this.fetchRetryCount - 1); // Exponential backoff
+              console.log(
+                `Retrying fetch (${this.fetchRetryCount}/${this.maxRetries}) in ${delay}ms...`
+              );
+              setTimeout(() => this.performFetch(), delay);
+              return;
+            }
+          }
+
+          // Only show error for non-silent refreshes or after all retries failed
+          if (!this.isRefreshing || this.fetchRetryCount >= this.maxRetries) {
+            this.errorMessage = `Failed to load plants: ${error.message}`;
+          }
+
+          // If we have cached data, use it as fallback
+          const cachedPlants = this.getCachedPlants();
+          if (cachedPlants && this.plants.length === 0) {
+            this.plants = cachedPlants;
+            this.filteredPlants = [...this.plants];
+            this.sortPlants();
+
+            // Show notification that we're using cached data
+            console.log("Using cached plants data due to fetch error");
+            if (!this.isRefreshing) {
+              this.showToast(
+                "Using cached data - please check your connection",
+                "warning"
+              );
+            }
+          }
         })
         .finally(() => {
           this.isLoading = false;
+          this.isRefreshing = false;
         });
+    },
+
+    // Fetch a single plant by ID
+    fetchSinglePlant(plantId) {
+      // Show loading state for this plant
+      const plantIndex = this.plants.findIndex((p) => p.id == plantId);
+      if (plantIndex === -1) return;
+
+      // Set loading state for this plant
+      this.plants[plantIndex].isRefreshing = true;
+
+      // Create a copy of the original plant for restoring if needed
+      const originalPlant = { ...this.plants[plantIndex] };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      fetch(`/api/plants/${plantId}`, {
+        signal: controller.signal,
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      })
+        .then((response) => {
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Process the plant data
+          const plantData = data || {};
+
+          // Update the plant data with normalized properties
+          const updatedPlant = {
+            ...plantData,
+            totalPower:
+              plantData.totalPower ||
+              plantData.power ||
+              plantData.current_power ||
+              0,
+            todayEnergy:
+              plantData.todayEnergy ||
+              plantData.today_energy ||
+              plantData.energy_today ||
+              0,
+            monthEnergy:
+              plantData.monthEnergy ||
+              plantData.month_energy ||
+              plantData.energy_month ||
+              0,
+            totalEnergy:
+              plantData.totalEnergy ||
+              plantData.total_energy ||
+              plantData.energy_total ||
+              0,
+            lastUpdateTime:
+              plantData.lastUpdateTime ||
+              plantData.last_update_time ||
+              originalPlant.lastUpdateTime,
+            formattedLastUpdate: this.formatLastUpdateTime(
+              plantData.lastUpdateTime ||
+                plantData.last_update_time ||
+                originalPlant.lastUpdateTime
+            ),
+          };
+
+          // Update the plant in the plants array
+          this.plants[plantIndex] = {
+            ...updatedPlant,
+            isRefreshing: false,
+          };
+
+          // Update the filtered plants array
+          this.filterPlants();
+
+          // Update the cache
+          this.cachePlants(this.plants);
+
+          // Show success message
+          this.showToast(
+            `${updatedPlant.plantName || "Plant"} data refreshed successfully`
+          );
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          console.error(`Error fetching plant ${plantId}:`, error);
+
+          // Restore original plant data
+          this.plants[plantIndex] = {
+            ...originalPlant,
+            isRefreshing: false,
+          };
+
+          // Show error message
+          this.showToast(`Failed to refresh plant: ${error.message}`, "error");
+        })
+        .finally(() => {
+          // Ensure loading state is cleared
+          this.plants[plantIndex].isRefreshing = false;
+        });
+    },
+
+    // Show a toast message
+    showToast(message, type = "success") {
+      // Check if we have the toast function available (typically added globally)
+      if (typeof window.showToast === "function") {
+        window.showToast(message, type);
+      } else {
+        // Fallback to console if toast function not available
+        console.log(`Toast (${type}): ${message}`);
+      }
+    },
+
+    // Format the last update time in a more user-friendly way
+    formatLastUpdateTime(dateTimeString) {
+      if (!dateTimeString) return "N/A";
+
+      try {
+        const date = new Date(dateTimeString);
+
+        // If invalid date, return original string
+        if (isNaN(date.getTime())) return dateTimeString;
+
+        // Check if it's today
+        const today = new Date();
+        const isToday =
+          date.getDate() === today.getDate() &&
+          date.getMonth() === today.getMonth() &&
+          date.getFullYear() === today.getFullYear();
+
+        if (isToday) {
+          // For today, show just the time
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } else {
+          // For other days, show date and time
+          return (
+            date.toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+            }) +
+            " " +
+            date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          );
+        }
+      } catch (e) {
+        console.error("Error formatting date:", e);
+        return dateTimeString;
+      }
     },
 
     // Filter plants based on search and status filter
@@ -149,7 +479,11 @@ document.addEventListener("alpine:init", () => {
             plant.plantName
               .toLowerCase()
               .includes(this.searchQuery.toLowerCase())) ||
-          (plant.id && plant.id.toString().includes(this.searchQuery));
+          (plant.id && plant.id.toString().includes(this.searchQuery)) ||
+          (plant.location &&
+            plant.location
+              .toLowerCase()
+              .includes(this.searchQuery.toLowerCase()));
 
         const matchesStatus =
           this.statusFilter === "all" ||
@@ -229,13 +563,21 @@ document.addEventListener("alpine:init", () => {
     // Format power value with unit
     formatPower(power) {
       if (power === undefined || power === null) return "N/A";
-      return `${power} kW`;
+
+      // Format to 2 decimal places
+      const formattedPower =
+        typeof power === "number" ? power.toFixed(2) : power;
+      return `${formattedPower} kW`;
     },
 
     // Format energy value with unit
     formatEnergy(energy) {
       if (energy === undefined || energy === null) return "N/A";
-      return `${energy} kWh`;
+
+      // Format to 2 decimal places
+      const formattedEnergy =
+        typeof energy === "number" ? energy.toFixed(2) : energy;
+      return `${formattedEnergy} kWh`;
     },
 
     // Get status text
@@ -273,8 +615,7 @@ document.addEventListener("alpine:init", () => {
 
     // Handle image error
     handleImageError(event) {
-      event.target.src =
-        "{{ url_for('static', filename='images/default-plant.jpg') }}";
+      event.target.src = "/static/images/default-plant.jpg";
     },
 
     // Export filtered plants to Excel
@@ -318,6 +659,8 @@ document.addEventListener("alpine:init", () => {
             "Timezone",
             "Total Power (kW)",
             "Today Energy (kWh)",
+            "Month Energy (kWh)",
+            "Total Energy (kWh)",
             "Location",
             "Last Updated",
             "Country",
@@ -334,6 +677,8 @@ document.addEventListener("alpine:init", () => {
             this.formatTimezone(plant.timezone),
             plant.totalPower || "0",
             plant.todayEnergy || "0",
+            plant.monthEnergy || "0",
+            plant.totalEnergy || "0",
             plant.location || "",
             plant.lastUpdateTime || "",
             plant.country || "",
@@ -358,9 +703,13 @@ document.addEventListener("alpine:init", () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
+        // Show success notification
+        this.showToast("Export completed successfully");
       } catch (error) {
         console.error("Error exporting to Excel:", error);
         this.errorMessage = `Failed to export: ${error.message}`;
+        this.showToast("Export failed: " + error.message, "error");
       } finally {
         // Restore button state
         exportBtn.innerHTML = originalText;

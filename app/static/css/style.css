@@ -1,7 +1,55 @@
-/* Specialized Components & Animations */
-@import url("dashboard.css");
+/**
+ * Growatt Devices Monitor - Main Stylesheet
+ * 
+ * This file imports component styles and defines global styles
+ * for the application.
+ */
 
-/* Custom animations that can't be replaced with Tailwind */
+/* Import component styles */
+@import "components.css";
+
+/* Root variables */
+:root {
+  --vh: 1vh; /* This will be set by JavaScript for mobile browsers */
+
+  /* Color variables for JS access */
+  --color-success: theme("colors.success");
+  --color-warning: theme("colors.warning");
+  --color-danger: theme("colors.danger");
+  --color-info: theme("colors.info");
+
+  /* Animation durations */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+}
+
+/* Base styles */
+html,
+body {
+  @apply antialiased text-charcoal bg-gray-50;
+  height: 100%; /* Fallback */
+  height: 100lvh; /* Logical viewport height */
+  max-height: 100lvh;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Flex layout for full-height app */
+.flex-column-fill {
+  @apply flex flex-col min-h-screen-dynamic;
+}
+
+.flex-grow {
+  @apply flex-1;
+}
+
+/* Custom animations */
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -11,78 +59,90 @@
   }
 }
 
-/* Pulse status indicators */
-.pulse-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  position: relative;
-  transform: translateZ(0); /* Performance optimization */
-  will-change: box-shadow; /* Performance hint */
-}
-
-.pulse-success {
-  background-color: theme("colors.eco-green");
-  box-shadow: 0 0 0 rgba(76, 175, 80, 0.4);
-  animation: pulse-green 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-}
-
-.pulse-warning {
-  background-color: theme("colors.sunshine-yellow");
-  box-shadow: 0 0 0 rgba(255, 193, 7, 0.4);
-  animation: pulse-yellow 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-}
-
-.pulse-danger {
-  background-color: theme("colors.danger-red");
-  box-shadow: 0 0 0 rgba(244, 67, 54, 0.4);
-  animation: pulse-red 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
-}
-
 @keyframes pulse-green {
   0% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.85);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.85);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
     transform: scale(1.1);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
     transform: scale(1);
   }
 }
 
 @keyframes pulse-yellow {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.85);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.85);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
     transform: scale(1.1);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
     transform: scale(1);
   }
 }
 
 @keyframes pulse-red {
   0% {
-    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.85);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
     transform: scale(1.1);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
     transform: scale(1);
   }
+}
+
+/* Status indicators */
+.pulse-dot {
+  @apply inline-block w-2 h-2 rounded-full relative;
+  transform: translateZ(0); /* Performance optimization */
+  will-change: box-shadow; /* Performance hint */
+}
+
+.pulse-success {
+  @apply bg-success;
+  box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+  animation: pulse-green 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
+}
+
+.pulse-warning {
+  @apply bg-warning;
+  box-shadow: 0 0 0 rgba(245, 158, 11, 0.4);
+  animation: pulse-yellow 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
+}
+
+.pulse-danger {
+  @apply bg-danger;
+  box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+  animation: pulse-red 2s infinite cubic-bezier(0.66, 0, 0.33, 1);
+}
+
+/* Spinner */
+.spinner {
+  @apply rounded-full;
+  border: 4px solid rgba(16, 185, 129, 0.2);
+  border-top: 4px solid theme("colors.success");
+  width: 40px;
+  height: 40px;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
 }
 
 /* Mobile menu animation */
@@ -90,78 +150,10 @@
   transition: opacity 0.3s ease, max-height 0.3s ease;
 }
 
-/* Custom accessibility styles */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Spinner animation that's easier to implement with CSS than Tailwind */
-.spinner {
-  border: 4px solid rgba(76, 175, 80, 0.2);
-  border-top: 4px solid #4caf50;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 0.8s linear infinite;
-}
-
-/* Additional styles for custom elements that Tailwind doesn't cover */
+/* Background patterns */
 .bg-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234caf50' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-
-/* Global styles for the Growatt Devices Monitor application */
-
-/* Base styles for height handling */
-:root {
-  --vh: 1vh; /* This will be set by JavaScript for mobile browsers */
-}
-
-html,
-body {
-  height: 100%; /* Fallback for older browsers */
-  height: 100lvh; /* Using logical viewport height for modern browsers */
-  max-height: 100lvh;
-  scroll-behavior: smooth;
-}
-
-/* For browsers that don't support lvh units */
-.h-screen-fallback {
-  height: calc(var(--vh, 1vh) * 100);
-}
-
-/* Ensure flexbox column layout fills the screen properly */
-.flex-column-fill {
-  display: flex;
-  flex-direction: column;
-  min-height: 100lvh;
-}
-
-/* Content area should grow to fill available space */
-.flex-grow {
-  flex: 1 0 auto;
-}
-
-/* Footer should not grow/shrink */
-footer {
-  flex-shrink: 0;
-}
-
-/* Better mobile handling for fixed position elements */
-@media (max-width: 640px) {
-  .fixed-mobile-adjust {
-    position: fixed;
-    bottom: env(safe-area-inset-bottom, 0);
-    height: auto;
-  }
+  background-image: url("/static/images/pattern-light.svg");
+  background-repeat: repeat;
 }
 
 /* Handle notched displays and safe areas */
@@ -170,5 +162,71 @@ footer {
     padding-left: max(0.75rem, env(safe-area-inset-left));
     padding-right: max(0.75rem, env(safe-area-inset-right));
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .fixed-mobile-adjust {
+    @apply fixed;
+    bottom: env(safe-area-inset-bottom, 0);
+    height: auto;
+  }
+
+  /* Improve tap targets */
+  button,
+  [role="button"],
+  a {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Hide scrollbars on mobile */
+  .scrollbar-hide-mobile {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide-mobile::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    @apply bg-white text-black;
+  }
+
+  a {
+    text-decoration: none !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dark-mode-support {
+    @apply bg-gray-900 text-gray-100;
+  }
+
+  .dark-mode-support .bg-white {
+    @apply bg-gray-800;
+  }
+
+  .dark-mode-support .text-gray-700,
+  .dark-mode-support .text-gray-800,
+  .dark-mode-support .text-gray-900 {
+    @apply text-gray-100;
+  }
+
+  .dark-mode-support .bg-pattern {
+    background-image: url("/static/images/pattern-dark.svg");
   }
 }

@@ -1,0 +1,183 @@
+<div
+  class="metric-card"
+  x-data="{ energyData: {} }"
+  x-init="energyData = await fetchEnergyData()"
+>
+  <div class="metric-header">
+    <div class="metric-icon bg-primary-50">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 text-primary-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+        />
+      </svg>
+    </div>
+    <div>
+      <h3 class="metric-title">Energy Production</h3>
+      <p class="metric-subtitle">Today's generation</p>
+    </div>
+  </div>
+  <div class="metric-body">
+    <div class="flex justify-between items-baseline mb-3">
+      <p class="metric-value" x-text="formatEnergy(energyData.today || 0)">
+        0 kWh
+      </p>
+      <template x-if="energyData.todayChange !== undefined">
+        <div
+          class="metric-trend"
+          :class="{
+          'trend-up': energyData.todayChange > 0,
+          'trend-down': energyData.todayChange < 0,
+          'trend-neutral': energyData.todayChange === 0
+        }"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            x-show="energyData.todayChange > 0"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            x-show="energyData.todayChange < 0"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
+          </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            x-show="energyData.todayChange === 0"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20 12H4"
+            />
+          </svg>
+          <span x-text="formatPercentage(energyData.todayChange)">0%</span>
+          <span class="text-slate-500 ml-1">vs yesterday</span>
+        </div>
+      </template>
+    </div>
+
+    <div class="space-y-3">
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Today</span>
+          <span
+            class="text-slate-500"
+            x-text="formatEnergy(energyData.today || 0)"
+            >0 kWh</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill energy-bar-daily"
+            :style="`width: ${calculatePercentage(energyData.today, energyData.monthlyMax)}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">This Month</span>
+          <span
+            class="text-slate-500"
+            x-text="formatEnergy(energyData.month || 0)"
+            >0 kWh</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill energy-bar-monthly"
+            :style="`width: ${calculatePercentage(energyData.month, energyData.monthlyTarget)}%`"
+          ></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1 text-xs">
+          <span class="font-medium text-slate-700">Total Generation</span>
+          <span
+            class="text-slate-500"
+            x-text="formatEnergy(energyData.total || 0)"
+            >0 kWh</span
+          >
+        </div>
+        <div class="energy-bar">
+          <div
+            class="energy-bar-fill energy-bar-total"
+            :style="`width: 100%`"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // This would be replaced with actual API calls in production
+  async function fetchEnergyData() {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    // Mock data
+    return {
+      today: 18.5,
+      yesterday: 17.2,
+      todayChange: 7.56,
+      month: 345.7,
+      monthlyTarget: 500,
+      monthlyMax: 30,
+      total: 12435.8,
+    };
+  }
+
+  function formatEnergy(value) {
+    return `${value.toLocaleString(undefined, {
+      maximumFractionDigits: 1,
+    })} kWh`;
+  }
+
+  function formatPercentage(value) {
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toLocaleString(undefined, {
+      maximumFractionDigits: 1,
+    })}%`;
+  }
+
+  function calculatePercentage(value, max) {
+    if (!max || max === 0) return 0;
+    return Math.min(100, (value / max) * 100);
+  }
+</script>

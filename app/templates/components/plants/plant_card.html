@@ -1,85 +1,245 @@
-<div
-  class="plant-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1 border border-gray-200"
-  :id="'plant-' + plant.id"
->
-  <div
-    class="relative h-40 bg-gradient-to-r from-eco-green to-fresh-mint overflow-hidden"
-  >
-    <img
-      :src="plant.image_url || '{{ url_for('static', filename='images/default-plant.jpg') }}'"
-      :alt="plant.plantName || 'Solar Plant'"
-      class="w-full h-full object-cover transition-all duration-500 filter hover:brightness-110"
-      @error="handleImageError"
-    />
-    <div
-      class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"
-    ></div>
-    <div
-      class="absolute top-2 right-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-white/20"
-      :class="getStatusBadgeClass(plant.status || 'active')"
-    >
-      <span x-text="getStatusText(plant.status || 'active')" class="tracking-wide"></span>
+<div class="card-plant animate-fade-in" x-data="{ plantDetails: false }">
+  <div class="card-plant-header">
+    <div class="flex items-center">
+      <div
+        class="plant-status-indicator"
+        :class="getStatusClass(plant.status)"
+      ></div>
+      <h3
+        class="text-sm font-semibold text-charcoal truncate max-w-[180px]"
+        x-text="plant.plantName || plant.name"
+      ></h3>
     </div>
-    <h3
-      class="absolute bottom-2 left-3 text-white font-bold text-lg line-clamp-1 pr-3"
-      :title="plant.plantName"
+    <button
+      @click="plantDetails = !plantDetails"
+      class="text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 rounded-full p-1"
+      :aria-expanded="plantDetails"
+      aria-label="Toggle plant details"
     >
-      <span x-text="plant.plantName || 'Unnamed Plant'"></span>
-    </h3>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        x-show="!plantDetails"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        x-show="plantDetails"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M5 15l7-7 7 7"
+        />
+      </svg>
+    </button>
   </div>
-  <div class="p-4 sm:p-5 flex-grow flex flex-col justify-between">
-    <div>
-      <div class="flex items-baseline justify-between mb-4">
-        <div class="text-xs sm:text-sm text-slate-gray bg-gray-50 px-2 py-1 rounded">
-          <i class="fas fa-map-marker-alt mr-1 text-eco-green"></i>
+
+  <div class="card-plant-body">
+    <div class="flex items-start mb-3">
+      <div class="flex-shrink-0 p-2 rounded-lg bg-primary-50 mr-3">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-8 w-8 text-primary-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500">Current Power</div>
+        <div class="text-xl font-bold text-charcoal">
           <span
-            x-text="plant.location || 'Unknown Location'"
-            class="line-clamp-1"
-            :title="plant.location"
+            x-text="formatPower(plant.totalPower)"
           ></span>
         </div>
         <div
-          class="text-xs bg-eco-green-5 text-eco-green px-2 py-1 rounded-full font-mono font-semibold border border-eco-green/10"
-          x-text="'ID: ' + plant.id"
+          class="text-xs text-slate-500 mt-0.5"
+          x-text="plant.location || ''"
         ></div>
       </div>
+    </div>
 
-      <div class="grid grid-cols-2 gap-3 text-xs sm:text-sm mb-4">
-        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
-          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Power</span>
-          <span class="font-medium text-deep-forest">
-            <span x-text="formatPower(plant.totalPower)"></span>
-          </span>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <div class="plant-detail-label">Today</div>
+        <div class="plant-detail-value">
+          <span
+            x-text="formatEnergy(plant.todayEnergy)"
+          ></span>
         </div>
-        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
-          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Today</span>
-          <span class="font-medium text-deep-forest">
-            <span x-text="formatEnergy(plant.todayEnergy)"></span>
-          </span>
-        </div>
-        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
-          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Month</span>
-          <span class="font-medium text-deep-forest">
-            <span x-text="formatEnergy(plant.monthEnergy)"></span>
-          </span>
-        </div>
-        <div class="flex flex-col p-2 bg-gray-50 rounded-md">
-          <span class="text-slate-gray mb-1 text-xs uppercase font-semibold">Total</span>
-          <span class="font-medium text-deep-forest">
-            <span x-text="formatEnergy(plant.totalEnergy)"></span>
-          </span>
+      </div>
+      <div>
+        <div class="plant-detail-label">This Month</div>
+        <div class="plant-detail-value">
+          <span
+            x-text="formatEnergy(plant.monthEnergy)"
+          ></span>
         </div>
       </div>
     </div>
 
-    <div class="mt-2 pt-3 border-t border-gray-200">
-      <div class="text-xs uppercase font-bold text-deep-forest mb-2 tracking-wider">Actions</div>
+    <!-- Expanded details -->
+    <div x-show="plantDetails" x-collapse>
+      <div class="mt-3 pt-3 border-t border-gray-100">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <div class="plant-detail-label">Total Energy</div>
+            <div class="plant-detail-value">
+              <span
+                x-text="formatEnergy(plant.totalEnergy)"
+              ></span>
+            </div>
+          </div>
+          <div>
+            <div class="plant-detail-label">CO₂ Avoided</div>
+            <div class="plant-detail-value">
+              <span
+                x-text="(plant.co2_avoided || plant.co2Avoided || 0) + ' t'"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <div class="plant-detail-label mb-2">Plant Details</div>
+          <ul class="text-xs text-slate-600 space-y-1">
+            <li class="flex justify-between">
+              <span>Installed Capacity:</span>
+              <span class="font-medium"
+                ><span x-text="(plant.capacity || 0) + ' kWp'"></span
+              ></span>
+            </li>
+            <li class="flex justify-between">
+              <span>Inverter Type:</span>
+              <span
+                class="font-medium"
+                x-text="plant.inverter_type || plant.inverterType || 'N/A'"
+              ></span>
+            </li>
+            <li class="flex justify-between">
+              <span>Installation Date:</span>
+              <span
+                class="font-medium"
+                x-text="plant.installation_date || plant.installDate || 'N/A'"
+              ></span>
+            </li>
+            <li class="flex justify-between">
+              <span>Timezone:</span>
+              <span
+                class="font-medium"
+                x-text="formatTimezone(plant.timezone)"
+              ></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="plant-card-actions">
       <a
         :href="'/plant/' + plant.id"
-        class="w-full flex items-center justify-center py-2.5 px-3 bg-eco-green text-white text-xs sm:text-sm font-medium rounded hover:bg-deep-forest transition-colors duration-200 touch-target shadow-sm"
+        class="plant-card-action-btn plant-card-action-btn-primary"
       >
-        <i class="fas fa-chart-line mr-2"></i> View Details
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
+        </svg>
+        View Details
       </a>
+      <button 
+        class="plant-card-action-btn" 
+        @click="fetchSinglePlant(plant.id)" 
+        :disabled="plant.isRefreshing"
+        :class="{'opacity-50 cursor-not-allowed': plant.isRefreshing}"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1"
+          :class="{'animate-spin': plant.isRefreshing}"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        <span x-text="plant.isRefreshing ? 'Refreshing...' : 'Refresh'"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card-plant-footer">
+    <div class="flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-3.5 w-3.5 mr-1 text-slate-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span
+        >Last update:
+        <span
+          x-text="plant.formattedLastUpdate"
+        ></span
+      ></span>
+    </div>
+    <div
+      class="plant-status-text"
+      :class="{
+      'text-success-600': plant.status === 'active',
+      'text-danger-600': plant.status === 'inactive',
+      'text-warning-600': plant.status === 'maintenance',
+      'text-error-600': plant.status === 'error',
+      'text-slate-500': !plant.status
+      }"
+    >
+      <span
+        x-text="getStatusText(plant.status)"
+      ></span>
     </div>
   </div>
 </div>

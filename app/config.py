@@ -36,8 +36,13 @@ class Config:
     SESSION_USE_SIGNER = os.getenv('SESSION_USE_SIGNER', 'True').lower() in ('true', '1', 't')
     PERMANENT_SESSION_LIFETIME = int(os.getenv('PERMANENT_SESSION_LIFETIME', '3600'))
     
-    # Database path
-    DATABASE_PATH = os.getenv('DATABASE_PATH', 'app/data/growatt_data.db')
+    # Database configuration - PostgreSQL
+    DATABASE_URL = os.getenv('DATABASE_URL', '')
+    POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'postgres')
+    POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
+    POSTGRES_USER = os.getenv('POSTGRES_USER', 'growatt')
+    POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'growattpassword')
+    POSTGRES_DB = os.getenv('POSTGRES_DB', 'growattdb')
     
     # Growatt API credentials
     GROWATT_USERNAME = os.getenv('GROWATT_USERNAME', '')
@@ -89,7 +94,12 @@ class Config:
     @classmethod
     def get_db_uri(cls) -> str:
         """Get the database URI based on configuration"""
-        return f"sqlite:///{cls.DATABASE_PATH}"
+        if cls.DATABASE_URL:
+            # If a full DATABASE_URL is provided, use it directly
+            return cls.DATABASE_URL
+        
+        # Build PostgreSQL connection string
+        return f"postgresql://{cls.POSTGRES_USER}:{cls.POSTGRES_PASSWORD}@{cls.POSTGRES_HOST}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
     
     @classmethod
     def get_cache_config(cls) -> Dict[str, Any]:
