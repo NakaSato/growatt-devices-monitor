@@ -28,8 +28,11 @@ ENV FLASK_APP=app/main.py
  
 EXPOSE 8000
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
+# Install runtime dependencies
+# - libstdc++ is needed for matplotlib and other scientific packages
+# - curl for healthcheck
+# - tzdata for proper timezone support
+RUN apk add --no-cache curl libstdc++ tzdata
 
 # Change the CMD to use wsgi.py
 CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "wsgi:app"]
