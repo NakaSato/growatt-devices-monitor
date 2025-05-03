@@ -1,0 +1,921 @@
+<!-- Monitoring Component -->
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="bg-white shadow rounded-lg p-4 sm:p-6">
+    <div class="md:flex md:items-center md:justify-between mb-4">
+      <h2 class="text-xl font-bold leading-tight text-gray-900">
+        Device Monitoring
+      </h2>
+      <div class="mt-3 md:mt-0 flex space-x-2">
+        <button
+          @click="refreshDeviceStatus()"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Refresh Status
+        </button>
+      </div>
+    </div>
+
+    <!-- Status Overview Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- Total Devices -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-blue-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+              />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-800">Total Devices</h3>
+            <p
+              class="text-2xl font-bold"
+              x-text="operationsData.deviceStats?.totalCount || 0"
+            ></p>
+            <p class="text-sm text-gray-600">
+              <span
+                x-show="operationsData.deviceStats?.newCount > 0"
+                class="text-green-600"
+                >+<span
+                  x-text="operationsData.deviceStats?.newCount || 0"
+                ></span>
+                new</span
+              >
+              <span x-show="operationsData.deviceStats?.newCount === 0"
+                >No new devices</span
+              >
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Online Devices -->
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-green-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-800">Online</h3>
+            <p
+              class="text-2xl font-bold"
+              x-text="operationsData.deviceStats?.onlineCount || 0"
+            ></p>
+            <p class="text-sm text-gray-600">
+              <span
+                x-text="operationsData.deviceStats?.onlinePercent || '0%'"
+              ></span>
+              of all devices
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offline Devices -->
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-red-100 rounded-full p-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+              />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-800">Offline</h3>
+            <p
+              class="text-2xl font-bold"
+              x-text="operationsData.deviceStats?.offlineCount || 0"
+            ></p>
+            <p class="text-sm text-gray-600">
+              <span
+                x-text="operationsData.deviceStats?.offlinePercent || '0%'"
+              ></span>
+              of all devices
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warning Devices -->
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-yellow-100 rounded-full p-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-yellow-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-800">Warnings</h3>
+            <p
+              class="text-2xl font-bold"
+              x-text="operationsData.deviceStats?.warningCount || 0"
+            ></p>
+            <p class="text-sm text-gray-600">
+              <span
+                x-text="operationsData.deviceStats?.warningPercent || '0%'"
+              ></span>
+              of all devices
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Monitoring Dashboard -->
+    <div class="bg-white border border-gray-200 rounded-md mb-6">
+      <div class="p-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">
+          Live Monitoring Dashboard
+        </h3>
+      </div>
+      <div class="p-4">
+        <!-- Live Data Visualization -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Power Output Chart -->
+          <div class="bg-white border rounded-lg p-4">
+            <h4 class="text-md font-medium text-gray-800 mb-4">
+              Current Power Output
+            </h4>
+            <div class="h-64">
+              <canvas id="powerOutputChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Device Status Distribution -->
+          <div class="bg-white border rounded-lg p-4">
+            <h4 class="text-md font-medium text-gray-800 mb-4">
+              Device Status Distribution
+            </h4>
+            <div class="h-64">
+              <canvas id="deviceDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Device Filter Section -->
+    <div class="bg-white border border-gray-200 rounded-md p-4 mb-6">
+      <div class="md:flex md:items-center space-y-4 md:space-y-0 md:space-x-4">
+        <!-- Search -->
+        <div class="flex-1">
+          <label
+            for="device-search"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Search Devices</label
+          >
+          <div class="relative rounded-md shadow-sm">
+            <input
+              type="text"
+              name="device-search"
+              id="device-search"
+              class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-md"
+              placeholder="Search by name, ID, or type..."
+            />
+            <div
+              class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
+            >
+              <svg
+                class="h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="w-full md:w-48">
+          <label
+            for="status-filter"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Status</label
+          >
+          <select
+            id="status-filter"
+            name="status-filter"
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+          >
+            <option value="all">All Status</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+            <option value="warning">Warning</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+
+        <!-- Plant Filter -->
+        <div class="w-full md:w-48">
+          <label
+            for="plant-filter"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Plant</label
+          >
+          <select
+            id="plant-filter"
+            name="plant-filter"
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+          >
+            <option value="all">All Plants</option>
+            <option value="plant-1">Plant 1</option>
+            <option value="plant-2">Plant 2</option>
+            <option value="plant-3">Plant 3</option>
+          </select>
+        </div>
+
+        <!-- Device Type Filter -->
+        <div class="w-full md:w-48">
+          <label
+            for="type-filter"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Device Type</label
+          >
+          <select
+            id="type-filter"
+            name="type-filter"
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+          >
+            <option value="all">All Types</option>
+            <option value="inverter">Inverter</option>
+            <option value="meter">Meter</option>
+            <option value="sensor">Sensor</option>
+            <option value="gateway">Gateway</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Table -->
+    <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Device
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Plant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Power Output
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Last Update
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <!-- Sample device rows (would be dynamic in real implementation) -->
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div
+                    class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-6 w-6 text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      GW-INV-001
+                    </div>
+                    <div class="text-sm text-gray-500">S/N: 2023051001</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Plant 1</div>
+                <div class="text-sm text-gray-500">Building A</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Inverter</div>
+                <div class="text-sm text-gray-500">Growatt 5000TL</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span
+                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                >
+                  Online
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                4.32 kW
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                2 minutes ago
+              </td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+              >
+                <div class="flex justify-end space-x-2">
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div
+                    class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-6 w-6 text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      GW-INV-002
+                    </div>
+                    <div class="text-sm text-gray-500">S/N: 2023051002</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Plant 1</div>
+                <div class="text-sm text-gray-500">Building A</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Inverter</div>
+                <div class="text-sm text-gray-500">Growatt 3000TL</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span
+                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                >
+                  Warning
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                2.75 kW
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                5 minutes ago
+              </td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+              >
+                <div class="flex justify-end space-x-2">
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div
+                    class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-6 w-6 text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      GW-INV-003
+                    </div>
+                    <div class="text-sm text-gray-500">S/N: 2023051003</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Plant 2</div>
+                <div class="text-sm text-gray-500">Building B</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Inverter</div>
+                <div class="text-sm text-gray-500">Growatt 5000TL</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span
+                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
+                >
+                  Offline
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                0 kW
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                2 hours ago
+              </td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+              >
+                <div class="flex justify-end space-x-2">
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button class="text-primary-600 hover:text-primary-900">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div
+        class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
+      >
+        <div class="flex-1 flex justify-between sm:hidden">
+          <a
+            href="#"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Previous
+          </a>
+          <a
+            href="#"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Next
+          </a>
+        </div>
+        <div
+          class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="text-sm text-gray-700">
+              Showing <span class="font-medium">1</span> to
+              <span class="font-medium">3</span> of
+              <span class="font-medium">12</span> devices
+            </p>
+          </div>
+          <div>
+            <nav
+              class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+              aria-label="Pagination"
+            >
+              <a
+                href="#"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <span class="sr-only">Previous</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary-50 text-sm font-medium text-primary-600 hover:bg-primary-100"
+              >
+                1
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                2
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                3
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                4
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <span class="sr-only">Next</span>
+                <svg
+                  class="h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Initialize the charts -->
+<script>
+  document.addEventListener("alpine:initialized", () => {
+    // Extend operationsApp with monitoring functionality
+    Alpine.data("operationsApp", () => ({
+      // Existing properties
+
+      refreshDeviceStatus() {
+        // Simulate refreshing device status
+        this.refreshOperationsData();
+      },
+
+      // Additional methods for monitoring
+    }));
+
+    // Sample data - this would come from the API in production
+    setTimeout(() => {
+      // Power Output Chart
+      const powerCtx = document
+        .getElementById("powerOutputChart")
+        .getContext("2d");
+      new Chart(powerCtx, {
+        type: "line",
+        data: {
+          labels: [
+            "9:00",
+            "10:00",
+            "11:00",
+            "12:00",
+            "13:00",
+            "14:00",
+            "15:00",
+          ],
+          datasets: [
+            {
+              label: "Power (kW)",
+              data: [5.2, 6.8, 9.3, 10.5, 9.8, 7.6, 6.2],
+              backgroundColor: "rgba(16, 185, 129, 0.2)",
+              borderColor: "rgba(16, 185, 129, 1)",
+              borderWidth: 2,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      // Device Distribution Chart
+      const deviceCtx = document
+        .getElementById("deviceDistributionChart")
+        .getContext("2d");
+      new Chart(deviceCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Online", "Offline", "Warning", "Maintenance"],
+          datasets: [
+            {
+              data: [65, 15, 12, 8],
+              backgroundColor: [
+                "rgba(16, 185, 129, 0.7)",
+                "rgba(239, 68, 68, 0.7)",
+                "rgba(245, 158, 11, 0.7)",
+                "rgba(59, 130, 246, 0.7)",
+              ],
+              borderColor: [
+                "rgba(16, 185, 129, 1)",
+                "rgba(239, 68, 68, 1)",
+                "rgba(245, 158, 11, 1)",
+                "rgba(59, 130, 246, 1)",
+              ],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+            },
+          },
+        },
+      });
+    }, 500);
+  });
+</script>

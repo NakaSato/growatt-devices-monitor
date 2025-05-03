@@ -31,6 +31,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger("plants_collector")
 
+# This function will be called by the background service
+def run_collection():
+    """
+    Run the plant data collection process.
+    This function is designed to be called by the background scheduler.
+    
+    Returns:
+        bool: True if collection was successful, False otherwise
+    """
+    collector = PlantsDataCollector()
+    try:
+        success = collector.run()
+        if success:
+            logger.info("Plant data collection completed successfully")
+            return True
+        else:
+            logger.error("Plant data collection failed")
+            return False
+    except Exception as e:
+        logger.error(f"Plant data collection failed with exception: {e}")
+        return False
+
 class PlantsDataCollector:
     """Collects plant data from the API and stores it in PostgreSQL"""
     

@@ -1,0 +1,1141 @@
+{% extends "base.html" %} {% block title %}IV Curve Diagnosis | Growatt Devices
+Monitor{% endblock %} {% block additional_head %}
+<!-- Chart.js for plotting IV curves -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- html2canvas and jsPDF for PDF generation in browser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  .health-score-indicator {
+    width: 100%;
+    height: 30px;
+    background: linear-gradient(to right, #ff0000, #ffa500, #ffff00, #008000);
+    position: relative;
+    border-radius: 15px;
+    margin: 10px 0;
+  }
+
+  .health-score-pointer {
+    position: absolute;
+    width: 20px;
+    height: 30px;
+    background-color: #333;
+    border-radius: 5px;
+    transform: translateX(-50%);
+  }
+
+  #reportContainer {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+
+  .diagnosis-card {
+    border-left: 5px solid #4e73df;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+
+  .parameter-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .parameter-table th,
+  .parameter-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e3e6f0;
+  }
+
+  .parameter-table th {
+    text-align: left;
+    background-color: #f8f9fc;
+  }
+
+  .recommendations-list {
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .recommendations-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e3e6f0;
+  }
+
+  .recommendations-list li:last-child {
+    border-bottom: none;
+  }
+
+  .recommendation-item {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .recommendation-item i {
+    margin-right: 10px;
+    color: #4e73df;
+  }
+
+  .fault-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 15px;
+    color: white;
+    font-weight: bold;
+    text-transform: capitalize;
+    margin-bottom: 10px;
+  }
+
+  .fault-normal {
+    background-color: #1cc88a;
+  }
+
+  .fault-partial-shading {
+    background-color: #f6c23e;
+  }
+
+  .fault-soiling {
+    background-color: #e74a3b;
+  }
+
+  .fault-degradation {
+    background-color: #e74a3b;
+  }
+
+  .fault-series-resistance {
+    background-color: #e74a3b;
+  }
+
+  .fault-shunt-resistance {
+    background-color: #e74a3b;
+  }
+
+  .fault-bypass-diode-failure {
+    background-color: #e74a3b;
+  }
+
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.3s linear;
+  }
+
+  .loading-spinner {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3 mb-0 text-gray-800">IV Curve Diagnosis</h1>
+  <div>
+    <button
+      class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"
+      id="generateReportBtn"
+    >
+      <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
+    </button>
+    <button
+      class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm ml-2"
+      id="simulateBtn"
+    >
+      <i class="fas fa-chart-line fa-sm text-white-50"></i> Simulate IV Curve
+    </button>
+  </div>
+</div>
+
+<div class="row">
+  <!-- IV Curve Input -->
+  <div class="col-lg-6">
+    <div class="card shadow mb-4">
+      <div
+        class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+      >
+        <h6 class="m-0 font-weight-bold text-primary">IV Curve Input</h6>
+        <div class="dropdown no-arrow">
+          <a
+            class="dropdown-toggle"
+            href="#"
+            role="button"
+            id="dropdownMenuLink"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+          </a>
+          <div
+            class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+            aria-labelledby="dropdownMenuLink"
+          >
+            <div class="dropdown-header">Input Options:</div>
+            <button class="dropdown-item" id="clearDataBtn">Clear Data</button>
+            <button class="dropdown-item" id="uploadCsvBtn">Upload CSV</button>
+            <input
+              type="file"
+              id="csvFileInput"
+              accept=".csv"
+              style="display: none"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form id="ivCurveForm">
+          <div class="form-group">
+            <label for="moduleId">Module ID</label>
+            <input
+              type="text"
+              class="form-control"
+              id="moduleId"
+              placeholder="Enter module ID"
+            />
+          </div>
+          <div class="form-group">
+            <label for="plantName">Plant Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="plantName"
+              placeholder="Enter plant name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="temperature">Temperature (°C)</label>
+            <input
+              type="number"
+              class="form-control"
+              id="temperature"
+              value="25"
+              step="0.1"
+            />
+          </div>
+          <div class="form-group">
+            <label>IV Curve Data</label>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Voltage (V)</span>
+              </div>
+              <input
+                type="text"
+                class="form-control"
+                id="voltageInput"
+                placeholder="Comma-separated values, e.g., 0,1,2,3,..."
+              />
+            </div>
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Current (A)</span>
+              </div>
+              <input
+                type="text"
+                class="form-control"
+                id="currentInput"
+                placeholder="Comma-separated values, e.g., 10,9.5,9,8.5,..."
+              />
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="diagnoseBtn">
+            Diagnose
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Simulation Parameters (Initially Hidden) -->
+    <div class="card shadow mb-4" id="simulationCard" style="display: none">
+      <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Simulation Parameters</h6>
+      </div>
+      <div class="card-body">
+        <form id="simulationForm">
+          <div class="form-group">
+            <label for="faultType">Fault Type</label>
+            <select class="form-control" id="faultType">
+              <option value="">Normal (No Fault)</option>
+              <option value="partial_shading">Partial Shading</option>
+              <option value="soiling">Soiling</option>
+              <option value="degradation">Degradation</option>
+              <option value="series_resistance">Series Resistance</option>
+              <option value="shunt_resistance">Shunt Resistance</option>
+              <option value="bypass_diode_failure">Bypass Diode Failure</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="iph">Photocurrent (A)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="iph"
+                value="10.0"
+                step="0.1"
+              />
+            </div>
+            <div class="form-group col-md-6">
+              <label for="i0">Saturation Current (A)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="i0"
+                value="1e-10"
+                step="1e-11"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="rs">Series Resistance (Ω)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="rs"
+                value="0.1"
+                step="0.01"
+              />
+            </div>
+            <div class="form-group col-md-6">
+              <label for="rsh">Shunt Resistance (Ω)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="rsh"
+                value="100.0"
+                step="5.0"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="voc">Open Circuit Voltage (V)</label>
+            <input
+              type="number"
+              class="form-control"
+              id="voc"
+              value="40.0"
+              step="0.5"
+            />
+          </div>
+          <button type="button" class="btn btn-primary" id="runSimulationBtn">
+            Run Simulation
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagnosis Results -->
+  <div class="col-lg-6">
+    <div class="card shadow mb-4">
+      <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">IV Curve Analysis</h6>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="position: relative; height: 300px">
+          <canvas id="ivCurveChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="diagnosisResultsCard"
+      class="card shadow mb-4"
+      style="display: none"
+    >
+      <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Diagnosis Results</h6>
+      </div>
+      <div class="card-body">
+        <div id="diagnosisResults">
+          <!-- Results will be populated here by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div
+  class="modal fade"
+  id="reportModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="reportModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportModalLabel">
+          IV Curve Diagnosis Report
+        </h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="reportContainer">
+          <!-- Report content will be generated here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" id="downloadReportBtn">
+          Download as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+</div>
+
+{% endblock %} {% block additional_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize variables
+    let ivCurveChart = null;
+    let currentDiagnosisResult = null;
+    let simulatedData = null;
+
+    // DOM elements
+    const diagnoseBtn = document.getElementById("diagnoseBtn");
+    const simulateBtn = document.getElementById("simulateBtn");
+    const runSimulationBtn = document.getElementById("runSimulationBtn");
+    const simulationCard = document.getElementById("simulationCard");
+    const diagnosisResultsCard = document.getElementById(
+      "diagnosisResultsCard"
+    );
+    const generateReportBtn = document.getElementById("generateReportBtn");
+    const downloadReportBtn = document.getElementById("downloadReportBtn");
+    const clearDataBtn = document.getElementById("clearDataBtn");
+    const uploadCsvBtn = document.getElementById("uploadCsvBtn");
+    const csvFileInput = document.getElementById("csvFileInput");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+
+    // Initialize Chart.js
+    function initChart() {
+      const ctx = document.getElementById("ivCurveChart").getContext("2d");
+
+      ivCurveChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Current (A)",
+              yAxisID: "y",
+              borderColor: "rgb(78, 115, 223)",
+              backgroundColor: "rgba(78, 115, 223, 0.05)",
+              borderWidth: 2,
+              pointRadius: 0,
+              data: [],
+              fill: true,
+            },
+            {
+              label: "Power (W)",
+              yAxisID: "y1",
+              borderColor: "rgb(255, 99, 132)",
+              backgroundColor: "rgba(255, 99, 132, 0.05)",
+              borderWidth: 2,
+              pointRadius: 0,
+              data: [],
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Voltage (V)",
+              },
+            },
+            y: {
+              type: "linear",
+              display: true,
+              position: "left",
+              title: {
+                display: true,
+                text: "Current (A)",
+              },
+            },
+            y1: {
+              type: "linear",
+              display: true,
+              position: "right",
+              title: {
+                display: true,
+                text: "Power (W)",
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Initialize chart
+    initChart();
+
+    // Event Listeners
+    diagnoseBtn.addEventListener("click", diagnoseIVCurve);
+    simulateBtn.addEventListener("click", toggleSimulationCard);
+    runSimulationBtn.addEventListener("click", runSimulation);
+    generateReportBtn.addEventListener("click", generateReport);
+    downloadReportBtn.addEventListener("click", downloadReportAsPDF);
+    clearDataBtn.addEventListener("click", clearData);
+    uploadCsvBtn.addEventListener("click", () => csvFileInput.click());
+    csvFileInput.addEventListener("change", handleCsvUpload);
+
+    // Functions for IV curve diagnosis
+    function diagnoseIVCurve() {
+      const voltageInput = document.getElementById("voltageInput").value;
+      const currentInput = document.getElementById("currentInput").value;
+      const temperature = parseFloat(
+        document.getElementById("temperature").value
+      );
+      const moduleId = document.getElementById("moduleId").value || "unknown";
+      const plantName =
+        document.getElementById("plantName").value || "Unknown Plant";
+
+      if (!voltageInput || !currentInput) {
+        alert("Please enter voltage and current data");
+        return;
+      }
+
+      // Parse the input data
+      const voltage = voltageInput.split(",").map((v) => parseFloat(v.trim()));
+      const current = currentInput.split(",").map((c) => parseFloat(c.trim()));
+
+      if (voltage.length !== current.length) {
+        alert("Voltage and current arrays must have the same length");
+        return;
+      }
+
+      // Show loading overlay
+      showLoading();
+
+      // Prepare the request data
+      const requestData = {
+        voltage: voltage,
+        current: current,
+        temperature: temperature,
+        module_id: moduleId,
+        plant_name: plantName,
+      };
+
+      // Send diagnosis request to API
+      fetch("/api/diagnosis/iv-curve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            currentDiagnosisResult = data.data;
+            updateChart(voltage, current);
+            displayDiagnosisResults(data.data);
+            hideLoading();
+          } else {
+            alert("Error: " + data.error);
+            hideLoading();
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Error occurred during diagnosis: " + error.message);
+          hideLoading();
+        });
+    }
+
+    function toggleSimulationCard() {
+      if (simulationCard.style.display === "none") {
+        simulationCard.style.display = "block";
+      } else {
+        simulationCard.style.display = "none";
+      }
+    }
+
+    function runSimulation() {
+      const faultType = document.getElementById("faultType").value;
+      const iph = parseFloat(document.getElementById("iph").value);
+      const i0 = parseFloat(document.getElementById("i0").value);
+      const rs = parseFloat(document.getElementById("rs").value);
+      const rsh = parseFloat(document.getElementById("rsh").value);
+      const voc = parseFloat(document.getElementById("voc").value);
+
+      // Show loading overlay
+      showLoading();
+
+      // Build query parameters
+      let queryParams = new URLSearchParams({
+        i_ph: iph,
+        i_0: i0,
+        r_s: rs,
+        r_sh: rsh,
+        v_oc: voc,
+      });
+
+      if (faultType) {
+        queryParams.append("fault", faultType);
+      }
+
+      // Send simulation request to API
+      fetch(`/api/diagnosis/simulate-iv-curve?${queryParams.toString()}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            simulatedData = data.data;
+
+            // Update the input fields with simulated data
+            document.getElementById("voltageInput").value =
+              data.data.voltage.join(",");
+            document.getElementById("currentInput").value =
+              data.data.current.join(",");
+
+            // Fill form fields with simulated data
+            document.getElementById("moduleId").value =
+              "Simulated_" + (faultType || "Normal");
+            document.getElementById("plantName").value = "Simulation Plant";
+
+            // Update the chart
+            updateChart(data.data.voltage, data.data.current);
+
+            // Display the diagnosis results
+            currentDiagnosisResult = data.data.diagnosis;
+            displayDiagnosisResults(data.data.diagnosis);
+
+            hideLoading();
+          } else {
+            alert("Error: " + data.error);
+            hideLoading();
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Error occurred during simulation: " + error.message);
+          hideLoading();
+        });
+    }
+
+    function updateChart(voltage, current) {
+      // Calculate power
+      const power = voltage.map((v, i) => v * current[i]);
+
+      // Update chart data
+      ivCurveChart.data.labels = voltage;
+      ivCurveChart.data.datasets[0].data = current;
+      ivCurveChart.data.datasets[1].data = power;
+
+      // Update chart
+      ivCurveChart.update();
+    }
+
+    function displayDiagnosisResults(diagnosisResult) {
+      const diagnosisResults = document.getElementById("diagnosisResults");
+      const faultType = diagnosisResult.fault_type;
+      const healthScore = diagnosisResult.health_score;
+      const confidence = diagnosisResult.confidence * 100;
+      const params = diagnosisResult.parameters;
+      const recommendations = diagnosisResult.recommendations;
+
+      // Format the fault type for display
+      const formattedFaultType = faultType
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+      // Build HTML for diagnosis results
+      let html = `
+        <div class="diagnosis-card">
+          <div class="fault-badge fault-${faultType}">${formattedFaultType}</div>
+          <h5>Health Score: ${healthScore.toFixed(1)}%</h5>
+          <div class="health-score-indicator">
+            <div class="health-score-pointer" style="left: ${healthScore}%;"></div>
+          </div>
+          <p>Confidence: ${confidence.toFixed(1)}%</p>
+        </div>
+        
+        <h6 class="font-weight-bold">IV Curve Parameters</h6>
+        <div class="table-responsive mb-4">
+          <table class="parameter-table">
+            <tr>
+              <th>Parameter</th>
+              <th>Value</th>
+            </tr>
+            <tr>
+              <td>Short Circuit Current (Isc)</td>
+              <td>${params.i_sc.toFixed(3)} A</td>
+            </tr>
+            <tr>
+              <td>Open Circuit Voltage (Voc)</td>
+              <td>${params.v_oc.toFixed(3)} V</td>
+            </tr>
+            <tr>
+              <td>Maximum Power (Pmax)</td>
+              <td>${params.p_max.toFixed(3)} W</td>
+            </tr>
+            <tr>
+              <td>Maximum Power Point Voltage (Vmpp)</td>
+              <td>${params.v_mpp.toFixed(3)} V</td>
+            </tr>
+            <tr>
+              <td>Maximum Power Point Current (Impp)</td>
+              <td>${params.i_mpp.toFixed(3)} A</td>
+            </tr>
+            <tr>
+              <td>Fill Factor</td>
+              <td>${params.fill_factor.toFixed(3)}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <h6 class="font-weight-bold">Recommendations</h6>
+        <ul class="recommendations-list">
+      `;
+
+      // Add each recommendation
+      recommendations.forEach((rec) => {
+        html += `
+          <li>
+            <div class="recommendation-item">
+              <i class="fas fa-check-circle"></i>
+              <span>${rec}</span>
+            </div>
+          </li>
+        `;
+      });
+
+      html += `</ul>`;
+
+      // Update the results div and show the card
+      diagnosisResults.innerHTML = html;
+      diagnosisResultsCard.style.display = "block";
+    }
+
+    function generateReport() {
+      if (!currentDiagnosisResult) {
+        alert("Please diagnose an IV curve first");
+        return;
+      }
+
+      const moduleId = document.getElementById("moduleId").value || "unknown";
+      const plantName =
+        document.getElementById("plantName").value || "Unknown Plant";
+      const temperature = parseFloat(
+        document.getElementById("temperature").value
+      );
+
+      // Get the current date and time
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString();
+      const formattedTime = now.toLocaleTimeString();
+
+      // Get parameters
+      const params = currentDiagnosisResult.parameters;
+      const faultType = currentDiagnosisResult.fault_type;
+      const healthScore = currentDiagnosisResult.health_score;
+      const recommendations = currentDiagnosisResult.recommendations;
+
+      // Format the fault type for display
+      const formattedFaultType = faultType
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+      // Get health score class
+      let healthClass = "health-critical";
+      if (healthScore >= 90) {
+        healthClass = "health-excellent";
+      } else if (healthScore >= 75) {
+        healthClass = "health-good";
+      } else if (healthScore >= 50) {
+        healthClass = "health-fair";
+      } else if (healthScore >= 25) {
+        healthClass = "health-poor";
+      }
+
+      // Build HTML for recommendations
+      let recommendationsHtml = "";
+      recommendations.forEach((rec, index) => {
+        recommendationsHtml += `<li>${rec}</li>`;
+      });
+
+      // Build report HTML
+      const reportHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2c3e50; margin-bottom: 10px;">IV Curve Diagnosis Report</h1>
+            <div style="color: #7f8c8d; font-size: 0.9em;">Generated on: ${formattedDate} ${formattedTime}</div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Module Information</h2>
+            <p><strong>Module ID:</strong> ${moduleId}</p>
+            <p><strong>Plant Name:</strong> ${plantName}</p>
+            <p><strong>Temperature:</strong> ${temperature}°C</p>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Diagnosis Summary</h2>
+            <div style="background-color: #f8f9fa; border-left: 4px solid #3498db; padding: 15px; margin-bottom: 20px;">
+              <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">Fault Type: ${formattedFaultType}</div>
+              <div style="font-size: 1.2em;">
+                Health Score: <span style="color: ${
+                  healthClass === "health-excellent"
+                    ? "#27ae60"
+                    : healthClass === "health-good"
+                    ? "#2ecc71"
+                    : healthClass === "health-fair"
+                    ? "#f39c12"
+                    : healthClass === "health-poor"
+                    ? "#e74c3c"
+                    : "#c0392b"
+                }">
+                  ${healthScore.toFixed(1)}%
+                </span>
+              </div>
+              <p><strong>Confidence:</strong> ${(
+                currentDiagnosisResult.confidence * 100
+              ).toFixed(1)}%</p>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">IV Curve Plot</h2>
+            <div style="text-align: center; margin: 30px 0;">
+              <canvas id="reportChart" width="700" height="350"></canvas>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Key Parameters</h2>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr style="background-color: #f2f2f2;">
+                <th style="padding: 12px 15px; border-bottom: 1px solid #ddd; text-align: left;">Parameter</th>
+                <th style="padding: 12px 15px; border-bottom: 1px solid #ddd; text-align: left;">Value</th>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Short Circuit Current (Isc)</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.i_sc.toFixed(
+                  3
+                )} A</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Open Circuit Voltage (Voc)</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.v_oc.toFixed(
+                  3
+                )} V</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power (Pmax)</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.p_max.toFixed(
+                  3
+                )} W</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power Point Voltage (Vmpp)</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.v_mpp.toFixed(
+                  3
+                )} V</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power Point Current (Impp)</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.i_mpp.toFixed(
+                  3
+                )} A</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Fill Factor</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.fill_factor.toFixed(
+                  3
+                )}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Recommendations</h2>
+            <div style="background-color: #f0f7fb; border-left: 4px solid #5bc0de; padding: 15px;">
+              <ul>
+                ${recommendationsHtml}
+              </ul>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 40px; font-size: 0.8em; color: #7f8c8d;">
+            <p>Growatt Devices Monitor - IV Curve Diagnosis System</p>
+          </div>
+        </div>
+      `;
+
+      // Update the report container
+      const reportContainer = document.getElementById("reportContainer");
+      reportContainer.innerHTML = reportHtml;
+
+      // Draw the chart in the report
+      setTimeout(() => {
+        const voltage = document
+          .getElementById("voltageInput")
+          .value.split(",")
+          .map((v) => parseFloat(v.trim()));
+        const current = document
+          .getElementById("currentInput")
+          .value.split(",")
+          .map((c) => parseFloat(c.trim()));
+        const power = voltage.map((v, i) => v * current[i]);
+
+        const reportCtx = document
+          .getElementById("reportChart")
+          .getContext("2d");
+
+        const reportChart = new Chart(reportCtx, {
+          type: "line",
+          data: {
+            labels: voltage,
+            datasets: [
+              {
+                label: "Current (A)",
+                yAxisID: "y",
+                borderColor: "rgb(78, 115, 223)",
+                backgroundColor: "rgba(78, 115, 223, 0.05)",
+                borderWidth: 2,
+                pointRadius: 0,
+                data: current,
+                fill: true,
+              },
+              {
+                label: "Power (W)",
+                yAxisID: "y1",
+                borderColor: "rgb(255, 99, 132)",
+                backgroundColor: "rgba(255, 99, 132, 0.05)",
+                borderWidth: 2,
+                pointRadius: 0,
+                data: power,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Voltage (V)",
+                },
+              },
+              y: {
+                type: "linear",
+                display: true,
+                position: "left",
+                title: {
+                  display: true,
+                  text: "Current (A)",
+                },
+              },
+              y1: {
+                type: "linear",
+                display: true,
+                position: "right",
+                title: {
+                  display: true,
+                  text: "Power (W)",
+                },
+                grid: {
+                  drawOnChartArea: false,
+                },
+              },
+            },
+          },
+        });
+      }, 100);
+
+      // Show the modal
+      $("#reportModal").modal("show");
+    }
+
+    function downloadReportAsPDF() {
+      // Get the report container element
+      const reportElement = document.getElementById("reportContainer");
+
+      // Define PDF document
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
+
+      // Show loading overlay
+      showLoading();
+
+      // Use html2canvas to render the report as an image
+      html2canvas(reportElement).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add image to PDF
+        doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Add additional pages if content exceeds page height
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          doc.addPage();
+          doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Save the PDF
+        const moduleId = document.getElementById("moduleId").value || "unknown";
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        doc.save(`iv_curve_report_${moduleId}_${timestamp}.pdf`);
+
+        // Hide loading overlay
+        hideLoading();
+      });
+    }
+
+    function clearData() {
+      document.getElementById("moduleId").value = "";
+      document.getElementById("plantName").value = "";
+      document.getElementById("temperature").value = "25";
+      document.getElementById("voltageInput").value = "";
+      document.getElementById("currentInput").value = "";
+
+      // Reset the chart
+      ivCurveChart.data.labels = [];
+      ivCurveChart.data.datasets[0].data = [];
+      ivCurveChart.data.datasets[1].data = [];
+      ivCurveChart.update();
+
+      // Hide the diagnosis results
+      diagnosisResultsCard.style.display = "none";
+
+      // Reset current diagnosis result
+      currentDiagnosisResult = null;
+      simulatedData = null;
+    }
+
+    function handleCsvUpload(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const contents = e.target.result;
+          const lines = contents.split("\n");
+
+          // Check if file has header
+          let startRow = 0;
+          if (
+            lines[0].toLowerCase().includes("voltage") ||
+            lines[0].toLowerCase().includes("current")
+          ) {
+            startRow = 1;
+          }
+
+          const voltage = [];
+          const current = [];
+
+          // Parse CSV data
+          for (let i = startRow; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line) {
+              const values = line.split(",");
+              if (values.length >= 2) {
+                const v = parseFloat(values[0]);
+                const c = parseFloat(values[1]);
+                if (!isNaN(v) && !isNaN(c)) {
+                  voltage.push(v);
+                  current.push(c);
+                }
+              }
+            }
+          }
+
+          if (voltage.length > 0 && current.length > 0) {
+            document.getElementById("voltageInput").value = voltage.join(",");
+            document.getElementById("currentInput").value = current.join(",");
+
+            // Update the chart
+            updateChart(voltage, current);
+
+            // Reset file input
+            csvFileInput.value = "";
+          } else {
+            alert("No valid data found in the CSV file");
+          }
+        } catch (error) {
+          console.error("Error parsing CSV:", error);
+          alert("Error parsing CSV file: " + error.message);
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    function showLoading() {
+      loadingOverlay.style.visibility = "visible";
+      loadingOverlay.style.opacity = "1";
+    }
+
+    function hideLoading() {
+      loadingOverlay.style.opacity = "0";
+      setTimeout(() => {
+        loadingOverlay.style.visibility = "hidden";
+      }, 300);
+    }
+  });
+</script>
+{% endblock %}

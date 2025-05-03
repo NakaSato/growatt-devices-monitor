@@ -137,6 +137,19 @@ def render_management() -> Tuple[str, int]:
     logger.debug("Rendering management page with authentication status: %s", authenticated)
     return render_template('management.html', authenticated=authenticated), 200
 
+def render_diagnosis() -> Tuple[str, int]:
+    """
+    Render the IV curve diagnosis template.
+    
+    Returns:
+        Tuple[str, int]: Rendered HTML template for the diagnosis page and status code
+    """
+    # Check authentication status from session
+    authenticated = session.get('growatt_authenticated', False)
+    
+    logger.debug("Rendering diagnosis page with authentication status: %s", authenticated)
+    return render_template('diagnosis.html', authenticated=authenticated), 200
+
 def render_error_404() -> Tuple[str, int]:
     """
     Render the 404 error template.

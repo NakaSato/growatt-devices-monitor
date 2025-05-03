@@ -73,6 +73,9 @@ class Config:
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))
     CACHE_THRESHOLD = int(os.getenv('CACHE_THRESHOLD', '1000'))
+    # Specific cache TTLs for different endpoints
+    DEVICE_CACHE_TTL = int(os.getenv('DEVICE_CACHE_TTL', '300'))  # Default 5 minutes for device data
+    PLANT_CACHE_TTL = int(os.getenv('PLANT_CACHE_TTL', '600'))    # Default 10 minutes for plant data
     
     # CORS configuration
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*')
@@ -84,12 +87,24 @@ class Config:
     # API settings
     API_RETRY_COUNT = int(os.getenv('API_RETRY_COUNT', '3'))
     API_RETRY_DELAY = int(os.getenv('API_RETRY_DELAY', '2'))
+    API_TIMEOUT = int(os.getenv('API_TIMEOUT', '30'))  # Default 30 seconds timeout for API calls
     
     # Live reload for development
     LIVE_RELOAD_ENABLED = os.getenv('LIVE_RELOAD_ENABLED', 'False').lower() in ('true', '1', 't')
     
     # Environment-specific settings
     ENVIRONMENT = os.getenv('FLASK_ENV', 'production')
+    
+    # Background service settings
+    ENABLE_BACKGROUND_MONITORING = os.getenv('ENABLE_BACKGROUND_MONITORING', 'True').lower() in ('true', '1', 't')
+    MONITOR_DEVICE_STATUS = os.getenv('MONITOR_DEVICE_STATUS', 'True').lower() in ('true', '1', 't')
+    COLLECT_DEVICE_DATA = os.getenv('COLLECT_DEVICE_DATA', 'True').lower() in ('true', '1', 't')
+    COLLECT_PLANT_DATA = os.getenv('COLLECT_PLANT_DATA', 'True').lower() in ('true', '1', 't')
+    DEVICE_STATUS_CHECK_INTERVAL_MINUTES = int(os.getenv('DEVICE_STATUS_CHECK_INTERVAL_MINUTES', '5'))
+    DEVICE_DATA_CRON = os.getenv('DEVICE_DATA_CRON', '*/15 6-20 * * *')  # Every 15 mins from 6 AM to 8 PM
+    PLANT_DATA_CRON = os.getenv('PLANT_DATA_CRON', '*/15 6-20 * * *')  # Every 15 mins from 6 AM to 8 PM
+    USE_SQLALCHEMY_JOBSTORE = os.getenv('USE_SQLALCHEMY_JOBSTORE', 'False').lower() in ('true', '1', 't')
+    TIMEZONE = os.getenv('TIMEZONE', 'UTC')
     
     @classmethod
     def get_db_uri(cls) -> str:

@@ -31,6 +31,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger("devices_collector")
 
+# This function will be called by the background service
+def run_collection():
+    """
+    Run the device data collection process.
+    This function is designed to be called by the background scheduler.
+    
+    Returns:
+        bool: True if collection was successful, False otherwise
+    """
+    collector = DevicesDataCollector()
+    try:
+        success = collector.run()
+        if success:
+            logger.info("Device data collection completed successfully")
+            return True
+        else:
+            logger.error("Device data collection failed")
+            return False
+    except Exception as e:
+        logger.error(f"Device data collection failed with exception: {e}")
+        return False
+
 class DevicesDataCollector:
     """Collects device data from the API and stores it in PostgreSQL"""
     

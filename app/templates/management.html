@@ -1,5 +1,5 @@
-{% extends "base.html" %} {% block title %}Management - Growatt Monitoring
-System{% endblock %} {% block styles %}
+{% extends "base.html" %} {% block title %}Operations Management - Growatt
+Monitoring System{% endblock %} {% block styles %}
 <!-- Management specific styles -->
 <link
   rel="stylesheet"
@@ -10,75 +10,118 @@ System{% endblock %} {% block styles %}
 <script src="{{ url_for('static', filename='js/utils/plant-data-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/export-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/chart-utils.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/management-app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/operations-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/operations-app.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %} {% block content %}
 <div
   class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6 border border-gray-200"
 >
-  <div x-data="managementApp()" x-init="init()" class="">
+  <div x-data="operationsApp()" x-init="init()">
     <!-- Header with Tabs Navigation -->
     <div class="border-b border-gray-200">
       <div
         class="sm:px-6 px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0"
       >
         <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
-          System Management
+          Operations Management
         </h1>
+        <div class="flex space-x-2">
+          <button
+            @click="refreshOperationsData"
+            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh Data
+          </button>
+          <button
+            @click="generateOperationsReport"
+            class="inline-flex items-center px-3 py-2 border border-primary-600 text-sm leading-4 font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Generate Report
+          </button>
+        </div>
       </div>
 
       <!-- Navigation Tabs -->
       <div class="flex overflow-x-auto scrollbar-hide overflow-hidden">
         <nav
           class="flex -mb-px space-x-8 sm:px-6 px-4"
-          aria-label="Management Tabs"
+          aria-label="Operations Tabs"
         >
           <button
-            @click="activeTab = 'overview'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'overview', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'overview' }"
+            @click="activeTab = 'dashboard'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'dashboard', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'dashboard' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            Overview
+            Dashboard
           </button>
 
           <button
-            @click="activeTab = 'plants'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'plants', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'plants' }"
+            @click="activeTab = 'maintenance'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'maintenance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'maintenance' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            Plants
+            Maintenance
           </button>
 
           <button
-            @click="activeTab = 'devices'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'devices', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'devices' }"
+            @click="activeTab = 'monitoring'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'monitoring', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'monitoring' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            Devices
+            Monitoring
           </button>
 
           <button
-            @click="activeTab = 'data'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'data', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'data' }"
+            @click="activeTab = 'performance'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'performance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'performance' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            Data Analysis
+            Performance
           </button>
 
           <button
-            @click="activeTab = 'health'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'health', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'health' }"
+            @click="activeTab = 'alerts'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'alerts', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'alerts' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            System Health
+            Alerts & Notifications
           </button>
 
           <button
-            @click="activeTab = 'settings'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'settings', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'settings' }"
+            @click="activeTab = 'configuration'"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'configuration', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'configuration' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
           >
-            Settings
+            Configuration
           </button>
         </nav>
       </div>
@@ -127,50 +170,109 @@ System{% endblock %} {% block styles %}
 
     <!-- Tab Content Sections -->
 
-    <!-- Overview Tab -->
+    <!-- Dashboard Tab -->
     <div
-      x-show="activeTab === 'overview' && !isLoading && !hasError"
+      x-show="activeTab === 'dashboard' && !isLoading && !hasError"
       class="p-6"
     >
-      {% include 'components/management/overview.html' %}
+      {% include 'components/management/operations_dashboard.html' %}
     </div>
 
-    <!-- Plants Tab -->
-    <div x-show="activeTab === 'plants' && !isLoading && !hasError" class="p-6">
-      {% include 'components/management/plants.html' %}
-    </div>
-
-    <!-- Devices Tab -->
+    <!-- Maintenance Tab -->
     <div
-      x-show="activeTab === 'devices' && !isLoading && !hasError"
+      x-show="activeTab === 'maintenance' && !isLoading && !hasError"
       class="p-6"
     >
-      {% include 'components/management/devices.html' %}
+      {% include 'components/management/maintenance.html' %}
     </div>
 
-    <!-- Data Analysis Tab -->
-    <div x-show="activeTab === 'data' && !isLoading && !hasError" class="p-6">
-      {% include 'components/management/data_analysis.html' %}
-    </div>
-
-    <!-- System Health Tab -->
-    <div x-show="activeTab === 'health' && !isLoading && !hasError" class="p-6">
-      {% include 'components/management/system_health.html' %}
-    </div>
-
-    <!-- Settings Tab -->
+    <!-- Monitoring Tab -->
     <div
-      x-show="activeTab === 'settings' && !isLoading && !hasError"
+      x-show="activeTab === 'monitoring' && !isLoading && !hasError"
       class="p-6"
     >
-      {% include 'components/management/settings.html' %}
+      {% include 'components/management/monitoring.html' %}
+    </div>
+
+    <!-- Performance Tab -->
+    <div
+      x-show="activeTab === 'performance' && !isLoading && !hasError"
+      class="p-6"
+    >
+      {% include 'components/management/performance.html' %}
+    </div>
+
+    <!-- Alerts & Notifications Tab -->
+    <div x-show="activeTab === 'alerts' && !isLoading && !hasError" class="p-6">
+      {% include 'components/management/alerts.html' %}
+    </div>
+
+    <!-- Configuration Tab -->
+    <div
+      x-show="activeTab === 'configuration' && !isLoading && !hasError"
+      class="p-6"
+    >
+      {% include 'components/management/configuration.html' %}
     </div>
   </div>
 </div>
 {% endblock %} {% block scripts %}
 <script>
   document.addEventListener("alpine:init", () => {
-    // Register any global Alpine components specific to the management page
+    // Register Alpine.js component for operations management
+    Alpine.data("operationsApp", () => ({
+      activeTab: "dashboard",
+      isLoading: true,
+      hasError: false,
+      errorMessage: "",
+      operationsData: {},
+      alerts: [],
+      maintenanceTasks: [],
+
+      init() {
+        this.fetchOperationsData();
+      },
+
+      fetchOperationsData() {
+        this.isLoading = true;
+        this.hasError = false;
+
+        // Fetch operations data from API
+        fetch("/api/operations/data")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch operations data");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            this.operationsData = data;
+            this.alerts = data.alerts || [];
+            this.maintenanceTasks = data.maintenanceTasks || [];
+            this.isLoading = false;
+          })
+          .catch((error) => {
+            this.hasError = true;
+            this.errorMessage =
+              error.message ||
+              "An error occurred while fetching operations data";
+            this.isLoading = false;
+            console.error("Operations data fetch error:", error);
+          });
+      },
+
+      refreshData() {
+        this.fetchOperationsData();
+      },
+
+      refreshOperationsData() {
+        this.fetchOperationsData();
+      },
+
+      generateOperationsReport() {
+        window.location.href = "/api/operations/report/generate";
+      },
+    }));
   });
 </script>
 {% endblock %}

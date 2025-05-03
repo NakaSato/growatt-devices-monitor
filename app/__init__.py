@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 # Import Config class which already handles .env loading
 from app.config import Config
 from app.database import init_db
+from app.services.background_service import background_service
 
 # Define version
 __version__ = "1.0.0"
@@ -87,6 +88,10 @@ def create_app(config: Optional[Dict[str, Any]] = None) -> Flask:
     
     # Import and register routes
     _register_blueprints(app)
+    
+    # Initialize background monitoring service if enabled
+    if app.config.get('ENABLE_BACKGROUND_MONITORING', True):
+        _init_background_service(app)
 
     # Log application startup
     logger.info(f"\033[32mGrowatt API v{__version__} initialized\033[0m")  # Green color
@@ -147,13 +152,17 @@ def _register_jinja_filters(app: Flask) -> None:
 
 def _register_blueprints(app: Flask) -> None:
     """Register all application blueprints"""
-    from app.routes import main_blueprint, api_routes_blueprint, data_routes, prediction_routes
+    from app.routes import main_blueprint, api_routes_blueprint, device_status_routes, prediction_routes
+    from app.routes.operations.operations_routes import operations_routes
     
     # Register all blueprints
     app.register_blueprint(main_blueprint)  # Main routes (/)
     app.register_blueprint(api_routes_blueprint)  # API routes (/api)
+    app.register_blueprint(operations_routes)  # Operations routes (/api/operations)
+    app.register_blueprint(device_status_routes)  # Device status routes
+    app.register_blueprint(prediction_routes)  # Prediction routes
     
-    # Note: data_routes and prediction_routes are already registered with main_blueprint
+    # Note: data_routes is already registered with main_blueprint
 
 def register_error_handlers(app: Flask) -> None:
     """
@@ -184,3 +193,32 @@ def register_error_handlers(app: Flask) -> None:
             "message": "Internal server error", 
             "error": str(e) if app.debug else None
         }), 500
+
+def _init_background_service(app: Flask) -> None:
+    """Initialize the background monitoring service with the current app"""
+    try:
+        logger.info("Initializing background monitoring service")
+        background_service.init_app(app)
+        logger.info(f"Background monitoring service initialized with timezone: {app.config.get('TIMEZONE', 'UTC')}")
+        
+        # Log the enabled monitoring tasks
+        if app.config.get('MONITOR_DEVICE_STATUS', True):
+            interval = app.config.get('DEVICE_STATUS_CHECK_INTERVAL_MINUTES', 5)
+            logger.info(f"Device status monitoring enabled (every {interval} minutes)")
+        
+        if app.config.get('COLLECT_DEVICE_DATA', True):
+            cron = app.config.get('DEVICE_DATA_CRON', '*/15 6-20 * * *')
+            logger.info(f"Device data collection enabled (schedule: {cron})")
+        
+        if app.config.get('COLLECT_PLANT_DATA', True):
+            cron = app.config.get('PLANT_DATA_CRON', '*/15 6-20 * * *')
+            logger.info(f"Plant data collection enabled (schedule: {cron})")
+            
+        # Store background service instance in app for access from routes/API
+        app.background_service = background_service
+    except Exception as e:
+        logger.error(f"Failed to initialize background service: {e}")
+        logger.warning("Background monitoring will not be available")
+        
+        # Still store the instance so routes don't break
+        app.background_service = background_service
