@@ -106,6 +106,23 @@ class Config:
     USE_SQLALCHEMY_JOBSTORE = os.getenv('USE_SQLALCHEMY_JOBSTORE', 'False').lower() in ('true', '1', 't')
     TIMEZONE = os.getenv('TIMEZONE', 'UTC')
     
+    # APScheduler specific settings
+    SCHEDULER_API_ENABLED = os.getenv('SCHEDULER_API_ENABLED', 'True').lower() in ('true', '1', 't')
+    SCHEDULER_JOBSTORES = {
+        'default': 'sqlite:///instance/apscheduler.db' if USE_SQLALCHEMY_JOBSTORE else 'memory'
+    }
+    SCHEDULER_EXECUTORS = {
+        'default': {'type': 'threadpool', 'max_workers': 10}
+    }
+    SCHEDULER_JOB_DEFAULTS = {
+        'coalesce': True,
+        'max_instances': 1,
+        'misfire_grace_time': 60  # 1 minute grace time for misfires
+    }
+    
+    # 24-hour monitoring setting
+    ENABLE_24H_COLLECTION = os.getenv('ENABLE_24H_COLLECTION', 'False').lower() in ('true', '1', 't')
+    
     @classmethod
     def get_db_uri(cls) -> str:
         """Get the database URI based on configuration"""

@@ -1,0 +1,965 @@
+<div x-data="schedulerManager()" x-init="initScheduler()" class="space-y-6">
+  <!-- Header Section with Controls -->
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
+  >
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900">Scheduler Management</h2>
+      <p class="text-sm text-gray-600">
+        Manage scheduled tasks using APScheduler
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button
+        @click="refreshSchedulerData()"
+        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        Refresh
+      </button>
+      <button
+        @click="openNewJobModal()"
+        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4 mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+          />
+        </svg>
+        Add Job
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div x-show="isLoading" class="flex justify-center items-center py-12">
+    <div
+      class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"
+    ></div>
+    <span class="ml-3 text-sm text-gray-500">Loading scheduler data...</span>
+  </div>
+
+  <!-- Error Alert -->
+  <div
+    x-show="hasError && !isLoading"
+    class="bg-red-50 border-l-4 border-red-400 p-4 mb-6"
+  >
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg
+          class="h-5 w-5 text-red-400"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-red-700" x-text="errorMessage"></p>
+        <div class="mt-2">
+          <button
+            @click="refreshSchedulerData()"
+            class="text-sm font-medium text-red-700 hover:text-red-600 underline"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduler Status -->
+  <div
+    x-show="!isLoading && !hasError"
+    class="bg-white shadow-sm rounded-lg border border-gray-200 p-4 sm:p-6"
+  >
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4"
+    >
+      <div>
+        <h3 class="text-base font-semibold text-gray-900">Scheduler Status</h3>
+        <p class="text-sm text-gray-500">Current status and configuration</p>
+      </div>
+      <div class="mt-2 sm:mt-0">
+        <span
+          :class="schedulerStatus === 'running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+        >
+          <span
+            :class="schedulerStatus === 'running' ? 'bg-green-400' : 'bg-red-400'"
+            class="h-2 w-2 rounded-full mr-1.5"
+          ></span>
+          <span
+            x-text="schedulerStatus === 'running' ? 'Running' : 'Stopped'"
+          ></span>
+        </span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+      <div class="bg-gray-50 p-3 rounded-md">
+        <div class="text-xs font-medium text-gray-500 uppercase">
+          Total Jobs
+        </div>
+        <div
+          class="mt-1 text-2xl font-semibold text-gray-900"
+          x-text="jobsCount"
+        ></div>
+      </div>
+      <div class="bg-gray-50 p-3 rounded-md">
+        <div class="text-xs font-medium text-gray-500 uppercase">
+          Server Time
+        </div>
+        <div
+          class="mt-1 text-sm font-medium text-gray-900"
+          x-text="serverTime"
+        ></div>
+      </div>
+      <div class="bg-gray-50 p-3 rounded-md">
+        <div class="text-xs font-medium text-gray-500 uppercase">
+          Next Job Run
+        </div>
+        <div
+          class="mt-1 text-sm font-medium text-gray-900"
+          x-text="getNextJobRun()"
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jobs List Tabs -->
+  <div x-show="!isLoading && !hasError" class="mt-6">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-6" aria-label="Job types">
+        <button
+          @click="activeJobType = 'all'"
+          :class="{ 'border-primary-600 text-primary-600': activeJobType === 'all', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeJobType !== 'all' }"
+          class="whitespace-nowrap py-3 border-b-2 font-medium text-sm transition-colors"
+        >
+          All Jobs
+          <span
+            class="ml-1 bg-gray-100 text-gray-700 py-0.5 px-1.5 rounded-full text-xs"
+            x-text="jobs.length"
+          ></span>
+        </button>
+        <button
+          @click="activeJobType = 'cron'"
+          :class="{ 'border-primary-600 text-primary-600': activeJobType === 'cron', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeJobType !== 'cron' }"
+          class="whitespace-nowrap py-3 border-b-2 font-medium text-sm transition-colors"
+        >
+          Cron Jobs
+          <span
+            class="ml-1 bg-gray-100 text-gray-700 py-0.5 px-1.5 rounded-full text-xs"
+            x-text="getJobCountByType('cron')"
+          ></span>
+        </button>
+        <button
+          @click="activeJobType = 'interval'"
+          :class="{ 'border-primary-600 text-primary-600': activeJobType === 'interval', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeJobType !== 'interval' }"
+          class="whitespace-nowrap py-3 border-b-2 font-medium text-sm transition-colors"
+        >
+          Interval Jobs
+          <span
+            class="ml-1 bg-gray-100 text-gray-700 py-0.5 px-1.5 rounded-full text-xs"
+            x-text="getJobCountByType('interval')"
+          ></span>
+        </button>
+        <button
+          @click="activeJobType = 'one_time'"
+          :class="{ 'border-primary-600 text-primary-600': activeJobType === 'one_time', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeJobType !== 'one_time' }"
+          class="whitespace-nowrap py-3 border-b-2 font-medium text-sm transition-colors"
+        >
+          One-Time Jobs
+          <span
+            class="ml-1 bg-gray-100 text-gray-700 py-0.5 px-1.5 rounded-full text-xs"
+            x-text="getJobCountByType('one_time')"
+          ></span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Jobs Table -->
+    <div
+      class="mt-4 -mx-4 sm:-mx-0 overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg"
+    >
+      <table class="min-w-full divide-y divide-gray-300">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+            >
+              Job ID
+            </th>
+            <th
+              scope="col"
+              class="hidden sm:table-cell px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Type
+            </th>
+            <th
+              scope="col"
+              class="hidden md:table-cell px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Description
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Next Run
+            </th>
+            <th
+              scope="col"
+              class="hidden sm:table-cell px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Status
+            </th>
+            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <template x-for="job in filteredJobs" :key="job.id">
+            <tr>
+              <td
+                class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"
+                x-text="job.id"
+              ></td>
+              <td
+                class="hidden sm:table-cell whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+              >
+                <span
+                  :class="{
+                    'bg-blue-100 text-blue-800': job.type === 'interval',
+                    'bg-purple-100 text-purple-800': job.type === 'cron',
+                    'bg-green-100 text-green-800': job.type === 'one_time'
+                  }"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  x-text="job.type"
+                ></span>
+              </td>
+              <td
+                class="hidden md:table-cell px-3 py-4 text-sm text-gray-500"
+                x-text="job.description || 'No description'"
+              ></td>
+              <td
+                class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+                x-text="job.next_run"
+              ></td>
+              <td
+                class="hidden sm:table-cell whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+              >
+                <span
+                  :class="job.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                >
+                  <span
+                    :class="job.active ? 'bg-green-400' : 'bg-yellow-400'"
+                    class="h-2 w-2 rounded-full mr-1.5"
+                  ></span>
+                  <span x-text="job.active ? 'Active' : 'Paused'"></span>
+                </span>
+              </td>
+              <td
+                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
+              >
+                <div class="flex justify-end space-x-2">
+                  <button
+                    @click="executeJob(job.id)"
+                    class="text-primary-600 hover:text-primary-900"
+                    title="Run Now"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    x-show="job.active"
+                    @click="pauseJob(job.id)"
+                    class="text-yellow-600 hover:text-yellow-900"
+                    title="Pause"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    x-show="!job.active"
+                    @click="resumeJob(job.id)"
+                    class="text-green-600 hover:text-green-900"
+                    title="Resume"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    @click="deleteJob(job.id)"
+                    class="text-red-600 hover:text-red-900"
+                    title="Delete"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </template>
+          <tr x-show="filteredJobs.length === 0">
+            <td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">
+              No jobs found for the selected type.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add New Job Modal -->
+  <div
+    x-show="showNewJobModal"
+    class="fixed inset-0 z-10 overflow-y-auto"
+    x-transition:enter="ease-out duration-300"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="ease-in duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+  >
+    <div
+      class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+    >
+      <div
+        x-show="showNewJobModal"
+        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        @click="showNewJobModal = false"
+      ></div>
+
+      <div
+        x-show="showNewJobModal"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+      >
+        <div>
+          <div class="mt-3 text-center sm:mt-0 sm:text-left">
+            <h3
+              class="text-lg leading-6 font-medium text-gray-900"
+              id="modal-title"
+            >
+              Add New Scheduled Job
+            </h3>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500">
+                Configure a new job to be scheduled in the background service.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sm:mt-4">
+          <form @submit.prevent="submitNewJob">
+            <div class="space-y-4">
+              <!-- Job Type -->
+              <div>
+                <label
+                  for="job-type"
+                  class="block text-sm font-medium text-gray-700"
+                  >Job Type</label
+                >
+                <select
+                  id="job-type"
+                  x-model="newJob.type"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                >
+                  <option value="interval">
+                    Interval (every X seconds/minutes/hours)
+                  </option>
+                  <option value="cron">
+                    Cron (scheduled at specific times)
+                  </option>
+                  <option value="one_time">
+                    One-Time (run once at specific time)
+                  </option>
+                </select>
+              </div>
+
+              <!-- Job ID -->
+              <div>
+                <label
+                  for="job-id"
+                  class="block text-sm font-medium text-gray-700"
+                  >Job ID</label
+                >
+                <input
+                  type="text"
+                  id="job-id"
+                  x-model="newJob.id"
+                  placeholder="unique_job_id"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  required
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Must be unique across all jobs
+                </p>
+              </div>
+
+              <!-- Job Description -->
+              <div>
+                <label
+                  for="job-description"
+                  class="block text-sm font-medium text-gray-700"
+                  >Description</label
+                >
+                <input
+                  type="text"
+                  id="job-description"
+                  x-model="newJob.description"
+                  placeholder="Brief description of the job"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+              </div>
+
+              <!-- Job Function -->
+              <div>
+                <label
+                  for="job-function"
+                  class="block text-sm font-medium text-gray-700"
+                  >Function</label
+                >
+                <input
+                  type="text"
+                  id="job-function"
+                  x-model="newJob.func"
+                  placeholder="module.path:function_name"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  required
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Format: module.path:function_name
+                </p>
+              </div>
+
+              <!-- Interval Settings (shown if type=interval) -->
+              <div x-show="newJob.type === 'interval'">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      for="interval-value"
+                      class="block text-sm font-medium text-gray-700"
+                      >Interval</label
+                    >
+                    <input
+                      type="number"
+                      id="interval-value"
+                      x-model.number="newJob.trigger_args.value"
+                      min="1"
+                      placeholder="5"
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="interval-unit"
+                      class="block text-sm font-medium text-gray-700"
+                      >Unit</label
+                    >
+                    <select
+                      id="interval-unit"
+                      x-model="newJob.trigger_args.unit"
+                      class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                    >
+                      <option value="seconds">Seconds</option>
+                      <option value="minutes">Minutes</option>
+                      <option value="hours">Hours</option>
+                      <option value="days">Days</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cron Settings (shown if type=cron) -->
+              <div x-show="newJob.type === 'cron'">
+                <label
+                  for="cron-expression"
+                  class="block text-sm font-medium text-gray-700"
+                  >Cron Expression</label
+                >
+                <input
+                  type="text"
+                  id="cron-expression"
+                  x-model="newJob.trigger_args.cron"
+                  placeholder="*/15 * * * *"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  required
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Format: minute hour day month day_of_week
+                </p>
+              </div>
+
+              <!-- One-Time Settings (shown if type=one_time) -->
+              <div x-show="newJob.type === 'one_time'">
+                <label
+                  for="run-date"
+                  class="block text-sm font-medium text-gray-700"
+                  >Run Date/Time</label
+                >
+                <input
+                  type="datetime-local"
+                  id="run-date"
+                  x-model="newJob.trigger_args.run_date"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
+            >
+              <button
+                type="submit"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm"
+                :disabled="isSubmitting"
+              >
+                <span x-show="!isSubmitting">Add Job</span>
+                <span x-show="isSubmitting" class="flex items-center">
+                  <svg
+                    class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </span>
+              </button>
+              <button
+                type="button"
+                @click="showNewJobModal = false"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("schedulerManager", () => ({
+      isLoading: true,
+      hasError: false,
+      errorMessage: "",
+      schedulerStatus: "unknown",
+      serverTime: "",
+      jobs: [],
+      jobsCount: 0,
+
+      // UI state
+      activeJobType: "all",
+      showNewJobModal: false,
+      isSubmitting: false,
+
+      // New job form data
+      newJob: {
+        type: "interval",
+        id: "",
+        description: "",
+        func: "",
+        trigger_args: {
+          // For interval jobs
+          value: 5,
+          unit: "minutes",
+
+          // For cron jobs
+          cron: "*/15 * * * *",
+
+          // For one-time jobs
+          run_date: new Date(Date.now() + 3600000).toISOString().slice(0, 16), // 1 hour from now
+        },
+      },
+
+      // Initialize component
+      initScheduler() {
+        this.refreshSchedulerData();
+      },
+
+      // Fetch scheduler data from API
+      refreshSchedulerData() {
+        this.isLoading = true;
+        this.hasError = false;
+
+        fetch("/api/scheduler/status")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            this.schedulerStatus = data.status;
+            this.serverTime = data.server_time;
+            this.jobs = data.jobs || [];
+            this.jobsCount = data.jobs_count || 0;
+
+            // Sort jobs by next run time
+            this.jobs.sort((a, b) => {
+              if (a.next_run === "Not scheduled") return 1;
+              if (b.next_run === "Not scheduled") return -1;
+              return a.next_run.localeCompare(b.next_run);
+            });
+
+            this.isLoading = false;
+          })
+          .catch((error) => {
+            this.hasError = true;
+            this.errorMessage = `Failed to load scheduler data: ${error.message}`;
+            this.isLoading = false;
+            console.error("Scheduler data fetch error:", error);
+          });
+      },
+
+      // Get filtered jobs based on active job type
+      get filteredJobs() {
+        if (this.activeJobType === "all") {
+          return this.jobs;
+        }
+        return this.jobs.filter((job) => job.type === this.activeJobType);
+      },
+
+      // Get count of jobs by type
+      getJobCountByType(type) {
+        return this.jobs.filter((job) => job.type === type).length;
+      },
+
+      // Get the next job to run
+      getNextJobRun() {
+        const activeJobs = this.jobs.filter((job) => job.active);
+        if (activeJobs.length === 0) {
+          return "No active jobs";
+        }
+
+        // Find the job with the earliest next run time that isn't "Not scheduled"
+        const nextJob = activeJobs
+          .filter((job) => job.next_run !== "Not scheduled")
+          .sort((a, b) => a.next_run.localeCompare(b.next_run))[0];
+
+        return nextJob ? nextJob.next_run : "No upcoming jobs";
+      },
+
+      // Open the new job modal
+      openNewJobModal() {
+        // Reset form
+        this.newJob = {
+          type: "interval",
+          id: "",
+          description: "",
+          func: "",
+          trigger_args: {
+            value: 5,
+            unit: "minutes",
+            cron: "*/15 * * * *",
+            run_date: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+          },
+        };
+
+        this.showNewJobModal = true;
+      },
+
+      // Submit new job
+      submitNewJob() {
+        this.isSubmitting = true;
+
+        // Prepare the request data based on job type
+        const requestData = {
+          type: this.newJob.type,
+          id: this.newJob.id,
+          description: this.newJob.description,
+          func: this.newJob.func,
+          trigger_args: {},
+        };
+
+        // Set trigger arguments based on job type
+        if (this.newJob.type === "interval") {
+          // Convert interval to the right unit
+          const unit = this.newJob.trigger_args.unit;
+          const value = this.newJob.trigger_args.value;
+
+          // Map unit to trigger args
+          requestData.trigger_args[unit] = value;
+        } else if (this.newJob.type === "cron") {
+          requestData.trigger_args.cron = this.newJob.trigger_args.cron;
+        } else if (this.newJob.type === "one_time") {
+          requestData.trigger_args.run_date = new Date(
+            this.newJob.trigger_args.run_date
+          ).toISOString();
+        }
+
+        // Send the request to the API
+        fetch("/api/scheduler/jobs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(
+                  data.message || `HTTP error: ${response.status}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success message
+            alert(`Job "${this.newJob.id}" created successfully`);
+
+            // Close modal and refresh data
+            this.showNewJobModal = false;
+            this.refreshSchedulerData();
+          })
+          .catch((error) => {
+            alert(`Failed to create job: ${error.message}`);
+            console.error("Job creation error:", error);
+          })
+          .finally(() => {
+            this.isSubmitting = false;
+          });
+      },
+
+      // Pause a job
+      pauseJob(jobId) {
+        if (!confirm(`Are you sure you want to pause job "${jobId}"?`)) {
+          return;
+        }
+
+        fetch(`/api/scheduler/jobs/${jobId}/pause`, {
+          method: "POST",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(
+                  data.message || `HTTP error: ${response.status}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success message and refresh data
+            alert(`Job "${jobId}" paused successfully`);
+            this.refreshSchedulerData();
+          })
+          .catch((error) => {
+            alert(`Failed to pause job: ${error.message}`);
+            console.error("Job pause error:", error);
+          });
+      },
+
+      // Resume a job
+      resumeJob(jobId) {
+        fetch(`/api/scheduler/jobs/${jobId}/resume`, {
+          method: "POST",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(
+                  data.message || `HTTP error: ${response.status}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success message and refresh data
+            alert(`Job "${jobId}" resumed successfully`);
+            this.refreshSchedulerData();
+          })
+          .catch((error) => {
+            alert(`Failed to resume job: ${error.message}`);
+            console.error("Job resume error:", error);
+          });
+      },
+
+      // Delete a job
+      deleteJob(jobId) {
+        if (
+          !confirm(
+            `Are you sure you want to delete job "${jobId}"? This cannot be undone.`
+          )
+        ) {
+          return;
+        }
+
+        fetch(`/api/scheduler/jobs/${jobId}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(
+                  data.message || `HTTP error: ${response.status}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success message and refresh data
+            alert(`Job "${jobId}" deleted successfully`);
+            this.refreshSchedulerData();
+          })
+          .catch((error) => {
+            alert(`Failed to delete job: ${error.message}`);
+            console.error("Job deletion error:", error);
+          });
+      },
+
+      // Execute a job immediately
+      executeJob(jobId) {
+        if (
+          !confirm(`Are you sure you want to run job "${jobId}" right now?`)
+        ) {
+          return;
+        }
+
+        fetch(`/api/scheduler/run-now/${jobId}`, {
+          method: "POST",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(
+                  data.message || `HTTP error: ${response.status}`
+                );
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success message
+            alert(`Job "${jobId}" executed successfully`);
+          })
+          .catch((error) => {
+            alert(`Failed to execute job: ${error.message}`);
+            console.error("Job execution error:", error);
+          });
+      },
+    }));
+  });
+</script>

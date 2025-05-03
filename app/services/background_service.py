@@ -6,12 +6,10 @@ at regular intervals without needing cron jobs, using APScheduler.
 """
 
 import logging
-import os
-from typing import Optional, Callable, Dict, Any, List
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, current_app
+from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -56,22 +54,50 @@ class BackgroundService:
         # Store app for context management
         self.app = app
         
-        # Create scheduler with timezone from app config
+        # Get scheduler configuration from app config
         timezone = app.config.get('TIMEZONE', 'UTC')
-        self.scheduler = BackgroundScheduler(timezone=timezone)
         
-        # Add jobstores if configured
+        # Initialize scheduler with configuration from app.config
+        jobstores = {}
+        executors = {}
+        job_defaults = {}
+        
+        # Configure jobstores if specified
         if app.config.get('USE_SQLALCHEMY_JOBSTORE', False):
             try:
                 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
                 from app.database import get_db_url
                 
+                # Use database URL for persistent job storage
                 db_url = get_db_url()
-                jobstore = SQLAlchemyJobStore(url=db_url)
-                self.scheduler.add_jobstore(jobstore, 'default')
+                jobstores['default'] = SQLAlchemyJobStore(url=db_url)
                 logger.info("Using SQLAlchemy jobstore for persistent jobs")
             except ImportError:
                 logger.warning("SQLAlchemyJobStore requested but SQLAlchemy not installed")
+                # Fallback to memory jobstore
+                jobstores['default'] = 'memory'
+        
+        # Get executors configuration
+        if 'SCHEDULER_EXECUTORS' in app.config:
+            executors = app.config.get('SCHEDULER_EXECUTORS', {
+                'default': {'type': 'threadpool', 'max_workers': 10}
+            })
+        
+        # Get job defaults configuration
+        if 'SCHEDULER_JOB_DEFAULTS' in app.config:
+            job_defaults = app.config.get('SCHEDULER_JOB_DEFAULTS', {
+                'coalesce': True,
+                'max_instances': 1,
+                'misfire_grace_time': 60
+            })
+        
+        # Create the scheduler with our configuration
+        self.scheduler = BackgroundScheduler(
+            jobstores=jobstores,
+            executors=executors,
+            job_defaults=job_defaults,
+            timezone=timezone
+        )
                 
         # Configure app context for jobs
         self.app_context = app.app_context
@@ -115,7 +141,7 @@ class BackgroundService:
             # Set up device data collection (default: every 15 minutes during daylight hours)
             cron_expr = app.config.get('DEVICE_DATA_CRON', '*/15 6-20 * * *')
             self.add_cron_job(
-                func='script.devices_data_collector:run_collection',
+                func='app.services.data_collector:collect_device_data',
                 id='device_data_collector',
                 cron=cron_expr,
                 description=f"Collect device data on schedule: {cron_expr}"
@@ -127,7 +153,7 @@ class BackgroundService:
             # Set up plant data collection (default: every 15 minutes during daylight hours)
             cron_expr = app.config.get('PLANT_DATA_CRON', '*/15 6-20 * * *')
             self.add_cron_job(
-                func='script.plants_data_collector:run_collection',
+                func='app.services.data_collector:collect_plant_data',
                 id='plant_data_collector',
                 cron=cron_expr,
                 description=f"Collect plant data on schedule: {cron_expr}"
@@ -328,7 +354,9 @@ class BackgroundService:
                 'name': job.name,
                 'type': job_info.get('type', 'unknown'),
                 'next_run': next_run_str,
-                'active': job.next_run_time is not None
+                'active': job.next_run_time is not None,
+                'description': job_info.get('description', ''),
+                'config': job_info.get('config', {})
             }
             
             result.append(job_data)
@@ -431,6 +459,100 @@ class BackgroundService:
         }
         
         return job
+    
+    def update_job(self, job_id, **kwargs):
+        """
+        Update an existing job's properties.
+        
+        Args:
+            job_id: ID of the job to update
+            **kwargs: New job parameters
+            
+        Returns:
+            True if job was updated, False otherwise
+        """
+        if not self.initialized or not self.scheduler:
+            logger.error("Cannot update job - scheduler not initialized")
+            return False
+        
+        try:
+            # Modify the job
+            if 'func' in kwargs:
+                func = kwargs.pop('func')
+                if isinstance(func, str):
+                    func = self._import_function(func)
+                    if not func:
+                        return False
+                kwargs['func'] = self._wrap_with_app_context(func)
+            
+            self.scheduler.modify_job(job_id, **kwargs)
+            
+            # Update our internal tracking
+            if job_id in self.jobs:
+                job_info = self.jobs[job_id]
+                if 'description' in kwargs:
+                    job_info['description'] = kwargs['description']
+                if 'config' in kwargs:
+                    job_info['config'].update(kwargs['config'])
+            
+            logger.info(f"Updated scheduled job: {job_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating job {job_id}: {e}")
+            return False
+    
+    def reschedule_job(self, job_id, trigger_type, trigger_args):
+        """
+        Reschedule an existing job with a new trigger.
+        
+        Args:
+            job_id: ID of the job to reschedule
+            trigger_type: Type of trigger ('interval', 'cron', 'date')
+            trigger_args: Arguments for the trigger
+            
+        Returns:
+            True if job was rescheduled, False otherwise
+        """
+        if not self.initialized or not self.scheduler:
+            logger.error("Cannot reschedule job - scheduler not initialized")
+            return False
+        
+        try:
+            if trigger_type == 'interval':
+                trigger = IntervalTrigger(**trigger_args)
+            elif trigger_type == 'cron':
+                if isinstance(trigger_args.get('cron', None), str):
+                    cron = trigger_args.pop('cron')
+                    minute, hour, day, month, day_of_week = cron.split()[:5]
+                    trigger = CronTrigger(
+                        minute=minute,
+                        hour=hour,
+                        day=day,
+                        month=month,
+                        day_of_week=day_of_week
+                    )
+                else:
+                    trigger = CronTrigger(**trigger_args)
+            elif trigger_type == 'date':
+                from apscheduler.triggers.date import DateTrigger
+                trigger = DateTrigger(**trigger_args)
+            else:
+                logger.error(f"Invalid trigger type: {trigger_type}")
+                return False
+            
+            self.scheduler.reschedule_job(job_id, trigger=trigger)
+            
+            # Update our internal tracking
+            if job_id in self.jobs:
+                job_info = self.jobs[job_id]
+                job_info['type'] = trigger_type
+                job_info['config'] = trigger_args
+            
+            logger.info(f"Rescheduled job {job_id} with trigger {trigger_type}")
+            return True
+        except Exception as e:
+            logger.error(f"Error rescheduling job {job_id}: {e}")
+            return False
 
 
 # Create the singleton background service instance

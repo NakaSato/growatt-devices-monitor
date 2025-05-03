@@ -1,5 +1,4 @@
 import json
-import logging
 import datetime
 from typing import Union, Tuple, List, Dict, Any
 
@@ -9,13 +8,15 @@ from flask import (
 )
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from app.services.plant_service import get_maps_plants, PlantService
+from app.services.plant_service import get_maps_plants
 
 # Import from common helpers module
 from app.routes.common.api_helpers import (
     get_plant_fault_logs, get_plants, get_devices_for_plant, get_weather_list,
     get_access_api, get_logout, get_plant_by_id, growatt_api, is_session_valid, ensure_login
 )
+
+from app.cache_utils import cached_route
 
 # Create a blueprint for the API routes
 api_blueprint = Blueprint('api_routes', __name__, url_prefix='/api')
@@ -148,6 +149,7 @@ def activity_data() -> Tuple[Response, int]:
         }), 500
 
 @api_blueprint.route('/plants', methods=['GET'])
+@cached_route(timeout=300, key_prefix='api_plants_')
 def api_plants() -> Tuple[Response, int]:
     """
     API endpoint to get the list of plants.
@@ -246,21 +248,25 @@ def api_get_devices() -> Tuple[Response, int]:
     start_time = log_api_request('/api/devices')
     
     try:
-        # Instead of using function attributes for caching, use Flask's app config
-        cache_ttl = current_app.config.get('DEVICE_CACHE_TTL', 300)  # Default 5 minutes cache
+        # Check if request has cache-control header to bypass cache
+        force_refresh = request.headers.get('Cache-Control') == 'no-cache'
         
-        # Get cache from application config
-        cache_data = current_app.config.get('_DEVICES_CACHE_DATA', {})
-        cache_timestamp = cache_data.get('timestamp', 0)
-        devices_cache = cache_data.get('devices')
-        
-        import time
-        # If cache is valid and not expired
-        if devices_cache and (time.time() - cache_timestamp) < cache_ttl:
-            current_app.logger.info("Returning devices from cache")
-            log_api_response('/api/devices', start_time, 200, devices_cache)
-            return jsonify(devices_cache), 200
-        
+        if not force_refresh:
+            # Try to get from cache - access cache through current_app.extensions
+            # Try to get from cache - access cache through current_app.extensions
+            cache = current_app.extensions.get('cache')
+            if cache:
+                cached_result = None
+                # Handle different cache implementations
+                if hasattr(cache, 'get'):
+                    cached_result = cache.get('api_devices')
+                elif isinstance(cache, dict):
+                    cached_result = cache.get('api_devices')
+                
+                if cached_result:
+                    current_app.logger.info("Returning devices from cache")
+                    log_api_response('/api/devices', start_time, 200, cached_result)
+                    return jsonify(cached_result), 200
         plants = get_plants()
         # Validate plants data
         if not isinstance(plants, list):
@@ -328,18 +334,24 @@ def api_get_devices() -> Tuple[Response, int]:
                 try:
                     devices = future.result()
                     all_devices.extend(devices)
-                except Exception as e:
-                    current_app.logger.error(f"Error processing plant {plant_id}: {str(e)}")
+                except Exception as exc:
+                    current_app.logger.error(f"Error processing plant {plant_id}: {exc}")
+                    
+        # Store in cache with TTL from config
+        cache_ttl = current_app.config.get('DEVICE_CACHE_TTL', 300)
         
-        # Update cache in application config (thread-safe)
-        cache_data = {
-            'timestamp': time.time(),
-            'devices': all_devices
-        }
-        current_app.config['_DEVICES_CACHE_DATA'] = cache_data
+        # Access cache through current_app.extensions
+        cache = current_app.extensions.get('cache')
+        if cache and hasattr(cache, 'set'):
+            # Use cache.set() method to store the device list
+            cache.set('api_devices', all_devices, timeout=cache_ttl)
+        elif cache and isinstance(cache, dict):
+            # Handle the case where cache is a dictionary-like object
+            cache['api_devices'] = all_devices
         
         # Add metrics about response time to the log
-        log_api_response('/api/devices', start_time, 200, all_devices)
+        
+        # Add metrics about response time to the log
         return jsonify(all_devices), 200
     except Exception as e:
         log_api_response('/api/devices', start_time, 500, error=e)
@@ -824,3 +836,118 @@ def test_notifications() -> Tuple[Response, int]:
             "code": "NOTIFICATION_TEST_ERROR",
             "ui_message": "An error occurred while testing notifications"
         }), 500
+
+@api_blueprint.route('/clear-cache', methods=['POST'])
+def clear_cache() -> Tuple[Response, int]:
+    """
+    API endpoint to clear the application cache.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with status code
+    """
+    start_time = log_api_request('/api/clear-cache')
+    
+    try:
+        # Get the cache instance
+        cache_instance = current_app.extensions.get('cache')
+        if not cache_instance:
+            log_api_response('/api/clear-cache', start_time, 500, error="Cache extension not found")
+            return jsonify({"status": "error", "message": "Cache extension not found"}), 500
+        
+        # Clear specific pattern if provided
+        pattern = request.json.get('pattern') if request.is_json else None
+        
+        if pattern:
+            from app.cache_utils import invalidate_cache_pattern
+            # Clear cache keys matching the pattern
+            num_cleared = invalidate_cache_pattern(pattern)
+            message = f"Cleared {num_cleared} cache keys matching pattern '{pattern}'"
+        else:
+            # Clear all cache
+            cache_instance.clear()
+            message = "Cache cleared successfully"
+        
+        log_api_response('/api/clear-cache', start_time, 200, {"status": "success", "message": message})
+        return jsonify({"status": "success", "message": message}), 200
+    except Exception as e:
+        error_msg = f"Error clearing cache: {str(e)}"
+        log_api_response('/api/clear-cache', start_time, 500, error=error_msg)
+        return jsonify({"status": "error", "message": error_msg}), 500
+
+@api_blueprint.route('/cache-stats', methods=['GET'])
+def cache_stats() -> Tuple[Response, int]:
+    """
+    API endpoint to get cache statistics.
+    
+    Returns:
+        Tuple[Response, int]: JSON response with cache statistics
+    """
+    start_time = log_api_request('/api/cache-stats')
+    
+    try:
+        # Get the cache instance
+        cache_instance = current_app.extensions.get('cache')
+        if not cache_instance:
+            log_api_response('/api/cache-stats', start_time, 500, error="Cache extension not found")
+            return jsonify({"status": "error", "message": "Cache extension not found"}), 500
+        
+        stats = {}
+        
+        # If using Redis cache, get detailed statistics
+        if hasattr(cache_instance, '_client') and cache_instance.config['CACHE_TYPE'] == 'RedisCache':
+            redis_client = cache_instance._client
+            info = redis_client.info()
+            
+            # Get key metrics 
+            stats = {
+                'cache_type': 'Redis',
+                'keys': redis_client.dbsize(),
+                'used_memory': info.get('used_memory_human', 'N/A'),
+                'hit_rate': info.get('keyspace_hits', 0) / max(info.get('keyspace_hits', 0) + info.get('keyspace_misses', 0), 1),
+                'uptime_seconds': info.get('uptime_in_seconds', 0),
+                'peak_memory': info.get('used_memory_peak_human', 'N/A'),
+                'clients_connected': info.get('connected_clients', 0),
+                'pattern_data': {}
+            }
+            
+            # Get stats for specific patterns
+            key_patterns = [
+                'api_plants_*',
+                'api_devices*',
+                'route_*'
+            ]
+            
+            for pattern in key_patterns:
+                keys = redis_client.keys(pattern)
+                if keys:
+                    # Get TTLs for all keys matching the pattern
+                    ttls = [redis_client.ttl(key) for key in keys]
+                    avg_ttl = sum(ttl for ttl in ttls if ttl > 0) / max(len([ttl for ttl in ttls if ttl > 0]), 1)
+                    
+                    stats['pattern_data'][pattern] = {
+                        'count': len(keys),
+                        'avg_ttl_seconds': avg_ttl
+                    }
+        else:
+            # For SimpleCache or other backends, provide limited info
+            stats = {
+                'cache_type': cache_instance.config['CACHE_TYPE'],
+                'default_timeout': cache_instance.config['CACHE_DEFAULT_TIMEOUT'],
+                'threshold': cache_instance.config.get('CACHE_THRESHOLD', 'N/A')
+            }
+        
+        log_api_response('/api/cache-stats', start_time, 200, stats)
+        return jsonify({
+            'status': 'success',
+            'stats': stats,
+            'cache_config': {
+                'CACHE_TYPE': current_app.config.get('CACHE_TYPE', 'Unknown'),
+                'CACHE_DEFAULT_TIMEOUT': current_app.config.get('CACHE_DEFAULT_TIMEOUT', 300),
+                'DEVICE_CACHE_TTL': current_app.config.get('DEVICE_CACHE_TTL', 300),
+                'PLANT_CACHE_TTL': current_app.config.get('PLANT_CACHE_TTL', 600)
+            }
+        }), 200
+    except Exception as e:
+        error_msg = f"Error getting cache stats: {str(e)}"
+        log_api_response('/api/cache-stats', start_time, 500, error=error_msg)
+        return jsonify({"status": "error", "message": error_msg}), 500
