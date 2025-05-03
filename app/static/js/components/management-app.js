@@ -19,14 +19,23 @@ function managementApp() {
       this.isLoading = true;
       this.hasError = false;
 
-      // Fetch data from API
-      fetch("/api/management/data")
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Network response was not ok");
-          }
-          return response.json();
-        })
+      // Use the new apiCache system
+      const apiUrl = "/api/management/data";
+
+      // Configure cache options
+      const options = {
+        cacheDuration: 5 * 60 * 1000, // 5 minutes cache
+        bypassBrowserCache: true,
+        requestOptions: {
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        },
+      };
+
+      // Use the new cache system
+      window.apiCache
+        .fetch(apiUrl, options)
         .then((data) => {
           this.systemData = data;
           this.isLoading = false;

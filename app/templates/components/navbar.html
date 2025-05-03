@@ -103,7 +103,7 @@
         <a href="/" class="flex items-center group" aria-label="Home">
           <div class="relative">
             <img
-              src="{{ url_for('static', filename='images/Growatt-logo.png') }}"
+              src="{{ 'images/Growatt-logo.png'|static_url }}"
               alt="Growatt Monitor Logo"
               class="h-8 xs:h-10 sm:h-12"
             />
@@ -134,7 +134,7 @@
           >
             <div class="mr-2 relative">
               <img
-                src="{{ url_for('static', filename='images/Growatt-logo.png') }}"
+                src="{{ 'images/Growatt-logo.png'|static_url }}"
                 alt="Growatt Monitor Logo"
                 class="h-16"
               />

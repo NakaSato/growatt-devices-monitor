@@ -306,192 +306,57 @@ document.addEventListener("alpine:init", () => {
     },
 
     fetchPlants(silentRefresh = false) {
-      // If this is a silent refresh, don't show loading indicator
       if (!silentRefresh) {
         this.isLoading = true;
       } else {
         this.isRefreshing = true;
       }
 
-      this.errorMessage = "";
-      this.fetchRetryCount = 0;
+      this.hasError = false;
 
-      this.performFetch();
-    },
+      // Use the new apiCache system
+      const apiUrl = "/api/plants";
 
-    performFetch() {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      // Update loading stage to fetching
-      this.loadingStage = "fetching";
-      this.loadingProgress = {
-        initializing: true,
-        fetching: true,
-        processing: false,
-        rendering: false,
+      // Set up fetch options
+      const options = {
+        forceFresh: silentRefresh, // Force fresh data on manual refresh
+        cacheDuration: this.cacheDuration,
+        bypassBrowserCache: true,
+        requestOptions: {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+          credentials: "same-origin",
+        },
       };
 
-      fetch("/api/plants", {
-        signal: controller.signal,
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      })
-        .then((response) => {
-          clearTimeout(timeoutId);
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
+      // Use the cache system
+      window.apiCache
+        .fetch(apiUrl, options)
         .then((data) => {
-          // Update loading stage to processing
-          this.loadingStage = "processing";
-          this.loadingProgress = {
-            initializing: true,
-            fetching: true,
-            processing: true,
-            rendering: false,
-          };
-
-          // Extract plants from data structure
-          let plantData = [];
-
-          // Handle the response format where each plant is an object with an id, plantName, etc.
+          // Data processing on success
           if (Array.isArray(data)) {
-            plantData = data;
-          } else if (typeof data === "object") {
-            // If data is a single plant object
-            if (data.id) {
-              plantData = [data];
-            }
-            // Check if data has a plants property that is an array
-            else if (data.plants && Array.isArray(data.plants)) {
-              plantData = data.plants;
-            }
-          }
-
-          // Process the data
-          this.plants = plantData.map((plant) => {
-            // Normalize property names to ensure consistency
-            return {
-              ...plant,
-              id: plant.id,
-              plantName: plant.plantName || plant.name || `Plant-${plant.id}`,
-              timezone: plant.timezone || "0",
-              // Map other properties that might have different names
-              totalPower:
-                plant.totalPower || plant.power || plant.current_power || 0,
-              todayEnergy:
-                plant.todayEnergy ||
-                plant.eToday ||
-                plant.today_energy ||
-                plant.energy_today ||
-                0,
-              monthEnergy:
-                plant.monthEnergy ||
-                plant.eMonth ||
-                plant.month_energy ||
-                plant.energy_month ||
-                0,
-              totalEnergy:
-                plant.totalEnergy ||
-                plant.eTotal ||
-                plant.total_energy ||
-                plant.energy_total ||
-                0,
-              lastUpdateTime:
-                plant.lastUpdateTime || plant.last_update_time || "",
-              status: plant.status || "active",
-              // Add a formatted last update time for easier display
-              formattedLastUpdate: this.formatLastUpdateTime(
-                plant.lastUpdateTime || plant.last_update_time || ""
-              ),
-            };
-          });
-
-          // Cache the plant data for future use
-          this.cachePlants(this.plants);
-
-          // Update loading stage to rendering
-          this.loadingStage = "rendering";
-          this.loadingProgress = {
-            initializing: true,
-            fetching: true,
-            processing: true,
-            rendering: true,
-          };
-
-          this.filteredPlants = [...this.plants]; // Initialize filtered plants
-          this.sortPlants(); // Apply initial sort
-          console.log("Plants data refreshed:", this.plants);
-
-          // Check if we need to show a success message for manual refresh
-          if (!this.isRefreshing && !this.isLoading) {
-            // Show success toast or notification if needed for manual refresh
-            this.showToast("Plants data refreshed successfully");
-          }
-
-          // Small delay to allow the rendering state to be visible
-          setTimeout(() => {
-            this.isLoading = false;
-            this.isRefreshing = false;
-          }, 500);
-        })
-        .catch((error) => {
-          clearTimeout(timeoutId);
-          console.error("Error fetching plants:", error);
-
-          // For network timeout or abort errors, retry
-          if (
-            error.name === "AbortError" ||
-            error.name === "TimeoutError" ||
-            error.message.includes("timeout") ||
-            error.message.includes("network")
-          ) {
-            if (this.fetchRetryCount < this.maxRetries) {
-              this.fetchRetryCount++;
-              const delay =
-                this.retryDelay * Math.pow(2, this.fetchRetryCount - 1); // Exponential backoff
-              console.log(
-                `Retrying fetch (${this.fetchRetryCount}/${this.maxRetries}) in ${delay}ms...`
-              );
-              setTimeout(() => this.performFetch(), delay);
-              return;
-            }
-          }
-
-          // Only show error for non-silent refreshes or after all retries failed
-          if (!this.isRefreshing || this.fetchRetryCount >= this.maxRetries) {
-            this.errorMessage = `Failed to load plants: ${error.message}`;
-          }
-
-          // If we have cached data, use it as fallback
-          const cachedPlants = this.getCachedPlants();
-          if (cachedPlants && this.plants.length === 0) {
-            this.plants = cachedPlants;
+            this.plants = data;
             this.filteredPlants = [...this.plants];
             this.sortPlants();
-
-            // Show notification that we're using cached data
-            console.log("Using cached plants data due to fetch error");
-            if (!this.isRefreshing) {
-              this.showToast(
-                "Using cached data - please check your connection",
-                "warning"
-              );
-            }
+            this.updatePagination();
+          } else {
+            throw new Error("Invalid data format received from API");
           }
 
-          // Reset loading state
+          // Reset loading states
           this.isLoading = false;
           this.isRefreshing = false;
         })
-        .finally(() => {
-          // Final cleanup after a short delay
-          // We don't set isLoading to false here as we've handled it in the .then and .catch blocks
+        .catch((error) => {
+          console.error("Error fetching plants data:", error);
+          this.hasError = true;
+          this.errorMessage = error.message || "Failed to load plants data";
+
+          // Reset loading states
+          this.isLoading = false;
+          this.isRefreshing = false;
         });
     },
 

@@ -1,13 +1,10 @@
 {% extends "base.html" %} {% block title %}Plants - Growatt API{% endblock %} {%
 block styles %}
 <!-- Plants specific styles -->
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/plants.css') }}"
-/>
+<link rel="stylesheet" href="{{ 'css/plants.css'|static_url }}" />
 {% endblock %} {% block head_scripts %}
 <!-- Toast Notifications -->
-<script src="{{ url_for('static', filename='js/utils/toast-utils.js') }}"></script>
+<script src="{{ 'js/utils/toast-utils.js'|static_url }}"></script>
 <!-- Alpine.js plugins -->
 <script
   defer
@@ -33,10 +30,10 @@ block styles %}
   });
 </script>
 <!-- Plant utilities -->
-<script src="{{ url_for('static', filename='js/utils/plant-data-utils.js') }}"></script>
-<script src="{{ url_for('static', filename='js/utils/export-utils.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/plants-app.js') }}"></script>
-<script src="{{ url_for('static', filename='js/utils/plant-detail-utils.js') }}"></script>
+<script src="{{ 'js/utils/plant-data-utils.js'|static_url }}"></script>
+<script src="{{ 'js/utils/export-utils.js'|static_url }}"></script>
+<script src="{{ 'js/components/plants-app.js'|static_url }}"></script>
+<script src="{{ 'js/utils/plant-detail-utils.js'|static_url }}"></script>
 {% endblock %} {% block content %}
 <div class="dashboard-container">
   <div

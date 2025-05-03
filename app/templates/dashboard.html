@@ -604,6 +604,11 @@ System{% endblock %} {% block styles %}
 <!-- Chart.js for data visualization -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
+<!-- Dashboard specific scripts -->
+<script src="{{ 'js/components/dashboard-app.js'|static_url }}"></script>
+<script src="{{ 'js/utils/chart-utils.js'|static_url }}"></script>
+<script src="{{ 'js/utils/data-formatter.js'|static_url }}"></script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Initialize dashboard components

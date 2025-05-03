@@ -20,7 +20,10 @@
     <meta name="theme-color" content="#ffffff" />
 
     <!-- Favicon -->
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"
+    />
 
     <!-- Google Fonts - Noto Sans Thai -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -72,10 +75,10 @@
     </script>
 
     <!-- Component Loader -->
-    <script src="{{ url_for('static', filename='js/component-loader.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/component-loader.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
 
     <!-- Responsive Utilities -->
-    <script src="{{ url_for('static', filename='js/utils/responsive-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils/responsive-utils.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
 
     <!-- Font Awesome -->
     <link
@@ -84,7 +87,7 @@
     />
 
     <!-- Tailwind Configuration -->
-    <script src="{{ url_for('static', filename='js/config/tailwind-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/config/tailwind-config.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
@@ -96,7 +99,7 @@
     <!-- Custom CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="{{ url_for('static', filename='css/style.css') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"
     />
 
     <title>
@@ -171,6 +174,132 @@
     {% block scripts %}{% endblock %}
 
     <script>
+      // API Request Cache System
+      window.apiCache = {
+        // Default cache duration (5 minutes)
+        defaultCacheDuration: 5 * 60 * 1000,
+
+        // Get cached response if valid
+        get: function (url, timestamp, maxAge) {
+          const cacheKey = `api_cache_${url}`;
+          const cachedData = localStorage.getItem(cacheKey);
+
+          if (!cachedData) return null;
+
+          try {
+            const parsed = JSON.parse(cachedData);
+            const cacheAge = (timestamp || Date.now()) - parsed.timestamp;
+            const maxCacheAge = maxAge || this.defaultCacheDuration;
+
+            // Check if cache is still valid
+            if (cacheAge < maxCacheAge) {
+              console.log(
+                `Using cached data for ${url} (age: ${Math.round(
+                  cacheAge / 1000
+                )}s)`
+              );
+              return parsed.data;
+            } else {
+              console.log(
+                `Cache expired for ${url} (age: ${Math.round(
+                  cacheAge / 1000
+                )}s)`
+              );
+              return null;
+            }
+          } catch (err) {
+            console.warn("Invalid cache data for", url, err);
+            return null;
+          }
+        },
+
+        // Store response in cache with timestamp
+        set: function (url, data, timestamp) {
+          const cacheKey = `api_cache_${url}`;
+          try {
+            localStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                timestamp: timestamp || Date.now(),
+                data: data,
+              })
+            );
+            console.log(`Cached data for ${url}`);
+          } catch (err) {
+            console.warn("Failed to cache data:", err);
+          }
+        },
+
+        // Clear specific or all cached responses
+        clear: function (url) {
+          if (url) {
+            localStorage.removeItem(`api_cache_${url}`);
+            console.log(`Cleared cache for ${url}`);
+          } else {
+            Object.keys(localStorage).forEach((key) => {
+              if (key.startsWith("api_cache_")) {
+                localStorage.removeItem(key);
+              }
+            });
+            console.log("Cleared all API cache");
+          }
+        },
+
+        // Fetch with caching
+        fetch: async function (url, options = {}) {
+          const timestamp = Date.now();
+          const {
+            forceFresh = false,
+            cacheDuration = this.defaultCacheDuration,
+            requestOptions = {},
+          } = options;
+
+          // Try to get from cache unless force refresh is requested
+          if (!forceFresh) {
+            const cachedData = this.get(url, timestamp, cacheDuration);
+            if (cachedData) return cachedData;
+          }
+
+          // Add timestamp to URL to bypass browser cache if needed
+          const urlWithTimestamp = options.bypassBrowserCache
+            ? `${url}${url.includes("?") ? "&" : "?"}_t=${timestamp}`
+            : url;
+
+          try {
+            // Fetch fresh data
+            const response = await fetch(urlWithTimestamp, {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                ...requestOptions.headers,
+              },
+              ...requestOptions,
+            });
+
+            if (!response.ok) {
+              throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            // Check content type to ensure it's JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await response.json();
+
+              // Cache the successful response
+              this.set(url, data, timestamp);
+
+              return data;
+            } else {
+              // Non-JSON responses are not cached
+              return await response.text();
+            }
+          } catch (error) {
+            console.error(`API fetch error for ${url}:`, error);
+            throw error;
+          }
+        },
+      };
+
       // Function to handle API access with improved error handling and user feedback
       document.addEventListener("DOMContentLoaded", () => {
         // Set CSS variable for viewport height to handle mobile browsers better

@@ -3,6 +3,7 @@ from flask_caching import Cache
 from flask_cors import CORS
 import os
 import logging
+import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -65,6 +66,12 @@ def create_app(config: Optional[Dict[str, Any]] = None) -> Flask:
     # Initialize the cache
     cache = Cache(app)
     
+    # Register context processors for template variables
+    _register_context_processors(app)
+    
+    # Register Jinja filters for templates
+    _register_jinja_filters(app)
+    
     # Register error handlers
     register_error_handlers(app)
     
@@ -106,6 +113,37 @@ def _setup_cors(app: Flask) -> None:
     # Only allow CORS for API routes with configurable origins
     origins = app.config.get('CORS_ORIGINS', '*')
     CORS(app, resources={r"/api/*": {"origins": origins}})
+
+def _register_context_processors(app: Flask) -> None:
+    """Register context processors for template variables"""
+    @app.context_processor
+    def inject_now():
+        """
+        Inject current timestamp and other time-related variables for use in templates.
+        This is particularly useful for cache busting on static file URLs.
+        """
+        return {
+            'now': int(time.time()),  # Unix timestamp for cache busting
+            'current_time': time.strftime('%Y-%m-%d %H:%M:%S')  # Formatted time for display
+        }
+
+def _register_jinja_filters(app: Flask) -> None:
+    """Register custom Jinja2 filters for templates"""
+    @app.template_filter('static_url')
+    def static_url_filter(file_path):
+        """
+        Add cache-busting timestamp to static file URLs.
+        
+        Usage in templates:
+            {{ 'js/app.js'|static_url }}
+            
+        Output:
+            /static/js/app.js?_ts=1620000000
+        """
+        from flask import url_for
+        timestamp = str(int(time.time()))
+        url = url_for('static', filename=file_path)
+        return f"{url}?_ts={timestamp}"
 
 def _register_blueprints(app: Flask) -> None:
     """Register all application blueprints"""
