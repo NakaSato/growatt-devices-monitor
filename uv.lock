@@ -212,6 +212,12 @@ wheels = [
 ]
 
 [[package]]
+name = "crontab"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/8b/3ea72ac8e26090b63779b4e0074af79b02bbbab7ddd01b36109bc0892d31/crontab-1.0.4.tar.gz", hash = "sha256:715b0e5e105bc62c9683cbb93c1cc5821e07a3e28d17404576d22dba7a896c92", size = 21677, upload-time = "2025-04-09T18:23:59.01Z" }
+
+[[package]]
 name = "cssselect2"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -322,6 +328,7 @@ dependencies = [
     { name = "certifi" },
     { name = "charset-normalizer" },
     { name = "click" },
+    { name = "crontab" },
     { name = "flask" },
     { name = "flask-caching" },
     { name = "flask-cors" },
@@ -335,6 +342,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "psycopg2-binary" },
+    { name = "python-crontab" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
     { name = "pytz" },
@@ -364,6 +372,7 @@ requires-dist = [
     { name = "certifi", specifier = ">=2025.1.31" },
     { name = "charset-normalizer", specifier = ">=3.4.1" },
     { name = "click", specifier = ">=8.1.8" },
+    { name = "crontab", specifier = ">=1.0.4" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-caching", specifier = ">=2.3.1" },
@@ -381,6 +390,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
+    { name = "python-crontab", specifier = ">=3.2.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "pytz", specifier = ">=2025.2" },
@@ -779,6 +789,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/25/69/5f1e57f6c5a39f81411b550027bf72842c4567ff5fd572bed1edc9e4b5d9/pytest_cov-6.1.1.tar.gz", hash = "sha256:46935f7aaefba760e716c2ebfbe1c216240b9592966e7da99ea8292d4d3e2a0a", size = 66857, upload-time = "2025-04-05T14:07:51.592Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/28/d0/def53b4a790cfb21483016430ed828f64830dd981ebe1089971cd10cab25/pytest_cov-6.1.1-py3-none-any.whl", hash = "sha256:bddf29ed2d0ab6f4df17b4c55b0a657287db8684af9c42ea546b21b1041b3dde", size = 23841, upload-time = "2025-04-05T14:07:49.641Z" },
+]
+
+[[package]]
+name = "python-crontab"
+version = "3.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e2/f0/25775565c133d4e29eeb607bf9ddba0075f3af36041a1844dd207881047f/python_crontab-3.2.0.tar.gz", hash = "sha256:40067d1dd39ade3460b2ad8557c7651514cd3851deffff61c5c60e1227c5c36b", size = 57001, upload-time = "2024-07-01T22:29:10.903Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/91/832fb3b3a1f62bd2ab4924f6be0c7736c9bc4f84d3b153b74efcf6d4e4a1/python_crontab-3.2.0-py3-none-any.whl", hash = "sha256:82cb9b6a312d41ff66fd3caf3eed7115c28c195bfb50711bc2b4b9592feb9fe5", size = 27351, upload-time = "2024-07-01T22:29:08.549Z" },
 ]
 
 [[package]]
