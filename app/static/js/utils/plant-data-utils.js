@@ -85,12 +85,20 @@ const PlantDataUtils = {
    */
   getStatusBadgeClass(status) {
     const classMap = {
-      active: "bg-green-600",
-      inactive: "bg-gray-500",
-      maintenance: "bg-amber-500",
-      error: "bg-red-600",
+      active: "bg-green-50 text-white border border-green-400 shadow-sm",
+      inactive:
+        "bg-gradient-to-r from-gray-400 to-gray-500 text-white border border-gray-600 shadow-sm",
+      maintenance:
+        "bg-gradient-to-r from-amber-400 to-amber-500 text-amber-900 border border-amber-600 shadow-sm",
+      error:
+        "bg-gradient-to-r from-red-500 to-red-600 text-white border border-red-700 shadow-sm",
+      warning:
+        "bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border border-yellow-600 shadow-sm",
     };
-    return classMap[status] || "bg-gray-500";
+    return (
+      classMap[status] ||
+      "bg-gradient-to-r from-gray-400 to-gray-500 text-white border border-gray-600 shadow-sm"
+    );
   },
 
   /**

@@ -1,0 +1,466 @@
+/* Electrical Engineering Theme for Growatt Monitoring
+   Created for professional monitoring interface - Modern UI Version
+*/
+
+:root {
+  /* Modern color palette with electrical engineering aesthetics */
+  --primary-blue: #0f56b3;
+  --secondary-blue: #2d7edb;
+  --accent-yellow: #ffc107;
+  --accent-red: #dc3545;
+  --accent-green: #28a745;
+  --dark-gray: #1e2430;
+  --medium-gray: #6c757d;
+  --light-gray: #e9ecef;
+  --panel-bg: #f8f9fa;
+  --circuit-line: #495057;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --glow-shadow: 0 0 15px rgba(15, 86, 179, 0.2);
+  
+  /* Font settings */
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', 'Courier New', monospace;
+  --font-sans: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Modern glass-like panel effect */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-shadow), var(--card-shadow);
+}
+
+/* Circuit board background pattern for containers */
+.circuit-pattern {
+  background-color: var(--panel-bg);
+  background-image: 
+    linear-gradient(var(--light-gray) 1px, transparent 1px),
+    linear-gradient(90deg, var(--light-gray) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1px solid var(--light-gray);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* For highlighting active electrical components */
+.component-active {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(44, 115, 210, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(44, 115, 210, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(44, 115, 210, 0); }
+}
+
+/* Status indicators for electrical systems */
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  position: relative;
+}
+
+.status-indicator::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0.6;
+  animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+.status-active {
+  background-color: var(--accent-green);
+}
+
+.status-active::after {
+  background-color: var(--accent-green);
+}
+
+.status-warning {
+  background-color: var(--accent-yellow);
+}
+
+.status-warning::after {
+  background-color: var(--accent-yellow);
+}
+
+.status-error {
+  background-color: var(--accent-red);
+}
+
+.status-error::after {
+  background-color: var(--accent-red);
+}
+
+.status-offline {
+  background-color: var(--medium-gray);
+}
+
+.status-offline::after {
+  background-color: var(--medium-gray);
+}
+
+/* Modern technical panel style */
+.tech-panel {
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: var(--card-shadow);
+  padding: 1rem;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.tech-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+.tech-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: 4px 4px 0 0;
+}
+
+/* Technical data displays */
+.data-display {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  background: linear-gradient(to right, var(--dark-gray), #2c3850);
+  color: #ffffff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Technical metrics and readings */
+.metric-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--primary-blue);
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+
+.tech-panel:hover .metric-value {
+  color: var(--secondary-blue);
+}
+
+.unit {
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  color: var(--medium-gray);
+  margin-left: 2px;
+}
+
+/* Technical charts customization */
+.technical-chart {
+  background-color: white;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease;
+}
+
+.technical-chart:hover {
+  transform: translateY(-2px);
+}
+
+/* Energy flow arrows with animation */
+.energy-flow {
+  position: relative;
+  padding-right: 20px;
+}
+
+.energy-flow::after {
+  content: "→";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-blue);
+  font-weight: bold;
+  animation: flow-pulse 1.5s infinite;
+}
+
+@keyframes flow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Technical buttons */
+.tech-button {
+  background: linear-gradient(to right, var(--primary-blue), var(--secondary-blue));
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(15, 86, 179, 0.3);
+}
+
+.tech-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(15, 86, 179, 0.4);
+}
+
+.tech-button:active {
+  transform: translateY(0);
+}
+
+/* Secondary button style */
+.tech-button-secondary {
+  background: white;
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.tech-button-secondary:hover {
+  background: rgba(15, 86, 179, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Blueprint grid for layout */
+.blueprint-grid {
+  background-color: white;
+  background-image: 
+    linear-gradient(rgba(44, 115, 210, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(44, 115, 210, 0.05) 1px, transparent 1px);
+  background-size: 25px 25px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Technical section headers */
+.tech-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.tech-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, var(--primary-blue), transparent);
+}
+
+.tech-header svg {
+  color: var(--primary-blue);
+}
+
+/* Data oscillation animation for active values */
+.oscillating-value {
+  animation: oscillate 2s infinite;
+}
+
+@keyframes oscillate {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Modern flexible grid layouts */
+.flex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Responsive layout containers */
+.responsive-container {
+  width: 100%;
+  padding: 1rem;
+  transition: padding 0.3s ease;
+}
+
+/* Enhanced progress bars */
+.progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--light-gray);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--secondary-blue), var(--primary-blue));
+  transition: width 1s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* SVG energy flow diagram styles */
+.flow-diagram {
+  margin: 1rem auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.flow-diagram-component {
+  transition: all 0.3s ease;
+}
+
+.flow-diagram-component:hover {
+  filter: brightness(1.1);
+}
+
+.flow-path {
+  stroke-dasharray: 10;
+  animation: flow 2s linear infinite;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -20; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tech-panel {
+    padding: 0.75rem;
+  }
+  
+  .tech-header {
+    font-size: 1rem;
+  }
+  
+  .responsive-container {
+    padding: 0.5rem;
+  }
+  
+  .flex-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animated icon */
+.animated-icon {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Card elevation on hover */
+.elevate-on-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.elevate-on-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Tag styling */
+.tech-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: rgba(15, 86, 179, 0.1);
+  color: var(--primary-blue);
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Modern skeleton loading animations */
+.skeleton-loading {
+  position: relative;
+  overflow: hidden;
+  background-color: #ededed;
+  border-radius: 4px;
+}
+
+.skeleton-loading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  100% {
+    transform: translateX(100%);
+  }
+}

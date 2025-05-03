@@ -20,50 +20,85 @@ document.addEventListener("alpine:init", () => {
     maxRetries: 3,
     retryDelay: 2000, // Initial retry delay in milliseconds
 
-    // Pagination
+    // Loading status tracking
+    loadingStage: "initializing", // 'initializing', 'fetching', 'processing', 'rendering'
+    loadingProgress: {
+      initializing: true,
+      fetching: false,
+      processing: false,
+      rendering: false,
+    },
+
+    // Plant details properties
+    selectedPlant: null,
+    plantDetails: {},
+    paginatedPlantDetails: {},
+    showPlantDetailModal: false,
+    isLoadingDetails: false,
+    detailsCurrentPage: 1,
+    detailsTotalPages: 1,
+    detailsPerPage: 10,
+
+    // Pagination settings
     currentPage: 1,
-    pageSize: window.innerWidth < 640 ? 6 : 10, // Smaller page size on mobile
+    itemsPerPage: 12, // Default number of cards per page
+    pageSize: window.innerWidth < 640 ? 6 : 10, // For table view
+    visiblePages: 5, // Number of page numbers to show in pagination
 
-    // Computed property for page numbers
-    get pageNumbers() {
-      const totalPages = this.totalPages;
-      const currentPage = this.currentPage;
-
-      if (totalPages <= 5) {
-        return Array.from({ length: totalPages }, (_, i) => i + 1);
-      }
-
-      if (currentPage <= 3) {
-        return [1, 2, 3, 4, 5];
-      }
-
-      if (currentPage >= totalPages - 2) {
-        return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
-      }
-
-      return [
-        currentPage - 2,
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        currentPage + 2,
-      ];
-    },
-
-    // Computed property for total pages
+    // Compute the total number of pages for current view mode
     get totalPages() {
-      return Math.ceil(this.filteredPlants.length / this.pageSize);
+      if (this.viewMode === "cards") {
+        return Math.ceil(this.filteredPlants.length / this.itemsPerPage);
+      } else {
+        return Math.ceil(this.filteredPlants.length / this.pageSize);
+      }
     },
 
-    // Computed property for paginated plants
+    // Compute paginated plants based on current view mode
     get paginatedPlants() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
+      let pageSize =
+        this.viewMode === "cards" ? this.itemsPerPage : this.pageSize;
+      const start = (this.currentPage - 1) * pageSize;
+      const end = start + pageSize;
       return this.filteredPlants.slice(start, end);
     },
 
-    // Lifecycle hooks - Initialize with responsive settings
+    // Calculate visible page numbers for pagination controls
+    get visiblePageNumbers() {
+      const totalPages = this.totalPages;
+
+      if (totalPages <= this.visiblePages) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+      }
+
+      let startPage = Math.max(
+        this.currentPage - Math.floor(this.visiblePages / 2),
+        1
+      );
+      let endPage = startPage + this.visiblePages - 1;
+
+      if (endPage > totalPages) {
+        endPage = totalPages;
+        startPage = Math.max(endPage - this.visiblePages + 1, 1);
+      }
+
+      return Array.from(
+        { length: endPage - startPage + 1 },
+        (_, i) => startPage + i
+      );
+    },
+
+    // Initialize component with responsive settings and user preferences
     init() {
+      // Load user preference for items per page
+      const savedItemsPerPage = localStorage.getItem("preferredItemsPerPage");
+      if (savedItemsPerPage) {
+        this.itemsPerPage = parseInt(savedItemsPerPage);
+      } else {
+        // Set default based on screen size
+        this.itemsPerPage = window.innerWidth < 768 ? 8 : 12;
+      }
+
       // Responsive view mode toggle based on screen size
       window.addEventListener("resize", () => {
         // Only auto-switch view mode if the user hasn't manually selected one
@@ -71,13 +106,26 @@ document.addEventListener("alpine:init", () => {
           this.viewMode = window.innerWidth < 640 ? "cards" : "table";
         }
 
-        // Update page size when screen size changes
-        this.pageSize = window.innerWidth < 640 ? 6 : 10;
-
-        // Reset to page 1 if the current page would be out of bounds after resize
-        if (this.currentPage > this.totalPages && this.totalPages > 0) {
-          this.currentPage = 1;
+        // Update page sizes when screen size changes
+        if (window.innerWidth < 640) {
+          this.pageSize = 6;
+          if (!localStorage.getItem("preferredItemsPerPage")) {
+            this.itemsPerPage = 8;
+          }
+        } else if (window.innerWidth < 1024) {
+          this.pageSize = 10;
+          if (!localStorage.getItem("preferredItemsPerPage")) {
+            this.itemsPerPage = 12;
+          }
+        } else {
+          this.pageSize = 10;
+          if (!localStorage.getItem("preferredItemsPerPage")) {
+            this.itemsPerPage = 16;
+          }
         }
+
+        // Ensure pagination is updated
+        this.updatePagination();
       });
 
       // Check for saved preferences
@@ -104,60 +152,118 @@ document.addEventListener("alpine:init", () => {
       this.setupPeriodicRefresh();
     },
 
-    // Set up a periodic refresh if the tab is visible (every 5 minutes)
+    // Setup periodic refresh of plant data
     setupPeriodicRefresh() {
-      const refreshInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
+      // Default refresh interval in milliseconds (5 minutes)
+      const refreshInterval = 300000;
 
-      // Use setInterval for periodic refresh
-      setInterval(() => {
-        // Only refresh if the document is visible and we're not already loading
-        if (
-          document.visibilityState === "visible" &&
-          !this.isLoading &&
-          !this.isRefreshing
-        ) {
-          this.fetchPlants(true); // Silent refresh
+      // Function to check if page is visible and refresh data if needed
+      const checkVisibilityAndRefresh = () => {
+        // Only refresh if the page is visible to the user
+        if (!document.hidden) {
+          // Check if it's time to refresh (based on last fetch time)
+          const timeSinceLastFetch = Date.now() - (this.lastFetchTime || 0);
+          if (timeSinceLastFetch >= refreshInterval) {
+            console.log("Performing periodic background refresh");
+            this.fetchPlants(true); // Silent refresh
+          }
         }
-      }, refreshInterval);
+      };
 
-      // Also refresh when the tab becomes visible again
+      // Set up periodic check
+      setInterval(checkVisibilityAndRefresh, 60000); // Check every minute
+
+      // Also refresh when user returns to the page
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && this.lastFetchTime) {
-          const timeSinceLastFetch = Date.now() - this.lastFetchTime;
-          if (
-            timeSinceLastFetch > refreshInterval &&
-            !this.isLoading &&
-            !this.isRefreshing
-          ) {
-            this.fetchPlants(true); // Silent refresh when tab becomes visible
+        if (!document.hidden) {
+          const timeSinceLastFetch = Date.now() - (this.lastFetchTime || 0);
+          // Only refresh if it's been at least 1 minute since the last fetch
+          if (timeSinceLastFetch >= 60000) {
+            console.log("Page became visible, refreshing data");
+            this.fetchPlants(true); // Silent refresh
           }
         }
       });
     },
 
-    // Get cached plants data
-    getCachedPlants() {
-      const cachedData = localStorage.getItem("plantsCache");
-      if (!cachedData) return null;
-
-      try {
-        const { timestamp, plants } = JSON.parse(cachedData);
-        const now = Date.now();
-
-        // Check if cache is still valid
-        if (
-          now - timestamp < this.cacheDuration &&
-          plants &&
-          plants.length > 0
-        ) {
-          this.lastFetchTime = timestamp;
-          return plants;
-        }
-      } catch (e) {
-        console.error("Error parsing cached plants data:", e);
+    // Updated pagination methods with better navigation
+    updatePagination() {
+      // Make sure current page is valid after filtering or changing items per page
+      if (this.currentPage > this.totalPages && this.totalPages > 0) {
+        this.currentPage = this.totalPages;
+      } else if (this.currentPage < 1) {
+        this.currentPage = 1;
       }
 
-      return null;
+      // Save preference for items per page
+      localStorage.setItem(
+        "preferredItemsPerPage",
+        this.itemsPerPage.toString()
+      );
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+      }
+    },
+
+    goToFirstPage() {
+      this.currentPage = 1;
+    },
+
+    goToLastPage() {
+      this.currentPage = this.totalPages;
+    },
+
+    // Apply filtering and ensure pagination is updated
+    filterPlants() {
+      // Store current page before filtering
+      const previousPage = this.currentPage;
+
+      // Filter by search query and status
+      this.filteredPlants = this.plants.filter((plant) => {
+        const matchesSearch =
+          !this.searchQuery ||
+          (plant.plantName &&
+            plant.plantName
+              .toLowerCase()
+              .includes(this.searchQuery.toLowerCase())) ||
+          (plant.id && plant.id.toString().includes(this.searchQuery)) ||
+          (plant.location &&
+            plant.location
+              .toLowerCase()
+              .includes(this.searchQuery.toLowerCase()));
+
+        const matchesStatus =
+          this.statusFilter === "all" ||
+          (plant.status || "active") === this.statusFilter;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      // Apply current sorting
+      this.sortPlants();
+
+      // Reset to first page when filtering changes results
+      if (
+        this.filteredPlants.length === 0 ||
+        (previousPage > this.totalPages && this.totalPages > 0)
+      ) {
+        this.currentPage = 1;
+      }
     },
 
     // Cache plants data
@@ -175,6 +281,27 @@ document.addEventListener("alpine:init", () => {
         );
       } catch (e) {
         console.error("Error caching plants data:", e);
+      }
+    },
+
+    // Get cached plants data
+    getCachedPlants() {
+      try {
+        const cachedData = localStorage.getItem("plantsCache");
+        if (!cachedData) return null;
+
+        const { timestamp, plants } = JSON.parse(cachedData);
+
+        // Check if cache has expired
+        if (Date.now() - timestamp > this.cacheDuration) {
+          console.log("Cache expired, fetching fresh data");
+          return null;
+        }
+
+        return plants;
+      } catch (e) {
+        console.error("Error retrieving cached plants data:", e);
+        return null;
       }
     },
 
@@ -196,6 +323,15 @@ document.addEventListener("alpine:init", () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+      // Update loading stage to fetching
+      this.loadingStage = "fetching";
+      this.loadingProgress = {
+        initializing: true,
+        fetching: true,
+        processing: false,
+        rendering: false,
+      };
+
       fetch("/api/plants", {
         signal: controller.signal,
         headers: {
@@ -211,34 +347,64 @@ document.addEventListener("alpine:init", () => {
           return response.json();
         })
         .then((data) => {
+          // Update loading stage to processing
+          this.loadingStage = "processing";
+          this.loadingProgress = {
+            initializing: true,
+            fetching: true,
+            processing: true,
+            rendering: false,
+          };
+
           // Extract plants from data structure
-          const plantData = Array.isArray(data) ? data : data.plants || [];
+          let plantData = [];
+
+          // Handle the response format where each plant is an object with an id, plantName, etc.
+          if (Array.isArray(data)) {
+            plantData = data;
+          } else if (typeof data === "object") {
+            // If data is a single plant object
+            if (data.id) {
+              plantData = [data];
+            }
+            // Check if data has a plants property that is an array
+            else if (data.plants && Array.isArray(data.plants)) {
+              plantData = data.plants;
+            }
+          }
 
           // Process the data
           this.plants = plantData.map((plant) => {
             // Normalize property names to ensure consistency
             return {
               ...plant,
-              // Ensure these properties exist with expected names
+              id: plant.id,
+              plantName: plant.plantName || plant.name || `Plant-${plant.id}`,
+              timezone: plant.timezone || "0",
+              // Map other properties that might have different names
               totalPower:
                 plant.totalPower || plant.power || plant.current_power || 0,
               todayEnergy:
                 plant.todayEnergy ||
+                plant.eToday ||
                 plant.today_energy ||
                 plant.energy_today ||
                 0,
               monthEnergy:
                 plant.monthEnergy ||
+                plant.eMonth ||
                 plant.month_energy ||
                 plant.energy_month ||
                 0,
               totalEnergy:
                 plant.totalEnergy ||
+                plant.eTotal ||
                 plant.total_energy ||
                 plant.energy_total ||
                 0,
               lastUpdateTime:
                 plant.lastUpdateTime || plant.last_update_time || "",
+              status: plant.status || "active",
               // Add a formatted last update time for easier display
               formattedLastUpdate: this.formatLastUpdateTime(
                 plant.lastUpdateTime || plant.last_update_time || ""
@@ -249,6 +415,15 @@ document.addEventListener("alpine:init", () => {
           // Cache the plant data for future use
           this.cachePlants(this.plants);
 
+          // Update loading stage to rendering
+          this.loadingStage = "rendering";
+          this.loadingProgress = {
+            initializing: true,
+            fetching: true,
+            processing: true,
+            rendering: true,
+          };
+
           this.filteredPlants = [...this.plants]; // Initialize filtered plants
           this.sortPlants(); // Apply initial sort
           console.log("Plants data refreshed:", this.plants);
@@ -258,6 +433,12 @@ document.addEventListener("alpine:init", () => {
             // Show success toast or notification if needed for manual refresh
             this.showToast("Plants data refreshed successfully");
           }
+
+          // Small delay to allow the rendering state to be visible
+          setTimeout(() => {
+            this.isLoading = false;
+            this.isRefreshing = false;
+          }, 500);
         })
         .catch((error) => {
           clearTimeout(timeoutId);
@@ -303,10 +484,14 @@ document.addEventListener("alpine:init", () => {
               );
             }
           }
-        })
-        .finally(() => {
+
+          // Reset loading state
           this.isLoading = false;
           this.isRefreshing = false;
+        })
+        .finally(() => {
+          // Final cleanup after a short delay
+          // We don't set isLoading to false here as we've handled it in the .then and .catch blocks
         });
     },
 
@@ -340,6 +525,9 @@ document.addEventListener("alpine:init", () => {
           return response.json();
         })
         .then((data) => {
+          // Log the received data to console
+          console.log(`Received data for plant ${plantId}:`, data);
+
           // Process the plant data
           const plantData = data || {};
 
@@ -413,6 +601,64 @@ document.addEventListener("alpine:init", () => {
         });
     },
 
+    // Show plant details modal
+    showPlantDetails(plant) {
+      this.selectedPlant = plant;
+      this.showPlantDetailModal = true;
+      this.isLoadingDetails = true;
+      this.detailsCurrentPage = 1;
+
+      fetchPlantDetails(plant.id)
+        .then((details) => {
+          this.selectedPlantDetails = details;
+          this.updateDetailsPagination();
+          this.isLoadingDetails = false;
+        })
+        .catch((error) => {
+          console.error("Error fetching plant details:", error);
+          this.isLoadingDetails = false;
+          this.showToast(
+            "Failed to load plant details. Please try again.",
+            "error"
+          );
+        });
+    },
+
+    /**
+     * Open plant detail modal and load plant details
+     * @param {Object} plant - The plant to show details for
+     */
+    openPlantDetails(plant) {
+      this.selectedPlant = plant;
+      this.showPlantDetailModal = true;
+      this.isLoadingDetails = true;
+      this.detailsCurrentPage = 1;
+
+      // Convert plant object to entries for pagination
+      this.plantDetails = { ...plant };
+      this.updateDetailsPagination();
+      this.isLoadingDetails = false;
+    },
+
+    /**
+     * Update plant details pagination
+     */
+    updateDetailsPagination() {
+      const entries = Object.entries(this.plantDetails);
+      this.detailsTotalPages = Math.ceil(entries.length / this.detailsPerPage);
+
+      // Get entries for current page
+      const startIndex = (this.detailsCurrentPage - 1) * this.detailsPerPage;
+      const endIndex = startIndex + parseInt(this.detailsPerPage);
+      const currentEntries = entries.slice(startIndex, endIndex);
+
+      // Convert back to object
+      this.paginatedPlantDetails = {};
+      currentEntries.forEach(([key, value]) => {
+        this.paginatedPlantDetails[key] = value;
+      });
+    },
+
     // Show a toast message
     showToast(message, type = "success") {
       // Check if we have the toast function available (typically added globally)
@@ -467,35 +713,6 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    // Filter plants based on search and status filter
-    filterPlants() {
-      this.currentPage = 1; // Reset to first page when filtering
-
-      // Filter by search query and status
-      this.filteredPlants = this.plants.filter((plant) => {
-        const matchesSearch =
-          !this.searchQuery ||
-          (plant.plantName &&
-            plant.plantName
-              .toLowerCase()
-              .includes(this.searchQuery.toLowerCase())) ||
-          (plant.id && plant.id.toString().includes(this.searchQuery)) ||
-          (plant.location &&
-            plant.location
-              .toLowerCase()
-              .includes(this.searchQuery.toLowerCase()));
-
-        const matchesStatus =
-          this.statusFilter === "all" ||
-          (plant.status || "active") === this.statusFilter;
-
-        return matchesSearch && matchesStatus;
-      });
-
-      // Apply current sorting
-      this.sortPlants();
-    },
-
     // Sort plants by field
     sortBy(field) {
       if (this.sortField === field) {
@@ -528,23 +745,6 @@ document.addEventListener("alpine:init", () => {
           return direction * (aValue - bValue);
         }
       });
-    },
-
-    // Pagination methods
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
-    },
-
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-
-    goToPage(page) {
-      this.currentPage = page;
     },
 
     formatTimezone(timezone) {
@@ -616,6 +816,16 @@ document.addEventListener("alpine:init", () => {
     // Handle image error
     handleImageError(event) {
       event.target.src = "/static/images/default-plant.jpg";
+    },
+
+    // Format key names for display
+    formatKeyName(key) {
+      return formatKeyName(key);
+    },
+
+    // Format plant values based on key type
+    formatPlantValue(key, value) {
+      return formatPlantValue(key, value);
     },
 
     // Export filtered plants to Excel

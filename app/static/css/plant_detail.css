@@ -1,0 +1,703 @@
+/* Plant Detail Page Specific Styles */
+
+/* Dashboard overview layout */
+.dashboard-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Energy flow visualization */
+.energy-flow-diagram {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.energy-flow-diagram:hover {
+  transform: scale(1.02);
+}
+
+.flow-connection {
+  stroke-dasharray: 5;
+  animation: dash 2s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Active power indicator */
+.power-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  background-color: rgba(15, 86, 179, 0.1);
+  border-radius: 16px;
+  color: var(--primary-blue);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-right: 1rem;
+}
+
+.power-indicator.active {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--accent-green);
+}
+
+.power-indicator.warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--accent-yellow);
+}
+
+.power-indicator.critical {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--accent-red);
+}
+
+/* Stat cards with glass effect */
+.stat-card {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--primary-blue);
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.stat-card-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--medium-gray);
+  letter-spacing: 0.05em;
+}
+
+.stat-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: white;
+}
+
+.stat-card-icon.power {
+  background: linear-gradient(135deg, #0f56b3, #2d7edb);
+}
+
+.stat-card-icon.energy {
+  background: linear-gradient(135deg, #ffc107, #ffb300);
+}
+
+.stat-card-icon.peak {
+  background: linear-gradient(135deg, #dc3545, #f86679);
+}
+
+.stat-card-icon.capacity {
+  background: linear-gradient(135deg, #28a745, #5dd879);
+}
+
+/* Chart container styling */
+.chart-container {
+  position: relative;
+  height: 350px;
+  width: 100%;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.chart-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.chart-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* System information panel */
+.system-info-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-group {
+  margin-bottom: 1.25rem;
+}
+
+.info-group-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--medium-gray);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.info-group-value {
+  font-size: 1rem;
+  color: var(--dark-gray);
+  font-weight: 500;
+}
+
+.info-group-value.mono {
+  font-family: var(--font-mono);
+}
+
+/* Technical data section */
+.technical-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.tech-stat {
+  background-color: var(--light-gray);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.tech-stat:hover {
+  background-color: rgba(15, 86, 179, 0.1);
+}
+
+.tech-stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-bottom: 0.25rem;
+}
+
+.tech-stat-label {
+  font-size: 0.75rem;
+  color: var(--medium-gray);
+  text-transform: uppercase;
+}
+
+/* Map container styling */
+.map-container {
+  height: 400px;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.map-overlay {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem;
+  border-radius: 8px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 0.85rem;
+  max-width: 200px;
+}
+
+/* Action buttons container */
+.actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: rgba(15, 86, 179, 0.03);
+  border-radius: 10px;
+}
+
+/* Responsive design adjustments */
+@media (max-width: 768px) {
+  .dashboard-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .system-info-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .technical-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-container {
+    height: 300px;
+  }
+
+  .map-container {
+    height: 300px;
+  }
+
+  .actions-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tech-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Animation for power flow indicator */
+.power-flow {
+  position: relative;
+  display: inline-block;
+}
+
+.power-flow::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: var(--secondary-blue);
+  border-radius: 50%;
+  right: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Value change indicators */
+.value-increase {
+  color: var(--accent-green);
+  font-size: 0.85em;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+.value-decrease {
+  color: var(--accent-red);
+  font-size: 0.85em;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+.value-increase::before {
+  content: "▲";
+  margin-right: 0.25rem;
+}
+
+.value-decrease::before {
+  content: "▼";
+  margin-right: 0.25rem;
+}
+
+/* Custom Leaflet map popup styles */
+.custom-popup .leaflet-popup-content-wrapper {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 0.5rem 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.custom-popup .leaflet-popup-tip {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* System badge styles */
+.system-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.system-badge.online {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--accent-green);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.system-badge.offline {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--medium-gray);
+  border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+.system-badge.warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.system-badge.error {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--accent-red);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+/* New modern components */
+
+/* Card with floating labels */
+.floating-label-card {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+}
+
+.floating-label-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    var(--primary-blue),
+    var(--secondary-blue)
+  );
+}
+
+.floating-label-card:hover {
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.floating-label {
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--medium-gray);
+  background: white;
+  padding: 0 0.5rem;
+  border-radius: 3px;
+}
+
+/* Animated metric value */
+.metric-value {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.metric-value .unit {
+  font-size: 0.6em;
+  color: var(--medium-gray);
+  margin-left: 0.25rem;
+}
+
+.oscillating-value {
+  animation: valueFluctuation 5s infinite;
+}
+
+@keyframes valueFluctuation {
+  0%,
+  100% {
+    color: var(--primary-blue);
+  }
+  50% {
+    color: var(--secondary-blue);
+  }
+}
+
+/* Modern tabs */
+.modern-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.modern-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.tab-item {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--medium-gray);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tab-item:hover {
+  color: var(--primary-blue);
+}
+
+.tab-item.active {
+  color: var(--primary-blue);
+  border-bottom-color: var(--primary-blue);
+}
+
+/* Grid layouts */
+.grid-layout-1-2 {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+}
+
+.grid-layout-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.grid-auto-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+  .grid-layout-1-2,
+  .grid-layout-2-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animated status indicator */
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-active {
+  background-color: var(--accent-green);
+  box-shadow: 0 0 0 rgba(40, 167, 69, 0.4);
+  animation: pulse-green 2s infinite;
+}
+
+.status-warning {
+  background-color: var(--accent-yellow);
+  box-shadow: 0 0 0 rgba(255, 193, 7, 0.4);
+  animation: pulse-yellow 2s infinite;
+}
+
+.status-error {
+  background-color: var(--accent-red);
+  box-shadow: 0 0 0 rgba(220, 53, 69, 0.4);
+  animation: pulse-red 2s infinite;
+}
+
+.status-offline {
+  background-color: var(--medium-gray);
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
+
+@keyframes pulse-yellow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+/* Data visualization panels */
+.data-visualization-panel {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Blueprint grid background */
+.blueprint-grid {
+  position: relative;
+  background-color: rgba(15, 86, 179, 0.01);
+  background-image: linear-gradient(
+      rgba(15, 86, 179, 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(15, 86, 179, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+/* Tech panel styling */
+.tech-panel {
+  background-color: white;
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.tech-panel:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.tech-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 0.5rem;
+}
+
+/* Data display component */
+.data-display {
+  background-color: rgba(15, 86, 179, 0.05);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  color: var(--primary-blue);
+}
+
+/* Tech button styling */
+.tech-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tech-button:hover {
+  background-color: var(--secondary-blue);
+  transform: translateY(-1px);
+}
+
+.tech-button:active {
+  transform: translateY(1px);
+}
+
+.tech-button:disabled {
+  background-color: var(--light-gray);
+  color: var(--medium-gray);
+  cursor: not-allowed;
+}
+
+/* Dashboard tiles layout */
+.dashboard-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1200px) {
+  .dashboard-tiles {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Energy flow animation */
+.energy-flow-path {
+  stroke-dasharray: 10;
+  animation: flow 2s linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
