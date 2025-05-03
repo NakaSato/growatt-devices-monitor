@@ -1,4 +1,5 @@
 <div class="card-plant animate-fade-in" x-data="{ plantDetails: false }">
+  <!-- Card Header with improved styling -->
   <div class="card-plant-header">
     <div class="flex items-center">
       <div
@@ -12,13 +13,13 @@
     </div>
     <button
       @click="plantDetails = !plantDetails"
-      class="text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 rounded-full p-1"
+      class="text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 rounded-full p-1 transition-all duration-300 hover:bg-gray-100"
       :aria-expanded="plantDetails"
       aria-label="Toggle plant details"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5"
+        class="h-5 w-5 transition-transform duration-300"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -33,7 +34,7 @@
       </svg>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5"
+        class="h-5 w-5 transition-transform duration-300"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -50,11 +51,14 @@
   </div>
 
   <div class="card-plant-body">
-    <div class="flex items-start mb-3">
-      <div class="flex-shrink-0 p-2 rounded-lg bg-primary-50 mr-3">
+    <!-- Power display with enhanced styling -->
+    <div class="flex items-start mb-4">
+      <div
+        class="flex-shrink-0 p-2.5 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 mr-3 shadow-sm border border-primary-200"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-8 w-8 text-primary-500"
+          class="h-9 w-9 text-primary-500 animated-value"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -68,53 +72,51 @@
         </svg>
       </div>
       <div>
-        <div class="text-xs text-slate-500">Current Power</div>
-        <div class="text-xl font-bold text-charcoal">
-          <span
-            x-text="formatPower(plant.totalPower)"
-          ></span>
+        <div class="text-xs text-slate-500 font-medium">Current Power</div>
+        <div class="text-xl font-bold text-charcoal animated-value">
+          <span x-text="formatPower(plant.totalPower)"></span>
         </div>
         <div
-          class="text-xs text-slate-500 mt-0.5"
+          class="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]"
           x-text="plant.location || ''"
+          :title="plant.location || ''"
         ></div>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-3">
-      <div>
+    <!-- Energy metrics with improved styling -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="metric-group transition-all duration-300 hover:shadow-inner">
         <div class="plant-detail-label">Today</div>
-        <div class="plant-detail-value">
-          <span
-            x-text="formatEnergy(plant.todayEnergy)"
-          ></span>
+        <div class="plant-detail-value animated-value">
+          <span x-text="formatEnergy(plant.todayEnergy)"></span>
         </div>
       </div>
-      <div>
+      <div class="metric-group transition-all duration-300 hover:shadow-inner">
         <div class="plant-detail-label">This Month</div>
-        <div class="plant-detail-value">
-          <span
-            x-text="formatEnergy(plant.monthEnergy)"
-          ></span>
+        <div class="plant-detail-value animated-value">
+          <span x-text="formatEnergy(plant.monthEnergy)"></span>
         </div>
       </div>
     </div>
 
-    <!-- Expanded details -->
+    <!-- Expanded details with improved styling -->
     <div x-show="plantDetails" x-collapse>
       <div class="mt-3 pt-3 border-t border-gray-100">
         <div class="grid grid-cols-2 gap-3 mb-3">
-          <div>
+          <div
+            class="metric-group bg-gradient-to-br from-gray-50 to-gray-100 transition-all duration-300 hover:shadow-inner"
+          >
             <div class="plant-detail-label">Total Energy</div>
-            <div class="plant-detail-value">
-              <span
-                x-text="formatEnergy(plant.totalEnergy)"
-              ></span>
+            <div class="plant-detail-value animated-value">
+              <span x-text="formatEnergy(plant.totalEnergy)"></span>
             </div>
           </div>
-          <div>
+          <div
+            class="metric-group bg-gradient-to-br from-gray-50 to-gray-100 transition-all duration-300 hover:shadow-inner"
+          >
             <div class="plant-detail-label">CO₂ Avoided</div>
-            <div class="plant-detail-value">
+            <div class="plant-detail-value animated-value">
               <span
                 x-text="(plant.co2_avoided || plant.co2Avoided || 0) + ' t'"
               ></span>
@@ -122,9 +124,13 @@
           </div>
         </div>
 
-        <div class="mt-3">
-          <div class="plant-detail-label mb-2">Plant Details</div>
-          <ul class="text-xs text-slate-600 space-y-1">
+        <div
+          class="mt-3 bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg border border-gray-200 shadow-sm"
+        >
+          <div class="plant-detail-label mb-2 font-semibold text-deep-forest">
+            Plant Details
+          </div>
+          <ul class="text-xs text-slate-600 space-y-2">
             <li class="flex justify-between">
               <span>Installed Capacity:</span>
               <span class="font-medium"
@@ -157,7 +163,8 @@
       </div>
     </div>
 
-    <div class="plant-card-actions">
+    <!-- Action buttons with improved styling -->
+    <div class="plant-card-actions mt-auto pt-3">
       <a
         :href="'/plant/' + plant.id"
         class="plant-card-action-btn plant-card-action-btn-primary"
@@ -178,9 +185,8 @@
         </svg>
         View Details
       </a>
-      <button 
-        class="plant-card-action-btn" 
-        @click="fetchSinglePlant(plant.id)" 
+      <button
+        class="plant-card-action-btn hover:bg-slate-200"
         :disabled="plant.isRefreshing"
         :class="{'opacity-50 cursor-not-allowed': plant.isRefreshing}"
       >
@@ -204,6 +210,7 @@
     </div>
   </div>
 
+  <!-- Card footer with improved styling -->
   <div class="card-plant-footer">
     <div class="flex items-center">
       <svg
@@ -220,12 +227,7 @@
           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <span
-        >Last update:
-        <span
-          x-text="plant.formattedLastUpdate"
-        ></span
-      ></span>
+      <span>Last update: <span x-text="plant.formattedLastUpdate"></span></span>
     </div>
     <div
       class="plant-status-text"
@@ -237,9 +239,7 @@
       'text-slate-500': !plant.status
       }"
     >
-      <span
-        x-text="getStatusText(plant.status)"
-      ></span>
+      <span x-text="getStatusText(plant.status)"></span>
     </div>
   </div>
 </div>

@@ -130,13 +130,85 @@
     </table>
   </div>
 
-  <!-- Text showing that data is loading -->
-  <div class="text-center text-sm text-slate-500">
-    Loading plant data...
-    <div class="inline-block">
-      <div
-        class="spinner border-2 border-t-2 border-light-gray border-t-eco-green rounded-full w-4 h-4 animate-spin align-[-2px] inline-block ml-1"
-      ></div>
+  <!-- Enhanced loading status information -->
+  <div class="bg-white rounded-lg shadow-md p-4 mt-4">
+    <div class="text-center space-y-3">
+      <div class="flex items-center justify-center mb-2">
+        <div
+          class="spinner border-4 border-t-4 border-gray-200 border-t-eco-green rounded-full w-10 h-10 animate-spin inline-block mr-3"
+        ></div>
+        <span class="text-lg font-medium text-deep-forest"
+          >Loading Plants Data</span
+        >
+      </div>
+
+      <div class="max-w-md mx-auto">
+        <div
+          x-show="fetchRetryCount > 0"
+          class="text-amber-600 bg-amber-50 px-3 py-2 rounded-md mb-2"
+        >
+          <span class="font-medium">Retrying connection</span>
+          <span x-text="` (Attempt ${fetchRetryCount}/${maxRetries})`"></span>
+        </div>
+
+        <div class="bg-snow-white rounded-lg p-3 text-left">
+          <div class="text-sm text-slate-700 mb-2 font-medium">
+            Loading Process:
+          </div>
+          <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex items-center">
+              <svg
+                class="w-4 h-4 mr-2 text-eco-green"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                ></path>
+              </svg>
+              <span>Initializing API connection</span>
+            </li>
+            <li class="flex items-center">
+              <div
+                class="w-4 h-4 mr-2 rounded-full border-2 border-eco-green border-t-transparent animate-spin"
+              ></div>
+              <span>Fetching plants data from Growatt API</span>
+            </li>
+            <li class="flex items-center opacity-50">
+              <svg
+                class="w-4 h-4 mr-2 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+              </svg>
+              <span>Processing data</span>
+            </li>
+            <li class="flex items-center opacity-50">
+              <svg
+                class="w-4 h-4 mr-2 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+              </svg>
+              <span>Rendering plants information</span>
+            </li>
+          </ul>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-3">
+          This may take a few moments. Data is being fetched from the Growatt
+          API and processed. If this takes too long, please check your internet
+          connection.
+        </p>
+      </div>
     </div>
   </div>
 </div>

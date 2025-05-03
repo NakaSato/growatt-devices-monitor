@@ -39,12 +39,37 @@
       defer
       src="https://unpkg.com/@alpinejs/persist@3.x.x/dist/cdn.min.js"
     ></script>
+    <script
+      defer
+      src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"
+    ></script>
 
     <!-- Alpine.js Core -->
     <script
       defer
       src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
+
+    <!-- Ensure Alpine plugins are registered -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (window.Alpine) {
+          // This will be executed after Alpine is loaded
+          // If there's a timing issue, the plugin registration will happen on alpine:init
+        }
+      });
+
+      document.addEventListener("alpine:init", function () {
+        // Ensure plugins are properly registered
+        if (
+          window.Alpine &&
+          window.AlpineCollapse &&
+          !Alpine.hasOwnProperty("collapse")
+        ) {
+          Alpine.plugin(AlpineCollapse);
+        }
+      });
+    </script>
 
     <!-- Component Loader -->
     <script src="{{ url_for('static', filename='js/component-loader.js') }}"></script>
@@ -128,57 +153,6 @@
         });
       });
     </script>
-
-    {% if config.get('LIVE_RELOAD_ENABLED', False) %}
-    <!-- Live Reload Script for Development -->
-    <script>
-      (function () {
-        // Check for file changes every 1000ms
-        const checkInterval = 1000;
-        let lastModified = {};
-
-        // Files to monitor (add more as needed)
-        const filesToMonitor = [
-          '{{ url_for("static", filename="css/style.css") }}',
-          // Add more static files here as needed
-        ];
-
-        function checkForChanges() {
-          filesToMonitor.forEach((file) => {
-            // Add cache-busting parameter to prevent browser caching
-            const url = file + "?check=" + new Date().getTime();
-
-            fetch(url, { method: "HEAD" })
-              .then((response) => {
-                const modified = response.headers.get("Last-Modified");
-                if (lastModified[file] && lastModified[file] !== modified) {
-                  console.log(`File changed: ${file}, reloading...`);
-                  window.location.reload();
-                }
-                lastModified[file] = modified;
-              })
-              .catch((err) => console.error("Error checking file:", err));
-          });
-        }
-
-        // Initialize by getting current timestamps
-        filesToMonitor.forEach((file) => {
-          fetch(file + "?init=" + new Date().getTime(), { method: "HEAD" })
-            .then((response) => {
-              lastModified[file] = response.headers.get("Last-Modified");
-            })
-            .catch((err) =>
-              console.error("Error initializing file check:", err)
-            );
-        });
-
-        // Start periodic checking
-        setInterval(checkForChanges, checkInterval);
-
-        console.log("Live reload for static files enabled");
-      })();
-    </script>
-    {% endif %}
   </head>
 
   <body class="h-lvh max-h-screen">

@@ -1,0 +1,825 @@
+{% extends "base.html" %} {% block title %}{{ plant.name }} - Plant Details{%
+endblock %} {% block head_scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- Leaflet.js for maps -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/utils/plant-detail-utils.js') }}"></script>
+{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Hero section with plant overview -->
+  <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white">
+    <div class="container mx-auto px-4 py-8">
+      <div class="flex items-center justify-between mb-2">
+        <a
+          href="{{ url_for('main_routes.plants') }}"
+          class="text-white hover:text-emerald-100 flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          <span>Back to Plants</span>
+        </a>
+        <div class="flex items-center space-x-2">
+          <span
+            class="text-sm bg-emerald-700 px-2 py-1 rounded-full"
+            x-data="plantDetail"
+            x-text="plant.status || 'unknown'"
+          ></span>
+          <span
+            class="text-sm"
+            x-data="plantDetail"
+            x-text="plant.formattedLastUpdate ? 'Updated: ' + plant.formattedLastUpdate : ''"
+          ></span>
+        </div>
+      </div>
+
+      <div
+        class="flex flex-col md:flex-row items-start md:items-center justify-between"
+      >
+        <div>
+          <h1 class="text-3xl font-bold mb-1">{{ plant.name }}</h1>
+          <p
+            class="text-emerald-100"
+            x-data="plantDetail"
+            x-text="plant.location || 'Location unknown'"
+          ></p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+          <button
+            class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 inline-block mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick stats cards -->
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8"
+        x-data="plantDetail"
+      >
+        <div
+          class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 shadow-sm hover:shadow-md transition-all"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-emerald-100 text-sm font-medium">Total Capacity</p>
+              <p
+                class="text-2xl font-bold mt-1"
+                x-text="plant.capacity ? plant.capacity + ' kWp' : 'N/A'"
+              ></p>
+            </div>
+            <div class="bg-emerald-700/40 p-2 rounded-lg">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 shadow-sm hover:shadow-md transition-all"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-emerald-100 text-sm font-medium">Today's Energy</p>
+              <p
+                class="text-2xl font-bold mt-1"
+                x-text="plant.today_energy ? plant.today_energy + ' kWh' : 'N/A'"
+              ></p>
+            </div>
+            <div class="bg-emerald-700/40 p-2 rounded-lg">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 shadow-sm hover:shadow-md transition-all"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-emerald-100 text-sm font-medium">Current Output</p>
+              <p
+                class="text-2xl font-bold mt-1"
+                x-text="plant.current_output ? plant.current_output + ' kW' : 'N/A'"
+              ></p>
+            </div>
+            <div class="bg-emerald-700/40 p-2 rounded-lg">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 shadow-sm hover:shadow-md transition-all"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-emerald-100 text-sm font-medium">Peak Output</p>
+              <p
+                class="text-2xl font-bold mt-1"
+                x-text="plant.peak_output ? plant.peak_output + ' kW' : 'N/A'"
+              ></p>
+            </div>
+            <div class="bg-emerald-700/40 p-2 rounded-lg">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content with tabs -->
+  <div class="container mx-auto px-4 py-6" x-data="{ activeTab: 'overview' }">
+    <!-- Tabs Navigation -->
+    <div class="border-b border-gray-200 mb-6">
+      <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+        <li class="mr-2">
+          <button
+            @click="activeTab = 'overview'"
+            :class="{'border-b-2 border-emerald-500 text-emerald-600': activeTab === 'overview', 'text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'overview'}"
+            class="inline-block p-4 rounded-t-lg"
+          >
+            Overview
+          </button>
+        </li>
+        <li class="mr-2">
+          <button
+            @click="activeTab = 'performance'"
+            :class="{'border-b-2 border-emerald-500 text-emerald-600': activeTab === 'performance', 'text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'performance'}"
+            class="inline-block p-4 rounded-t-lg"
+          >
+            Performance
+          </button>
+        </li>
+        <li class="mr-2">
+          <button
+            @click="activeTab = 'devices'"
+            :class="{'border-b-2 border-emerald-500 text-emerald-600': activeTab === 'devices', 'text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'devices'}"
+            class="inline-block p-4 rounded-t-lg"
+          >
+            Devices
+          </button>
+        </li>
+        <li class="mr-2">
+          <button
+            @click="activeTab = 'analytics'"
+            :class="{'border-b-2 border-emerald-500 text-emerald-600': activeTab === 'analytics', 'text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'analytics'}"
+            class="inline-block p-4 rounded-t-lg"
+          >
+            Analytics
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Loading indicator -->
+    <div
+      x-data="plantDetail"
+      x-show="isLoading"
+      class="flex justify-center my-12"
+    >
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"
+      ></div>
+    </div>
+
+    <!-- Tab content -->
+    <div x-data="plantDetail" x-show="!isLoading">
+      <!-- Overview Tab -->
+      <div
+        x-show="activeTab === 'overview'"
+        class="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      >
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Energy Production Chart -->
+          <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold text-gray-800">
+                Energy Production
+              </h2>
+              <div class="flex space-x-2">
+                <button
+                  class="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  Day
+                </button>
+                <button
+                  class="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  Week
+                </button>
+                <button
+                  class="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  Month
+                </button>
+              </div>
+            </div>
+            <div class="h-64 w-full">
+              <canvas id="energy-production-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Power Distribution -->
+          <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Power Distribution
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-medium text-gray-500">
+                    Self Consumption
+                  </h3>
+                  <div class="bg-green-100 text-green-800 p-1 rounded">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <p
+                  class="text-xl font-bold"
+                  x-text="plant.power_self_consumption ? plant.power_self_consumption + ' kW' : '0 kW'"
+                ></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-medium text-gray-500">Grid Export</h3>
+                  <div class="bg-blue-100 text-blue-800 p-1 rounded">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <p
+                  class="text-xl font-bold"
+                  x-text="plant.power_to_grid ? plant.power_to_grid + ' kW' : '0 kW'"
+                ></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-medium text-gray-500">
+                    Battery Storage
+                  </h3>
+                  <div class="bg-yellow-100 text-yellow-800 p-1 rounded">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <p
+                  class="text-xl font-bold"
+                  x-text="plant.power_to_battery ? plant.power_to_battery + ' kW' : '0 kW'"
+                ></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Plant Details & Location -->
+        <div class="space-y-6">
+          <!-- Plant Info Card -->
+          <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Plant Information
+            </h2>
+            <div class="space-y-4">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Plant ID</span>
+                <span class="font-medium" x-text="plant.id || 'N/A'"></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Account Name</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.accountName || 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Creation Date</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.formattedCreationDate || plant.creatDate || 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Location</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.city ? plant.city + ', ' + plant.country : (plant.location || 'N/A')"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Nominal Power</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.nominalPower ? (plant.nominalPower/1000).toFixed(2) + ' kWp' : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Total Energy</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.eTotal ? formatEnergy(plant.eTotal) + ' kWh' : (plant.total_energy ? plant.total_energy + ' kWh' : 'N/A')"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Timezone</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.timezone ? 'UTC+' + plant.timezone : 'N/A'"
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Environmental Impact -->
+          <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Environmental Impact
+            </h2>
+            <div class="space-y-4">
+              <div class="flex justify-between">
+                <span class="text-gray-500">CO2 Avoided</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.co2 ? formatEnergy(plant.co2) + ' kg' : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Coal Equivalent</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.coal ? plant.coal + ' kg' : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Trees Planted Equivalent</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.tree ? plant.tree + ' trees' : 'N/A'"
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Plant Data -->
+          <div
+            class="bg-white rounded-lg shadow-md p-6 border border-gray-100 mt-6"
+          >
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+              Additional Information
+            </h2>
+            <div class="space-y-4">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Plant Type</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.plantType ? plant.plantType : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Design Company</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.designCompany && plant.designCompany !== '0' ? plant.designCompany : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Money Unit</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.moneyUnit ? plant.moneyUnit + ' (' + plant.moneyUnitText + ')' : 'N/A'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Shared</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.isShare === 'true' || plant.isShare === true ? 'Yes' : 'No'"
+                ></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Nominal Power</span>
+                <span
+                  class="font-medium"
+                  x-text="plant.nominalPower ? formatEnergy(plant.nominalPower/1000) + ' kWp' : 'N/A'"
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location Map -->
+          <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Location</h2>
+            <div
+              id="plant-location-map"
+              class="h-64 w-full rounded-lg bg-gray-100"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Tab -->
+      <div
+        x-show="activeTab === 'performance'"
+        class="bg-white rounded-lg shadow-md p-6 border border-gray-100"
+      >
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          Performance Metrics
+        </h2>
+        <p class="text-gray-600">
+          Detailed performance analytics will be displayed here.
+        </p>
+      </div>
+
+      <!-- Devices Tab -->
+      <div
+        x-show="activeTab === 'devices'"
+        class="bg-white rounded-lg shadow-md p-6 border border-gray-100"
+      >
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          Connected Devices
+        </h2>
+        <p class="text-gray-600">
+          List of all devices connected to this plant.
+        </p>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div
+        x-show="activeTab === 'analytics'"
+        class="bg-white rounded-lg shadow-md p-6 border border-gray-100"
+      >
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          Advanced Analytics
+        </h2>
+        <p class="text-gray-600">Advanced data analysis and predictions.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // JavaScript to handle plant details data
+  document.addEventListener('alpine:init', () => {
+      Alpine.data('plantDetail', () => ({
+          plant: {{ plant|tojson }},
+          isLoading: false,
+          apiData: null,
+
+          init() {
+              // Format data as needed
+              if (this.plant) {
+                  if (this.plant.last_update_time) {
+                      const date = new Date(this.plant.last_update_time);
+                      this.plant.formattedLastUpdate = date.toLocaleString();
+                  }
+
+                  // Format creation date if available
+                  if (this.plant.creatDate) {
+                      this.plant.formattedCreationDate = formatDate(this.plant.creatDate);
+                  }
+
+                  // Calculate CO2 avoided in tons if in kg
+                  if (this.plant.co2 && !isNaN(parseFloat(this.plant.co2))) {
+                      const co2Value = parseFloat(this.plant.co2);
+                      this.plant.co2_avoided = (co2Value > 1000) ? (co2Value / 1000).toFixed(2) : co2Value;
+                  }
+
+                  // Fetch additional data from the API
+                  this.fetchPlantData();
+
+                  // Initialize map if coordinates are available
+                  this.$nextTick(() => {
+                      if (this.plant.latitude && this.plant.longitude || (this.plant.lat && this.plant.lng)) {
+                          this.initializeMap();
+                      }
+
+                      this.initializeChart();
+                  });
+              }
+          },
+
+          fetchPlantData() {
+              this.isLoading = true;
+              const plantId = this.plant.id;
+
+              if (!plantId) {
+                  this.isLoading = false;
+                  return;
+              }
+
+              fetch(`/api/plants/${plantId}`, {
+                  headers: {
+                      "Cache-Control": "no-cache",
+                      "Pragma": "no-cache"
+                  }
+              })
+              .then(response => {
+                  if (!response.ok) {
+                      throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  return response.json();
+              })
+              .then(data => {
+                  // Log the received data to console for debugging
+                  console.log(`Received data for plant ${plantId}:`, data);
+
+                  // Update plant data with API response
+                  this.apiData = data;
+
+                  // Merge API data with existing plant data
+                  this.updatePlantData(data);
+
+                  this.isLoading = false;
+              })
+              .catch(error => {
+                  console.error(`Error fetching plant ${plantId}:`, error);
+                  this.isLoading = false;
+              });
+          },
+
+          updatePlantData(data) {
+              // Update plant data with normalized values from API
+              if (!data) return;
+
+              // Handle different API response formats
+              let plantData = data;
+
+              // If data is an object with a specific plant property
+              if (data.plant) {
+                  plantData = data.plant;
+              }
+
+              // Merge with existing plant data
+              this.plant = {
+                  ...this.plant,
+                  // Standard fields
+                  id: plantData.id || this.plant.id,
+                  plantName: plantData.plantName || plantData.name || this.plant.plantName || this.plant.name,
+
+                  // Energy/power fields with multiple possible property names
+                  current_output: parseFloat(plantData.currentPac || plantData.current_output || plantData.totalPower || this.plant.current_output || 0),
+                  today_energy: parseFloat(plantData.eToday || plantData.today_energy || plantData.todayEnergy || this.plant.today_energy || 0),
+                  total_energy: parseFloat(plantData.eTotal || plantData.total_energy || plantData.totalEnergy || this.plant.total_energy || 0),
+
+                  // Environmental impact data
+                  co2_avoided: plantData.co2 ? parseFloat(plantData.co2) / 1000 : (this.plant.co2_avoided || 0),
+                  tree: plantData.tree || this.plant.tree || 0,
+                  coal: plantData.coal || this.plant.coal || 0,
+
+                  // Location data
+                  latitude: plantData.latitude || plantData.lat || this.plant.latitude || this.plant.lat,
+                  longitude: plantData.longitude || plantData.lng || this.plant.longitude || this.plant.lng,
+                  city: plantData.city || this.plant.city,
+                  country: plantData.country || this.plant.country,
+
+                  // Money and financial data
+                  moneyUnit: plantData.moneyUnit || this.plant.moneyUnit,
+                  moneyUnitText: plantData.moneyUnitText || this.plant.moneyUnitText,
+
+                  // Additional plant information
+                  nominalPower: plantData.nominalPower || this.plant.nominalPower,
+                  designCompany: plantData.designCompany || this.plant.designCompany,
+                  plantType: plantData.plantType || this.plant.plantType,
+
+                  // Status and timestamps
+                  status: getPlantStatus(plantData) || this.plant.status || 'unknown',
+                  last_update_time: plantData.lastUpdateTime || this.plant.last_update_time,
+                  formattedLastUpdate: formatDate(plantData.lastUpdateTime) || this.plant.formattedLastUpdate,
+                  formattedCreationDate: formatDate(plantData.creatDate) || this.plant.formattedCreationDate,
+
+                  // Other fields
+                  onlineNum: parseInt(plantData.onlineNum || this.plant.onlineNum || 0, 10),
+                  accountName: plantData.accountName || this.plant.accountName,
+                  isShare: plantData.isShare || this.plant.isShare,
+                  timezone: plantData.timezone || this.plant.timezone
+              };
+
+              // Force UI update
+              this.$nextTick(() => {
+                  this.initializeChart();
+                  if (this.plant.latitude && this.plant.longitude || (this.plant.lat && this.plant.lng)) {
+                      this.initializeMap();
+                  }
+              });
+          },
+
+          initializeMap() {
+              const mapElement = document.getElementById('plant-location-map');
+              if (!mapElement) return;
+
+              // Get coordinates, supporting different field names
+              const latitude = this.plant.latitude || this.plant.lat;
+              const longitude = this.plant.longitude || this.plant.lng;
+
+              if (!latitude || !longitude) return;
+
+              // Check if map instance already exists and remove it
+              if (window.plantMap) {
+                  window.plantMap.remove();
+                  window.plantMap = null;
+              }
+
+              // Clear existing map content
+              mapElement.innerHTML = '';
+
+              // Create new map
+              window.plantMap = L.map('plant-location-map').setView([latitude, longitude], 13);
+
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              }).addTo(window.plantMap);
+
+              L.marker([latitude, longitude])
+                  .addTo(window.plantMap)
+                  .bindPopup(`<b>${this.plant.name || this.plant.plantName}</b><br>Capacity: ${this.plant.capacity || this.plant.nominalPower/1000 || 'Unknown'} kWp`);
+          },
+
+          initializeChart() {
+              const ctx = document.getElementById('energy-production-chart');
+              if (!ctx) return;
+
+              // Check if we have real data from API to use
+              let chartData = [];
+              let labels = [];
+
+              // If we have API data with hourly production, use it
+              if (this.apiData && this.apiData.hourlyProduction) {
+                  // Format API data for chart
+                  Object.entries(this.apiData.hourlyProduction).forEach(([hour, value]) => {
+                      labels.push(hour + ':00');
+                      chartData.push(parseFloat(value));
+                  });
+              } else {
+                  // Use sample data if no real data available
+                  labels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+                  chartData = [0, 0.2, 1.5, 3.8, 4.2, 3.5, 1.2, 0];
+              }
+
+              const data = {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Energy Production (kWh)',
+                      data: chartData,
+                      fill: true,
+                      backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                      borderColor: 'rgb(16, 185, 129)',
+                      tension: 0.4
+                  }]
+              };
+
+              // Check if chart instance already exists and destroy it
+              if (window.energyChart) {
+                  window.energyChart.destroy();
+              }
+
+              // Create new chart
+              window.energyChart = new Chart(ctx, {
+                  type: 'line',
+                  data: data,
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: {
+                              display: false
+                          }
+                      },
+                      scales: {
+                          y: {
+                              beginAtZero: true,
+                              grid: {
+                                  color: 'rgba(0, 0, 0, 0.05)'
+                              }
+                          },
+                          x: {
+                              grid: {
+                                  display: false
+                              }
+                          }
+                      }
+                  }
+              });
+          }
+      }));
+  });
+</script>
+{% endblock %}

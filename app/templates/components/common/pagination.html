@@ -1,5 +1,58 @@
-<div class="flex items-center justify-between py-3">
-  <div class="flex items-center space-x-2">
+<div class="flex flex-col sm:flex-row items-center justify-between py-3 gap-3">
+  <!-- Mobile pagination info -->
+  <div
+    class="w-full sm:hidden flex items-center justify-between bg-white px-4 py-2 rounded-lg shadow-sm"
+  >
+    <button
+      @click="prevPage()"
+      :disabled="currentPage === 1"
+      class="p-2 rounded-md bg-white hover:bg-light-gray transition-all touch-manipulation"
+      :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
+      aria-label="Previous page"
+    >
+      <svg
+        class="h-5 w-5 text-slate-gray"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+
+    <span class="text-sm font-medium text-slate-700">
+      Page <span class="text-eco-green" x-text="currentPage"></span> of
+      <span x-text="totalPages"></span>
+    </span>
+
+    <button
+      @click="nextPage()"
+      :disabled="currentPage >= totalPages"
+      class="p-2 rounded-md bg-white hover:bg-light-gray transition-all touch-manipulation"
+      :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
+      aria-label="Next page"
+    >
+      <svg
+        class="h-5 w-5 text-slate-gray"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Desktop pagination info -->
+  <div class="hidden sm:flex items-center space-x-2">
     <span class="text-sm text-slate-gray">
       Showing
       <span
@@ -20,12 +73,13 @@
     </span>
   </div>
 
-  <nav class="flex items-center space-x-1" aria-label="Pagination">
+  <!-- Desktop pagination controls -->
+  <nav class="hidden sm:flex items-center space-x-1" aria-label="Pagination">
     <!-- First Page Button -->
     <button
-      @click="goToPage(1)"
+      @click="goToFirstPage()"
       :disabled="currentPage === 1"
-      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all"
+      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all touch-manipulation"
       :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
       aria-label="Go to first page"
     >
@@ -38,7 +92,7 @@
       >
         <path
           fill-rule="evenodd"
-          d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414l-3.293 3.293a1 1 0 01-1.414 0zM5.293 12.293a1 1 0 011.414 0L10 15.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z"
           clip-rule="evenodd"
         />
       </svg>
@@ -48,7 +102,7 @@
     <button
       @click="prevPage()"
       :disabled="currentPage === 1"
-      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all"
+      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all touch-manipulation"
       :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
       aria-label="Previous page"
     >
@@ -68,10 +122,10 @@
     </button>
 
     <!-- Page Numbers -->
-    <template x-for="page in pageNumbers" :key="page">
+    <template x-for="page in visiblePageNumbers" :key="page">
       <button
         @click="goToPage(page)"
-        class="px-3 py-1 rounded-md text-sm font-medium transition-all"
+        class="px-3 py-1 rounded-md text-sm font-medium transition-all touch-manipulation"
         :class="page === currentPage ? 'bg-eco-green text-white' : 'bg-white text-slate-gray border border-light-gray hover:bg-light-gray'"
         :aria-current="page === currentPage ? 'page' : null"
         x-text="page"
@@ -82,7 +136,7 @@
     <button
       @click="nextPage()"
       :disabled="currentPage >= totalPages"
-      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all"
+      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all touch-manipulation"
       :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
       aria-label="Next page"
     >
@@ -103,9 +157,9 @@
 
     <!-- Last Page Button -->
     <button
-      @click="goToPage(totalPages)"
+      @click="goToLastPage()"
       :disabled="currentPage >= totalPages"
-      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all"
+      class="px-2 py-1 rounded-md border border-light-gray bg-white hover:bg-light-gray transition-all touch-manipulation"
       :class="{'opacity-50 cursor-not-allowed': currentPage >= totalPages}"
       aria-label="Go to last page"
     >
@@ -118,10 +172,30 @@
       >
         <path
           fill-rule="evenodd"
-          d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0zM14.707 7.707a1 1 0 00-1.414 0L10 4.414 6.707 7.707a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+          d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"
+        />
+        <path
+          fill-rule="evenodd"
+          d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
           clip-rule="evenodd"
         />
       </svg>
     </button>
   </nav>
+
+  <!-- Page size selector -->
+  <div class="flex items-center space-x-2">
+    <span class="text-sm text-slate-gray hidden xs:inline">Show:</span>
+    <select
+      x-model="pageSize"
+      @change="currentPage = 1; updatePagination()"
+      class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-eco-green focus:border-eco-green p-1 pl-2 pr-6"
+    >
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="50">50</option>
+    </select>
+  </div>
 </div>

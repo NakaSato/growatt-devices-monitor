@@ -8,12 +8,37 @@ block styles %}
 {% endblock %} {% block head_scripts %}
 <!-- Toast Notifications -->
 <script src="{{ url_for('static', filename='js/utils/toast-utils.js') }}"></script>
+<!-- Alpine.js plugins -->
+<script
+  defer
+  src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"
+></script>
+<!-- Ensure Alpine Collapse plugin is registered -->
+<script>
+  document.addEventListener("alpine:init", () => {
+    // Make sure Collapse plugin is registered properly
+    if (window.Alpine && !Alpine.hasOwnProperty("collapse")) {
+      console.warn("Manually registering Collapse plugin");
+      // This will help debug any issues with the plugin
+      window.addEventListener("load", () => {
+        if (
+          window.Alpine &&
+          !Alpine.hasOwnProperty("collapse") &&
+          window.AlpineCollapse
+        ) {
+          Alpine.plugin(AlpineCollapse);
+        }
+      });
+    }
+  });
+</script>
 <!-- Plant utilities -->
 <script src="{{ url_for('static', filename='js/utils/plant-data-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/export-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/plants-app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/plant-detail-utils.js') }}"></script>
 {% endblock %} {% block content %}
-<div class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6">
+<div class="dashboard-container">
   <div
     x-data="plantsApp()"
     x-init="init()"
@@ -67,7 +92,7 @@ block styles %}
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                d="M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2-2 0 01-2-2v-2z"
               />
             </svg>
             <span class="hidden xs:inline">Cards</span>
@@ -94,54 +119,62 @@ block styles %}
             <span class="hidden xs:inline">Table</span>
           </button>
         </div>
-        <button
-          id="export-excel-button"
-          class="bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 w-full sm:w-auto order-3 sm:order-2 mt-2 sm:mt-0"
-          @click="exportToExcel()"
-          :disabled="isLoading || filteredPlants.length === 0"
+        <!-- Action buttons with improved accessibility and responsive design -->
+        <div
+          class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-3 sm:order-2"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <button
+            id="refresh-button"
+            class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center justify-center gap-2 text-sm font-medium px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+            @click="fetchPlants()"
+            :disabled="isLoading"
+            aria-label="Refresh plants data"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-            />
-          </svg>
-          <span class="font-medium">Export</span>
-        </button>
-        <button
-          id="refresh-button"
-          class="bg-gradient-to-r from-green-500 to-green-600 text-white flex items-center gap-2 text-sm sm:text-base px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 w-full sm:w-auto order-1 sm:order-3"
-          @click="fetchPlants()"
-          :disabled="isLoading"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            :class="{'animate-spin': isLoading}"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              :class="{'animate-spin': isLoading}"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span x-text="isLoading ? 'Loading...' : 'Refresh'"></span>
+          </button>
+
+          <button
+            id="export-excel-button"
+            class="bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center gap-2 text-sm font-medium px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            @click="exportToExcel()"
+            :disabled="isLoading || filteredPlants.length === 0"
+            :class="{'opacity-60 cursor-not-allowed': isLoading || filteredPlants.length === 0}"
+            aria-label="Export data to Excel"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span
-            x-text="isLoading ? 'Loading...' : 'Refresh'"
-            class="font-medium"
-          ></span>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              />
+            </svg>
+            <span>Export</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -165,14 +198,39 @@ block styles %}
       {% include 'components/plants/empty_state.html' %}
     </div>
 
-    <!-- Card view (optimized for mobile) -->
+    <!-- Cards Per Page Selection -->
+    <div
+      x-show="!isLoading && plants.length > 0 && viewMode === 'cards'"
+      class="flex justify-end items-center mb-4 space-x-2"
+    >
+      <label for="cardsPerPage" class="text-sm text-gray-600"
+        >Cards per page:</label
+      >
+      <select
+        id="cardsPerPage"
+        x-model="itemsPerPage"
+        @change="currentPage = 1; updatePagination()"
+        class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-eco-green focus:border-eco-green p-1.5"
+      >
+        <option value="8">8</option>
+        <option value="12">12</option>
+        <option value="16">16</option>
+        <option value="24">24</option>
+      </select>
+    </div>
+
+    <!-- Card view (improved responsive layout) -->
     <div
       x-show="!isLoading && plants.length > 0 && viewMode === 'cards'"
       x-transition
-      class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
+      class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-5 sm:gap-6"
     >
       <template x-for="plant in paginatedPlants" :key="plant.id">
-        {% include 'components/plants/plant_card.html' %}
+        <div
+          class="transform transition-all duration-300 hover:scale-102 hover:shadow-lg"
+        >
+          {% include 'components/plants/plant_card.html' %}
+        </div>
       </template>
     </div>
 
@@ -180,6 +238,7 @@ block styles %}
     <div
       x-show="!isLoading && plants.length > 0 && viewMode === 'table'"
       x-transition
+      class="overflow-x-auto"
     >
       {% include 'components/plants/plant_table.html' %}
 
@@ -187,11 +246,356 @@ block styles %}
       {% include 'components/common/pagination.html' %}
     </div>
 
-    <!-- Card view pagination (appears at the bottom of card view) -->
+    <!-- Card view pagination (improved styling) -->
     <div
       x-show="!isLoading && plants.length > 0 && viewMode === 'cards' && totalPages > 1"
+      class="mt-8 flex justify-center"
     >
-      {% include 'components/plants/card_pagination.html' %}
+      <div
+        class="inline-flex flex-wrap items-center justify-center gap-1 sm:gap-0 rounded-md shadow-sm bg-white w-full max-w-md px-2 py-3 sm:px-0 sm:py-0"
+      >
+        <!-- First and Previous buttons in a group -->
+        <div class="flex items-center">
+          <button
+            @click="goToFirstPage()"
+            :disabled="currentPage === 1"
+            class="px-2 sm:px-3 py-2 text-sm font-medium rounded-l-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            :class="{'text-gray-400': currentPage === 1}"
+            aria-label="Go to first page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <button
+            @click="prevPage()"
+            :disabled="currentPage === 1"
+            class="px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            :class="{'text-gray-400': currentPage === 1}"
+            aria-label="Previous page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Current page info for small screens -->
+        <div class="flex items-center mx-2 sm:hidden">
+          <span class="text-sm text-gray-600">
+            Page <span class="font-medium" x-text="currentPage"></span>/<span
+              x-text="totalPages"
+            ></span>
+          </span>
+        </div>
+
+        <!-- Page numbers - visible only on tablet and up -->
+        <div class="hidden sm:flex">
+          <template x-for="page in visiblePageNumbers" :key="page">
+            <button
+              @click="goToPage(page)"
+              class="px-3 py-2 text-sm font-medium hover:bg-gray-50 focus:outline-none touch-manipulation"
+              :class="page === currentPage ? 'bg-eco-green text-white hover:bg-eco-green-dark' : 'text-gray-700'"
+              :aria-current="page === currentPage ? 'page' : null"
+            >
+              <span x-text="page"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Next and Last buttons in a group -->
+        <div class="flex items-center">
+          <button
+            @click="nextPage()"
+            :disabled="currentPage === totalPages"
+            class="px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            :class="{'text-gray-400': currentPage === totalPages}"
+            aria-label="Next page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <button
+            @click="goToLastPage()"
+            :disabled="currentPage === totalPages"
+            class="px-2 sm:px-3 py-2 text-sm font-medium rounded-r-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            :class="{'text-gray-400': currentPage === totalPages}"
+            aria-label="Go to last page"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+              <path
+                fill-rule="evenodd"
+                d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plant Detail Modal -->
+    <div
+      x-show="showPlantDetailModal"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform scale-90"
+      x-transition:enter-end="opacity-100 transform scale-100"
+      x-transition:leave="transition ease-in duration-200"
+      x-transition:leave-start="opacity-100 transform scale-100"
+      x-transition:leave-end="opacity-0 transform scale-90"
+      class="fixed inset-0 z-50 overflow-y-auto"
+      @click.away="showPlantDetailModal = false"
+    >
+      <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div
+          class="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        >
+          <!-- Modal Header -->
+          <div
+            class="sticky top-0 bg-gradient-mint p-4 border-b border-gray-200 rounded-t-lg flex justify-between items-center"
+          >
+            <h3
+              class="text-xl font-semibold text-deep-forest"
+              x-text="selectedPlant ? selectedPlant.name : 'Plant Details'"
+            ></h3>
+            <button
+              @click="showPlantDetailModal = false"
+              class="text-gray-600 hover:text-gray-900"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-5 md:p-6">
+            <div
+              x-show="isLoadingDetails"
+              class="flex justify-center items-center py-10"
+            >
+              <div class="loader"></div>
+            </div>
+
+            <div x-show="!isLoadingDetails && selectedPlant">
+              <!-- Plant basic information -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                <div class="bg-snow-white p-3 md:p-4 rounded-lg shadow-sm">
+                  <h4 class="text-lg font-semibold mb-3 text-deep-forest">
+                    Basic Information
+                  </h4>
+                  <div class="grid grid-cols-2 gap-3 md:gap-4">
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Plant Name</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.name || 'N/A'"
+                      ></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Plant ID</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.id || 'N/A'"
+                      ></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Status</p>
+                      <div class="flex items-center">
+                        <span
+                          class="inline-block w-2 h-2 rounded-full mr-2"
+                          :class="selectedPlant?.status === 'Normal' ? 'bg-green-500' : 'bg-red-500'"
+                        ></span>
+                        <span
+                          class="text-sm md:text-base"
+                          x-text="selectedPlant?.status || 'Unknown'"
+                        ></span>
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Creation Date</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.createDate ? formatDate(selectedPlant.createDate) : 'N/A'"
+                      ></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-snow-white p-3 md:p-4 rounded-lg shadow-sm">
+                  <h4 class="text-lg font-semibold mb-3 text-deep-forest">
+                    Current Generation
+                  </h4>
+                  <div class="grid grid-cols-2 gap-3 md:gap-4">
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Today</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.eToday !== undefined ? formatEnergy(selectedPlant.eToday) + ' kWh' : 'N/A'"
+                      ></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">This Month</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.eMonth !== undefined ? formatEnergy(selectedPlant.eMonth) + ' kWh' : 'N/A'"
+                      ></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Total Energy</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.eTotal !== undefined ? formatEnergy(selectedPlant.eTotal) + ' kWh' : 'N/A'"
+                      ></p>
+                    </div>
+                    <div>
+                      <p class="text-xs text-slate-gray mb-1">Current Power</p>
+                      <p
+                        class="font-medium text-sm md:text-base"
+                        x-text="selectedPlant?.currentPower !== undefined ? formatPower(selectedPlant.currentPower) + ' kW' : 'N/A'"
+                      ></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Additional details with pagination -->
+              <div class="bg-snow-white p-3 md:p-4 rounded-lg shadow-sm mt-4">
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="text-lg font-semibold text-deep-forest">
+                    All Plant Details
+                  </h4>
+                  <div class="flex space-x-2">
+                    <select
+                      x-model="detailsPerPage"
+                      @change="updateDetailsPagination()"
+                      class="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-eco-green focus:border-eco-green p-1.5"
+                    >
+                      <option value="5">5 / page</option>
+                      <option value="10">10 / page</option>
+                      <option value="20">20 / page</option>
+                      <option value="50">50 / page</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th
+                          class="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Key
+                        </th>
+                        <th
+                          class="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <template
+                        x-for="(value, key) in paginatedPlantDetails"
+                        :key="key"
+                      >
+                        <tr class="hover:bg-gray-50">
+                          <td
+                            class="px-2 sm:px-3 py-1.5 whitespace-nowrap text-sm font-medium text-gray-900"
+                            x-text="formatKeyName(key)"
+                          ></td>
+                          <td
+                            class="px-2 sm:px-3 py-1.5 whitespace-nowrap text-sm text-gray-700"
+                            x-text="formatPlantValue(key, value)"
+                          ></td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Plant details pagination -->
+                <div
+                  class="flex justify-between items-center mt-4"
+                  x-show="detailsTotalPages > 1"
+                >
+                  <button
+                    @click="detailsCurrentPage > 1 ? detailsCurrentPage-- : null"
+                    :disabled="detailsCurrentPage === 1"
+                    class="px-2 sm:px-3 py-1 bg-white text-sm border rounded-md text-gray-700 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+
+                  <span class="text-sm text-gray-600">
+                    Page <span x-text="detailsCurrentPage"></span> of
+                    <span x-text="detailsTotalPages"></span>
+                  </span>
+
+                  <button
+                    @click="detailsCurrentPage < detailsTotalPages ? detailsCurrentPage++ : null"
+                    :disabled="detailsCurrentPage === detailsTotalPages"
+                    class="px-2 sm:px-3 py-1 bg-white text-sm border rounded-md text-gray-700 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
