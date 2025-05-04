@@ -141,7 +141,7 @@ class BackgroundService:
             # Set up device data collection (default: every 15 minutes during daylight hours)
             cron_expr = app.config.get('DEVICE_DATA_CRON', '*/15 6-20 * * *')
             self.add_cron_job(
-                func='app.services.data_collector:collect_device_data',
+                func='app.data_collector:collect_device_data',
                 id='device_data_collector',
                 cron=cron_expr,
                 description=f"Collect device data on schedule: {cron_expr}"
@@ -153,7 +153,7 @@ class BackgroundService:
             # Set up plant data collection (default: every 15 minutes during daylight hours)
             cron_expr = app.config.get('PLANT_DATA_CRON', '*/15 6-20 * * *')
             self.add_cron_job(
-                func='app.services.data_collector:collect_plant_data',
+                func='app.data_collector:collect_plant_data',
                 id='plant_data_collector',
                 cron=cron_expr,
                 description=f"Collect plant data on schedule: {cron_expr}"
@@ -410,150 +410,28 @@ class BackgroundService:
     def shutdown(self):
         """Shut down the scheduler."""
         if self.scheduler and self.scheduler.running:
-            self.scheduler.shutdown()
-            logger.info("Background service scheduler shutdown")
-            self.initialized = False
-    
-    def add_one_time_job(self, func, run_date=None, **kwargs):
-        """
-        Add a job to run once at a specific time.
-        
-        Args:
-            func: Function or import string to call
-            run_date: Date/time to run the job (default: now)
-            **kwargs: Additional arguments for job
-            
-        Returns:
-            The scheduled job
-        """
-        if not self.initialized or not self.scheduler:
-            logger.error("Cannot add job - scheduler not initialized")
-            return None
-        
-        # Parse function if it's a string
-        if isinstance(func, str):
-            func = self._import_function(func)
-            if not func:
-                return None
-        
-        # Add job with app context
-        description = kwargs.pop('description', None)
-        id = kwargs.pop('id', f"one_time_{datetime.now().timestamp()}")
-        wrapped_func = self._wrap_with_app_context(func)
-        
-        job = self.scheduler.add_job(
-            wrapped_func,
-            'date',
-            run_date=run_date,
-            id=id,
-            name=description or id,
-            **kwargs
-        )
-        
-        # Store in internal tracking
-        self.jobs[id] = {
-            'job': job,
-            'description': description,
-            'type': 'one_time',
-            'config': {'run_date': run_date, **kwargs}
-        }
-        
-        return job
-    
-    def update_job(self, job_id, **kwargs):
-        """
-        Update an existing job's properties.
-        
-        Args:
-            job_id: ID of the job to update
-            **kwargs: New job parameters
-            
-        Returns:
-            True if job was updated, False otherwise
-        """
-        if not self.initialized or not self.scheduler:
-            logger.error("Cannot update job - scheduler not initialized")
-            return False
-        
-        try:
-            # Modify the job
-            if 'func' in kwargs:
-                func = kwargs.pop('func')
-                if isinstance(func, str):
-                    func = self._import_function(func)
-                    if not func:
-                        return False
-                kwargs['func'] = self._wrap_with_app_context(func)
-            
-            self.scheduler.modify_job(job_id, **kwargs)
-            
-            # Update our internal tracking
-            if job_id in self.jobs:
-                job_info = self.jobs[job_id]
-                if 'description' in kwargs:
-                    job_info['description'] = kwargs['description']
-                if 'config' in kwargs:
-                    job_info['config'].update(kwargs['config'])
-            
-            logger.info(f"Updated scheduled job: {job_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Error updating job {job_id}: {e}")
-            return False
-    
-    def reschedule_job(self, job_id, trigger_type, trigger_args):
-        """
-        Reschedule an existing job with a new trigger.
-        
-        Args:
-            job_id: ID of the job to reschedule
-            trigger_type: Type of trigger ('interval', 'cron', 'date')
-            trigger_args: Arguments for the trigger
-            
-        Returns:
-            True if job was rescheduled, False otherwise
-        """
-        if not self.initialized or not self.scheduler:
-            logger.error("Cannot reschedule job - scheduler not initialized")
-            return False
-        
-        try:
-            if trigger_type == 'interval':
-                trigger = IntervalTrigger(**trigger_args)
-            elif trigger_type == 'cron':
-                if isinstance(trigger_args.get('cron', None), str):
-                    cron = trigger_args.pop('cron')
-                    minute, hour, day, month, day_of_week = cron.split()[:5]
-                    trigger = CronTrigger(
-                        minute=minute,
-                        hour=hour,
-                        day=day,
-                        month=month,
-                        day_of_week=day_of_week
-                    )
-                else:
-                    trigger = CronTrigger(**trigger_args)
-            elif trigger_type == 'date':
-                from apscheduler.triggers.date import DateTrigger
-                trigger = DateTrigger(**trigger_args)
+            # Prevent shutdown from within a job context to avoid deadlocks
+            import threading
+            if threading.current_thread() is threading.main_thread():
+                self.scheduler.shutdown()
+                logger.info("Background service scheduler shutdown")
+                self.initialized = False
             else:
-                logger.error(f"Invalid trigger type: {trigger_type}")
-                return False
-            
-            self.scheduler.reschedule_job(job_id, trigger=trigger)
-            
-            # Update our internal tracking
-            if job_id in self.jobs:
-                job_info = self.jobs[job_id]
-                job_info['type'] = trigger_type
-                job_info['config'] = trigger_args
-            
-            logger.info(f"Rescheduled job {job_id} with trigger {trigger_type}")
-            return True
+                logger.info("Shutdown requested from a job thread - deferring to avoid deadlock")
+                # Schedule the shutdown to happen from another thread
+                import threading
+                threading.Thread(target=self._safe_shutdown).start()
+    
+    def _safe_shutdown(self):
+        """Safely shut down the scheduler from a separate thread."""
+        try:
+            if self.scheduler and self.scheduler.running:
+                # Using shutdown(wait=False) to avoid waiting for jobs to complete
+                self.scheduler.shutdown(wait=False)
+                logger.info("Background service scheduler safely shutdown from separate thread")
+                self.initialized = False
         except Exception as e:
-            logger.error(f"Error rescheduling job {job_id}: {e}")
-            return False
+            logger.error(f"Error during safe shutdown: {e}")
 
-
-# Create the singleton background service instance
+# Create a singleton instance to be imported by other modules
 background_service = BackgroundService()

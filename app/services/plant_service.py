@@ -201,7 +201,7 @@ class PlantService:
             plant_id_int = int(plant_id) if str(plant_id).isdigit() else None
             
             # First, try to use the api_helpers function to get plant data
-            from app.routes.api_helpers import get_plant_by_id
+            from app.routes.common.api_helpers import get_plant_by_id
             
             api_plant = None
             try:

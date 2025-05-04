@@ -699,3 +699,180 @@ class GrowattDataCollector:
                             )
         
         return results
+
+# Add standalone functions for scheduled collection
+
+def collect_device_data():
+    """
+    Collect device data from Growatt API.
+    This function is designed to be called by the background scheduler.
+    
+    Returns:
+        Dict[str, Any]: Collection results
+    """
+    logger.info("Starting scheduled device data collection")
+    collector = GrowattDataCollector()
+    
+    try:
+        # Authenticate with API
+        if not collector.authenticate():
+            logger.error("Failed to authenticate with Growatt API")
+            return {"success": False, "message": "Authentication failed"}
+        
+        # Get plant list
+        logger.info("Fetching plant list")
+        plants = collector._collect_plants_data({"plants": 0, "errors": []})
+        
+        if not plants:
+            logger.error("No plants data returned from API")
+            return {"success": False, "message": "No plants data returned from API"}
+        
+        # For each plant, collect and store devices
+        logger.info(f"Collecting device data for {len(plants)} plants")
+        all_devices = []
+        results = {
+            "plants": len(plants),
+            "devices": 0,
+            "errors": []
+        }
+        
+        for plant_index, plant in enumerate(plants):
+            plant_id = plant.get('id')
+            plant_name = plant.get('name', 'Unknown')
+            
+            if not plant_id:
+                logger.warning(f"Skipping plant with no ID: {plant}")
+                results["errors"].append(f"Missing ID: {plant_name}")
+                continue
+            
+            logger.info(f"Processing plant {plant_index+1}/{len(plants)}: {plant_name} (ID: {plant_id})")
+            
+            try:
+                # Use the api instance to get devices
+                logger.info(f"Fetching devices for plant {plant_id}")
+                devices = collector._safe_api_call(collector.api.get_device_list, plant_id)
+                
+                if isinstance(devices, list):
+                    device_data = devices
+                elif isinstance(devices, dict) and 'datas' in devices:
+                    device_data = devices.get('datas', [])
+                else:
+                    device_data = []
+                
+                # Transform device data to match database schema
+                transformed_devices = []
+                for device in device_data:
+                    device_entry = {
+                        "serial_number": device.get('sn'),
+                        "plant_id": plant_id,
+                        "plant_name": plant_name,
+                        "alias": device.get('alias', ''),
+                        "type": device.get('deviceTypeName', ''),
+                        "status": device.get('status', ''),
+                        "last_update_time": device.get('lastUpdateTime', datetime.now().isoformat())
+                    }
+                    transformed_devices.append(device_entry)
+                    all_devices.append(device_entry)
+                
+                if transformed_devices:
+                    device_store_result = collector.db.save_device_data(transformed_devices)
+                    if device_store_result:
+                        results["devices"] += len(transformed_devices)
+                
+            except Exception as e:
+                error_msg = f"Error collecting devices for plant {plant_id} ({plant_name}): {str(e)}"
+                logger.error(error_msg)
+                results["errors"].append(error_msg)
+        
+        # Check device status and send notifications if needed
+        if all_devices:
+            logger.info(f"Checking status of {len(all_devices)} devices for notifications")
+            tracker = DeviceStatusTracker()
+            notification_results = tracker.check_all_devices()
+            
+            # Add notification results to the overall results
+            results["notifications"] = notification_results
+            
+            logger.info(f"Notification check completed: {notification_results.get('offline', 0)} offline notifications, "
+                       f"{notification_results.get('online', 0)} online notifications sent")
+        
+        success = results["devices"] > 0
+        message = "Device data collection completed successfully"
+        if results["errors"]:
+            message = "Device data collection completed with some errors"
+            
+        logger.info(message)
+        return {
+            "success": success, 
+            "results": results,
+            "message": message
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in device data collection: {str(e)}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+def collect_plant_data():
+    """
+    Collect plant data from Growatt API.
+    This function is designed to be called by the background scheduler.
+    
+    Returns:
+        Dict[str, Any]: Collection results
+    """
+    logger.info("Starting scheduled plant data collection")
+    collector = GrowattDataCollector()
+    
+    try:
+        # Authenticate with API
+        if not collector.authenticate():
+            logger.error("Failed to authenticate with Growatt API")
+            return {"success": False, "message": "Authentication failed"}
+        
+        # Collect plants data
+        logger.info("Fetching plant list")
+        results = {"plants": 0, "errors": []}
+        plants = collector._collect_plants_data(results)
+        
+        if not plants:
+            logger.error("No plants data returned from API")
+            return {"success": False, "message": "No plants data returned from API"}
+        
+        # For each plant, collect energy data and weather
+        logger.info(f"Collecting additional data for {len(plants)} plants")
+        
+        for plant_index, plant in enumerate(plants):
+            plant_id = plant.get('id')
+            plant_name = plant.get('name', 'Unknown')
+            
+            if not plant_id:
+                logger.warning(f"Skipping plant with no ID: {plant}")
+                results["errors"].append(f"Missing ID: {plant_name}")
+                continue
+            
+            logger.info(f"Processing plant {plant_index+1}/{len(plants)}: {plant_name} (ID: {plant_id})")
+            
+            # Collect and store weather data
+            try:
+                logger.info(f"Collecting weather data for plant {plant_id}")
+                collector._collect_weather_data(plant_id, results)
+            except Exception as weather_err:
+                error_msg = f"Weather data error for plant {plant_id} ({plant_name}): {str(weather_err)}"
+                logger.error(error_msg)
+                results["errors"].append(error_msg)
+        
+        success = results["plants"] > 0
+        message = "Plant data collection completed successfully"
+        if results["errors"]:
+            message = "Plant data collection completed with some errors"
+            
+        logger.info(message)
+        return {
+            "success": success, 
+            "results": results,
+            "message": message
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in plant data collection: {str(e)}", exc_info=True)
+        return {"success": False, "message": str(e)}

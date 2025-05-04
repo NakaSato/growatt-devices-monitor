@@ -5,282 +5,181 @@ Monitor{% endblock %} {% block additional_head %}
 <!-- html2canvas and jsPDF for PDF generation in browser -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
-  .health-score-indicator {
-    width: 100%;
-    height: 30px;
-    background: linear-gradient(to right, #ff0000, #ffa500, #ffff00, #008000);
-    position: relative;
-    border-radius: 15px;
-    margin: 10px 0;
-  }
-
-  .health-score-pointer {
-    position: absolute;
-    width: 20px;
-    height: 30px;
-    background-color: #333;
-    border-radius: 5px;
-    transform: translateX(-50%);
-  }
-
-  #reportContainer {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
-  }
-
-  .diagnosis-card {
-    border-left: 5px solid #4e73df;
-    background-color: white;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-  }
-
-  .parameter-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .parameter-table th,
-  .parameter-table td {
-    padding: 10px;
-    border-bottom: 1px solid #e3e6f0;
-  }
-
-  .parameter-table th {
-    text-align: left;
-    background-color: #f8f9fc;
-  }
-
-  .recommendations-list {
-    list-style-type: none;
-    padding-left: 0;
-  }
-
-  .recommendations-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #e3e6f0;
-  }
-
-  .recommendations-list li:last-child {
-    border-bottom: none;
-  }
-
-  .recommendation-item {
-    display: flex;
-    align-items: flex-start;
-  }
-
-  .recommendation-item i {
-    margin-right: 10px;
-    color: #4e73df;
-  }
-
-  .fault-badge {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 15px;
-    color: white;
-    font-weight: bold;
-    text-transform: capitalize;
-    margin-bottom: 10px;
-  }
-
-  .fault-normal {
-    background-color: #1cc88a;
-  }
-
-  .fault-partial-shading {
-    background-color: #f6c23e;
-  }
-
-  .fault-soiling {
-    background-color: #e74a3b;
-  }
-
-  .fault-degradation {
-    background-color: #e74a3b;
-  }
-
-  .fault-series-resistance {
-    background-color: #e74a3b;
-  }
-
-  .fault-shunt-resistance {
-    background-color: #e74a3b;
-  }
-
-  .fault-bypass-diode-failure {
-    background-color: #e74a3b;
-  }
-
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s, opacity 0.3s linear;
-  }
-
-  .loading-spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #3498db;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 2s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-</style>
 {% endblock %} {% block content %}
 <!-- Page Heading -->
-<div class="d-sm-flex align-items-center justify-content-between mb-4">
-  <h1 class="h3 mb-0 text-gray-800">IV Curve Diagnosis</h1>
-  <div>
+<div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+  <h1 class="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
+    <i class="fas fa-wave-square mr-2"></i>IV Curve Diagnosis
+  </h1>
+  <div class="flex space-x-2">
     <button
-      class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"
+      class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
       id="generateReportBtn"
     >
-      <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
+      <i class="fas fa-file-pdf fa-sm mr-1"></i> Generate Report
     </button>
     <button
-      class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm ml-2"
+      class="px-4 py-2 text-sm font-medium bg-cyan-600 text-white rounded shadow hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
       id="simulateBtn"
     >
-      <i class="fas fa-chart-line fa-sm text-white-50"></i> Simulate IV Curve
+      <i class="fas fa-flask fa-sm mr-1"></i> Simulate IV Curve
     </button>
   </div>
 </div>
 
-<div class="row">
+<!-- Content Row -->
+<div class="flex flex-col lg:flex-row lg:space-x-4">
   <!-- IV Curve Input -->
-  <div class="col-lg-6">
-    <div class="card shadow mb-4">
+  <div class="w-full lg:w-1/2">
+    <div
+      class="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+    >
       <div
-        class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500"
       >
-        <h6 class="m-0 font-weight-bold text-primary">IV Curve Input</h6>
-        <div class="dropdown no-arrow">
-          <a
-            class="dropdown-toggle"
-            href="#"
-            role="button"
-            id="dropdownMenuLink"
-            data-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
+        <h6 class="m-0 font-bold text-white">
+          <i class="fas fa-input mr-2"></i>IV Curve Input
+        </h6>
+        <div class="relative">
+          <button
+            class="text-white opacity-80 hover:opacity-100 focus:outline-none"
+            id="dropdownMenuButton"
           >
-            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-          </a>
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
           <div
-            class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-            aria-labelledby="dropdownMenuLink"
+            class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+            id="dropdownMenu"
           >
-            <div class="dropdown-header">Input Options:</div>
-            <button class="dropdown-item" id="clearDataBtn">Clear Data</button>
-            <button class="dropdown-item" id="uploadCsvBtn">Upload CSV</button>
-            <input
-              type="file"
-              id="csvFileInput"
-              accept=".csv"
-              style="display: none"
-            />
+            <div class="px-4 py-2 text-sm text-gray-700 font-semibold border-b">
+              Input Options:
+            </div>
+            <button
+              class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+              id="clearDataBtn"
+            >
+              <i class="fas fa-eraser fa-sm mr-2 text-gray-400"></i>Clear Data
+            </button>
+            <button
+              class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+              id="uploadCsvBtn"
+            >
+              <i class="fas fa-file-csv fa-sm mr-2 text-gray-400"></i>Upload CSV
+            </button>
+            <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
           </div>
         </div>
       </div>
-      <div class="card-body">
+      <div class="p-4">
         <form id="ivCurveForm">
-          <div class="form-group">
-            <label for="moduleId">Module ID</label>
-            <input
-              type="text"
-              class="form-control"
-              id="moduleId"
-              placeholder="Enter module ID"
-            />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label
+                for="moduleId"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Module ID</label
+              >
+              <input
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="moduleId"
+                placeholder="Enter module ID"
+              />
+            </div>
+            <div>
+              <label
+                for="plantName"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Plant Name</label
+              >
+              <input
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="plantName"
+                placeholder="Enter plant name"
+              />
+            </div>
           </div>
-          <div class="form-group">
-            <label for="plantName">Plant Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="plantName"
-              placeholder="Enter plant name"
-            />
-          </div>
-          <div class="form-group">
-            <label for="temperature">Temperature (°C)</label>
+          <div class="mb-4">
+            <label
+              for="temperature"
+              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+              >Temperature (°C)</label
+            >
             <input
               type="number"
-              class="form-control"
+              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               id="temperature"
               value="25"
               step="0.1"
             />
           </div>
-          <div class="form-group">
-            <label>IV Curve Data</label>
-            <div class="input-group mb-3">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Voltage (V)</span>
+          <div class="mb-4">
+            <label
+              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+              >IV Curve Data</label
+            >
+            <div class="mb-3">
+              <div class="flex">
+                <span
+                  class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500"
+                >
+                  <i class="fas fa-bolt mr-1"></i>Voltage (V)
+                </span>
+                <input
+                  type="text"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  id="voltageInput"
+                  placeholder="Comma-separated values, e.g., 0,1,2,3,..."
+                />
               </div>
-              <input
-                type="text"
-                class="form-control"
-                id="voltageInput"
-                placeholder="Comma-separated values, e.g., 0,1,2,3,..."
-              />
             </div>
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Current (A)</span>
+            <div>
+              <div class="flex">
+                <span
+                  class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500"
+                >
+                  <i class="fas fa-tachometer-alt mr-1"></i>Current (A)
+                </span>
+                <input
+                  type="text"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  id="currentInput"
+                  placeholder="Comma-separated values, e.g., 10,9.5,9,8.5,..."
+                />
               </div>
-              <input
-                type="text"
-                class="form-control"
-                id="currentInput"
-                placeholder="Comma-separated values, e.g., 10,9.5,9,8.5,..."
-              />
             </div>
           </div>
-          <button type="button" class="btn btn-primary" id="diagnoseBtn">
-            Diagnose
+          <button
+            type="button"
+            class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
+            id="diagnoseBtn"
+          >
+            <i class="fas fa-stethoscope mr-1"></i> Diagnose
           </button>
         </form>
       </div>
     </div>
 
     <!-- Simulation Parameters (Initially Hidden) -->
-    <div class="card shadow mb-4" id="simulationCard" style="display: none">
-      <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Simulation Parameters</h6>
+    <div class="bg-white rounded-lg shadow-md mb-4 hidden" id="simulationCard">
+      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+        <h6 class="m-0 font-bold text-white">
+          <i class="fas fa-sliders-h mr-2"></i>Simulation Parameters
+        </h6>
       </div>
-      <div class="card-body">
+      <div class="p-4">
         <form id="simulationForm">
-          <div class="form-group">
-            <label for="faultType">Fault Type</label>
-            <select class="form-control" id="faultType">
+          <div class="mb-4">
+            <label
+              for="faultType"
+              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+              >Fault Type</label
+            >
+            <select
+              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              id="faultType"
+            >
               <option value="">Normal (No Fault)</option>
               <option value="partial_shading">Partial Shading</option>
               <option value="soiling">Soiling</option>
@@ -290,62 +189,86 @@ Monitor{% endblock %} {% block additional_head %}
               <option value="bypass_diode_failure">Bypass Diode Failure</option>
             </select>
           </div>
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="iph">Photocurrent (A)</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label
+                for="iph"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Photocurrent (A)</label
+              >
               <input
                 type="number"
-                class="form-control"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="iph"
                 value="10.0"
                 step="0.1"
               />
             </div>
-            <div class="form-group col-md-6">
-              <label for="i0">Saturation Current (A)</label>
+            <div>
+              <label
+                for="i0"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Saturation Current (A)</label
+              >
               <input
                 type="number"
-                class="form-control"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="i0"
                 value="1e-10"
                 step="1e-11"
               />
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="rs">Series Resistance (Ω)</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label
+                for="rs"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Series Resistance (Ω)</label
+              >
               <input
                 type="number"
-                class="form-control"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="rs"
                 value="0.1"
                 step="0.01"
               />
             </div>
-            <div class="form-group col-md-6">
-              <label for="rsh">Shunt Resistance (Ω)</label>
+            <div>
+              <label
+                for="rsh"
+                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+                >Shunt Resistance (Ω)</label
+              >
               <input
                 type="number"
-                class="form-control"
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id="rsh"
                 value="100.0"
                 step="5.0"
               />
             </div>
           </div>
-          <div class="form-group">
-            <label for="voc">Open Circuit Voltage (V)</label>
+          <div class="mb-4">
+            <label
+              for="voc"
+              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+              >Open Circuit Voltage (V)</label
+            >
             <input
               type="number"
-              class="form-control"
+              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               id="voc"
               value="40.0"
               step="0.5"
             />
           </div>
-          <button type="button" class="btn btn-primary" id="runSimulationBtn">
-            Run Simulation
+          <button
+            type="button"
+            class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
+            id="runSimulationBtn"
+          >
+            <i class="fas fa-play-circle mr-1"></i> Run Simulation
           </button>
         </form>
       </div>
@@ -353,13 +276,17 @@ Monitor{% endblock %} {% block additional_head %}
   </div>
 
   <!-- Diagnosis Results -->
-  <div class="col-lg-6">
-    <div class="card shadow mb-4">
-      <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">IV Curve Analysis</h6>
+  <div class="w-full lg:w-1/2">
+    <div
+      class="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+    >
+      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+        <h6 class="m-0 font-bold text-white">
+          <i class="fas fa-chart-line mr-2"></i>IV Curve Analysis
+        </h6>
       </div>
-      <div class="card-body">
-        <div class="chart-container" style="position: relative; height: 300px">
+      <div class="p-4">
+        <div class="relative h-[300px]" style="position: relative">
           <canvas id="ivCurveChart"></canvas>
         </div>
       </div>
@@ -367,13 +294,14 @@ Monitor{% endblock %} {% block additional_head %}
 
     <div
       id="diagnosisResultsCard"
-      class="card shadow mb-4"
-      style="display: none"
+      class="bg-white rounded-lg shadow-md mb-4 hidden overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
     >
-      <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Diagnosis Results</h6>
+      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+        <h6 class="m-0 font-bold text-white">
+          <i class="fas fa-clipboard-check mr-2"></i>Diagnosis Results
+        </h6>
       </div>
-      <div class="card-body">
+      <div class="p-4">
         <div id="diagnosisResults">
           <!-- Results will be populated here by JavaScript -->
         </div>
@@ -384,48 +312,57 @@ Monitor{% endblock %} {% block additional_head %}
 
 <!-- Report Modal -->
 <div
-  class="modal fade"
+  class="fixed inset-0 z-50 flex items-center justify-center hidden"
   id="reportModal"
-  tabindex="-1"
-  role="dialog"
-  aria-labelledby="reportModalLabel"
-  aria-hidden="true"
 >
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="reportModalLabel">
-          IV Curve Diagnosis Report
-        </h5>
-        <button
-          type="button"
-          class="close"
-          data-dismiss="modal"
-          aria-label="Close"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
+  <div class="absolute inset-0 bg-black bg-opacity-50" id="modalOverlay"></div>
+  <div
+    class="relative bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] flex flex-col"
+  >
+    <div class="px-6 py-4 border-b flex justify-between items-center">
+      <h5 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-file-medical-alt mr-2"></i>IV Curve Diagnosis Report
+      </h5>
+      <button
+        type="button"
+        class="text-gray-500 hover:text-gray-700 focus:outline-none"
+        id="closeReportBtn"
+      >
+        <span class="text-2xl">&times;</span>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-grow">
+      <div id="reportContainer">
+        <!-- Report content will be generated here -->
       </div>
-      <div class="modal-body">
-        <div id="reportContainer">
-          <!-- Report content will be generated here -->
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-          Close
-        </button>
-        <button type="button" class="btn btn-primary" id="downloadReportBtn">
-          Download as PDF
-        </button>
-      </div>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end">
+      <button
+        type="button"
+        class="px-4 py-2 mr-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-100"
+        id="closeModalBtn"
+      >
+        Close
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        id="downloadReportBtn"
+      >
+        <i class="fas fa-download mr-1"></i> Download as PDF
+      </button>
     </div>
   </div>
 </div>
 
 <!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-spinner"></div>
+<div
+  class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 invisible opacity-0 transition-opacity duration-300"
+  id="loadingOverlay"
+>
+  <div
+    class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"
+  ></div>
 </div>
 
 {% endblock %} {% block additional_scripts %}
@@ -450,6 +387,35 @@ Monitor{% endblock %} {% block additional_head %}
     const uploadCsvBtn = document.getElementById("uploadCsvBtn");
     const csvFileInput = document.getElementById("csvFileInput");
     const loadingOverlay = document.getElementById("loadingOverlay");
+    const reportModal = document.getElementById("reportModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const closeReportBtn = document.getElementById("closeReportBtn");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const dropdownMenuButton = document.getElementById("dropdownMenuButton");
+    const dropdownMenu = document.getElementById("dropdownMenu");
+
+    // Setup dropdown menu toggle
+    dropdownMenuButton.addEventListener("click", function () {
+      dropdownMenu.classList.toggle("hidden");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", function (event) {
+      if (
+        !dropdownMenuButton.contains(event.target) &&
+        !dropdownMenu.contains(event.target)
+      ) {
+        dropdownMenu.classList.add("hidden");
+      }
+    });
+
+    // Modal setup
+    const showModal = () => reportModal.classList.remove("hidden");
+    const hideModal = () => reportModal.classList.add("hidden");
+
+    closeModalBtn.addEventListener("click", hideModal);
+    closeReportBtn.addEventListener("click", hideModal);
+    modalOverlay.addEventListener("click", hideModal);
 
     // Initialize Chart.js
     function initChart() {
@@ -463,8 +429,8 @@ Monitor{% endblock %} {% block additional_head %}
             {
               label: "Current (A)",
               yAxisID: "y",
-              borderColor: "rgb(78, 115, 223)",
-              backgroundColor: "rgba(78, 115, 223, 0.05)",
+              borderColor: "rgb(59, 130, 246)",
+              backgroundColor: "rgba(59, 130, 246, 0.05)",
               borderWidth: 2,
               pointRadius: 0,
               data: [],
@@ -473,8 +439,8 @@ Monitor{% endblock %} {% block additional_head %}
             {
               label: "Power (W)",
               yAxisID: "y1",
-              borderColor: "rgb(255, 99, 132)",
-              backgroundColor: "rgba(255, 99, 132, 0.05)",
+              borderColor: "rgb(239, 68, 68)",
+              backgroundColor: "rgba(239, 68, 68, 0.05)",
               borderWidth: 2,
               pointRadius: 0,
               data: [],
@@ -596,11 +562,7 @@ Monitor{% endblock %} {% block additional_head %}
     }
 
     function toggleSimulationCard() {
-      if (simulationCard.style.display === "none") {
-        simulationCard.style.display = "block";
-      } else {
-        simulationCard.style.display = "none";
-      }
+      simulationCard.classList.toggle("hidden");
     }
 
     function runSimulation() {
@@ -691,63 +653,107 @@ Monitor{% endblock %} {% block additional_head %}
         .replace(/_/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase());
 
+      // Get color based on health score
+      let healthColor = "bg-red-600"; // critical
+      if (healthScore >= 90) {
+        healthColor = "bg-green-500"; // excellent
+      } else if (healthScore >= 75) {
+        healthColor = "bg-green-600"; // good
+      } else if (healthScore >= 50) {
+        healthColor = "bg-yellow-500"; // fair
+      } else if (healthScore >= 25) {
+        healthColor = "bg-orange-500"; // poor
+      }
+
+      // Get color for fault badge
+      let faultColor = "bg-green-500"; // normal
+      if (faultType === "partial_shading") {
+        faultColor = "bg-yellow-500";
+      } else if (
+        [
+          "soiling",
+          "degradation",
+          "series_resistance",
+          "shunt_resistance",
+          "bypass_diode_failure",
+        ].includes(faultType)
+      ) {
+        faultColor = "bg-red-500";
+      }
+
       // Build HTML for diagnosis results
       let html = `
-        <div class="diagnosis-card">
-          <div class="fault-badge fault-${faultType}">${formattedFaultType}</div>
-          <h5>Health Score: ${healthScore.toFixed(1)}%</h5>
-          <div class="health-score-indicator">
-            <div class="health-score-pointer" style="left: ${healthScore}%;"></div>
+        <div class="border-l-4 border-blue-500 bg-white p-5 rounded shadow-md mb-6 transition-transform duration-300 hover:-translate-y-1">
+          <div class="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide text-white ${faultColor} mb-4 shadow-sm">${formattedFaultType}</div>
+          <h5 class="text-lg font-semibold mb-2">Health Score: ${healthScore.toFixed(
+            1
+          )}%</h5>
+          <div class="relative w-full h-2 bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 rounded mb-3">
+            <div class="absolute w-4 h-4 bg-white rounded-full border-2 border-gray-800 shadow -translate-y-1/2 top-1/2" style="left: ${healthScore}%; transform: translateX(-50%) translateY(-50%);"></div>
           </div>
-          <p>Confidence: ${confidence.toFixed(1)}%</p>
+          <p class="mb-4">Confidence: ${confidence.toFixed(1)}%</p>
         </div>
         
-        <h6 class="font-weight-bold">IV Curve Parameters</h6>
-        <div class="table-responsive mb-4">
-          <table class="parameter-table">
-            <tr>
-              <th>Parameter</th>
-              <th>Value</th>
-            </tr>
-            <tr>
-              <td>Short Circuit Current (Isc)</td>
-              <td>${params.i_sc.toFixed(3)} A</td>
-            </tr>
-            <tr>
-              <td>Open Circuit Voltage (Voc)</td>
-              <td>${params.v_oc.toFixed(3)} V</td>
-            </tr>
-            <tr>
-              <td>Maximum Power (Pmax)</td>
-              <td>${params.p_max.toFixed(3)} W</td>
-            </tr>
-            <tr>
-              <td>Maximum Power Point Voltage (Vmpp)</td>
-              <td>${params.v_mpp.toFixed(3)} V</td>
-            </tr>
-            <tr>
-              <td>Maximum Power Point Current (Impp)</td>
-              <td>${params.i_mpp.toFixed(3)} A</td>
-            </tr>
-            <tr>
-              <td>Fill Factor</td>
-              <td>${params.fill_factor.toFixed(3)}</td>
-            </tr>
+        <h6 class="text-sm font-bold uppercase tracking-wide text-gray-700 mb-2">IV Curve Parameters</h6>
+        <div class="overflow-x-auto mb-6">
+          <table class="min-w-full bg-white rounded-lg overflow-hidden">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parameter</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Value</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Short Circuit Current (Isc)</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.i_sc.toFixed(
+                  3
+                )} A</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Open Circuit Voltage (Voc)</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.v_oc.toFixed(
+                  3
+                )} V</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power (Pmax)</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.p_max.toFixed(
+                  3
+                )} W</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power Point Voltage (Vmpp)</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.v_mpp.toFixed(
+                  3
+                )} V</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power Point Current (Impp)</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.i_mpp.toFixed(
+                  3
+                )} A</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Fill Factor</td>
+                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.fill_factor.toFixed(
+                  3
+                )}</td>
+              </tr>
+            </tbody>
           </table>
         </div>
         
-        <h6 class="font-weight-bold">Recommendations</h6>
-        <ul class="recommendations-list">
+        <h6 class="text-sm font-bold uppercase tracking-wide text-gray-700 mb-2">Recommendations</h6>
+        <ul class="bg-blue-50 border-l-4 border-blue-500 rounded p-4 space-y-2">
       `;
 
       // Add each recommendation
       recommendations.forEach((rec) => {
         html += `
-          <li>
-            <div class="recommendation-item">
-              <i class="fas fa-check-circle"></i>
-              <span>${rec}</span>
-            </div>
+          <li class="flex items-start py-2 border-b border-blue-100 last:border-0">
+            <i class="fas fa-check-circle text-blue-500 mt-1 mr-3"></i>
+            <span class="text-gray-800">${rec}</span>
           </li>
         `;
       });
@@ -756,7 +762,7 @@ Monitor{% endblock %} {% block additional_head %}
 
       // Update the results div and show the card
       diagnosisResults.innerHTML = html;
-      diagnosisResultsCard.style.display = "block";
+      diagnosisResultsCard.classList.remove("hidden");
     }
 
     function generateReport() {
@@ -788,127 +794,121 @@ Monitor{% endblock %} {% block additional_head %}
         .replace(/_/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase());
 
-      // Get health score class
-      let healthClass = "health-critical";
+      // Get health score class color
+      let healthColor = "#ef4444"; // critical (red-500)
       if (healthScore >= 90) {
-        healthClass = "health-excellent";
+        healthColor = "#22c55e"; // excellent (green-500)
       } else if (healthScore >= 75) {
-        healthClass = "health-good";
+        healthColor = "#16a34a"; // good (green-600)
       } else if (healthScore >= 50) {
-        healthClass = "health-fair";
+        healthColor = "#eab308"; // fair (yellow-500)
       } else if (healthScore >= 25) {
-        healthClass = "health-poor";
+        healthColor = "#f97316"; // poor (orange-500)
       }
 
       // Build HTML for recommendations
       let recommendationsHtml = "";
-      recommendations.forEach((rec, index) => {
-        recommendationsHtml += `<li>${rec}</li>`;
+      recommendations.forEach((rec) => {
+        recommendationsHtml += `<li class="mb-2">${rec}</li>`;
       });
 
       // Build report HTML
       const reportHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2c3e50; margin-bottom: 10px;">IV Curve Diagnosis Report</h1>
-            <div style="color: #7f8c8d; font-size: 0.9em;">Generated on: ${formattedDate} ${formattedTime}</div>
+        <div class="font-sans max-w-4xl mx-auto">
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">IV Curve Diagnosis Report</h1>
+            <div class="text-gray-500 text-sm">Generated on: ${formattedDate} ${formattedTime}</div>
           </div>
           
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Module Information</h2>
-            <p><strong>Module ID:</strong> ${moduleId}</p>
-            <p><strong>Plant Name:</strong> ${plantName}</p>
-            <p><strong>Temperature:</strong> ${temperature}°C</p>
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Module Information</h2>
+            <p class="mb-2"><span class="font-semibold">Module ID:</span> ${moduleId}</p>
+            <p class="mb-2"><span class="font-semibold">Plant Name:</span> ${plantName}</p>
+            <p><span class="font-semibold">Temperature:</span> ${temperature}°C</p>
           </div>
           
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Diagnosis Summary</h2>
-            <div style="background-color: #f8f9fa; border-left: 4px solid #3498db; padding: 15px; margin-bottom: 20px;">
-              <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">Fault Type: ${formattedFaultType}</div>
-              <div style="font-size: 1.2em;">
-                Health Score: <span style="color: ${
-                  healthClass === "health-excellent"
-                    ? "#27ae60"
-                    : healthClass === "health-good"
-                    ? "#2ecc71"
-                    : healthClass === "health-fair"
-                    ? "#f39c12"
-                    : healthClass === "health-poor"
-                    ? "#e74c3c"
-                    : "#c0392b"
-                }">
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Diagnosis Summary</h2>
+            <div class="bg-gray-50 border-l-4 border-blue-500 p-4 mb-4">
+              <div class="text-lg font-bold mb-2">Fault Type: ${formattedFaultType}</div>
+              <div class="text-lg mb-2">
+                Health Score: <span style="color: ${healthColor}">
                   ${healthScore.toFixed(1)}%
                 </span>
               </div>
-              <p><strong>Confidence:</strong> ${(
+              <p><span class="font-semibold">Confidence:</span> ${(
                 currentDiagnosisResult.confidence * 100
               ).toFixed(1)}%</p>
             </div>
           </div>
           
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">IV Curve Plot</h2>
-            <div style="text-align: center; margin: 30px 0;">
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">IV Curve Plot</h2>
+            <div class="text-center my-6">
               <canvas id="reportChart" width="700" height="350"></canvas>
             </div>
           </div>
           
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Key Parameters</h2>
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr style="background-color: #f2f2f2;">
-                <th style="padding: 12px 15px; border-bottom: 1px solid #ddd; text-align: left;">Parameter</th>
-                <th style="padding: 12px 15px; border-bottom: 1px solid #ddd; text-align: left;">Value</th>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Short Circuit Current (Isc)</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.i_sc.toFixed(
-                  3
-                )} A</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Open Circuit Voltage (Voc)</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.v_oc.toFixed(
-                  3
-                )} V</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power (Pmax)</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.p_max.toFixed(
-                  3
-                )} W</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power Point Voltage (Vmpp)</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.v_mpp.toFixed(
-                  3
-                )} V</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Maximum Power Point Current (Impp)</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.i_mpp.toFixed(
-                  3
-                )} A</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">Fill Factor</td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #ddd;">${params.fill_factor.toFixed(
-                  3
-                )}</td>
-              </tr>
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Key Parameters</h2>
+            <table class="min-w-full bg-white border border-gray-200 mb-4">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-4 py-2 text-left border-b">Parameter</th>
+                  <th class="px-4 py-2 text-left border-b">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="px-4 py-2 border-b">Short Circuit Current (Isc)</td>
+                  <td class="px-4 py-2 border-b">${params.i_sc.toFixed(
+                    3
+                  )} A</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 border-b">Open Circuit Voltage (Voc)</td>
+                  <td class="px-4 py-2 border-b">${params.v_oc.toFixed(
+                    3
+                  )} V</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 border-b">Maximum Power (Pmax)</td>
+                  <td class="px-4 py-2 border-b">${params.p_max.toFixed(
+                    3
+                  )} W</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 border-b">Maximum Power Point Voltage (Vmpp)</td>
+                  <td class="px-4 py-2 border-b">${params.v_mpp.toFixed(
+                    3
+                  )} V</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 border-b">Maximum Power Point Current (Impp)</td>
+                  <td class="px-4 py-2 border-b">${params.i_mpp.toFixed(
+                    3
+                  )} A</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 border-b">Fill Factor</td>
+                  <td class="px-4 py-2 border-b">${params.fill_factor.toFixed(
+                    3
+                  )}</td>
+                </tr>
+              </tbody>
             </table>
           </div>
           
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 5px;">Recommendations</h2>
-            <div style="background-color: #f0f7fb; border-left: 4px solid #5bc0de; padding: 15px;">
-              <ul>
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Recommendations</h2>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+              <ul class="list-disc pl-5">
                 ${recommendationsHtml}
               </ul>
             </div>
           </div>
           
-          <div style="text-align: center; margin-top: 40px; font-size: 0.8em; color: #7f8c8d;">
+          <div class="text-center mt-10 text-sm text-gray-500">
             <p>Growatt Devices Monitor - IV Curve Diagnosis System</p>
           </div>
         </div>
@@ -942,8 +942,8 @@ Monitor{% endblock %} {% block additional_head %}
               {
                 label: "Current (A)",
                 yAxisID: "y",
-                borderColor: "rgb(78, 115, 223)",
-                backgroundColor: "rgba(78, 115, 223, 0.05)",
+                borderColor: "rgb(59, 130, 246)",
+                backgroundColor: "rgba(59, 130, 246, 0.05)",
                 borderWidth: 2,
                 pointRadius: 0,
                 data: current,
@@ -952,8 +952,8 @@ Monitor{% endblock %} {% block additional_head %}
               {
                 label: "Power (W)",
                 yAxisID: "y1",
-                borderColor: "rgb(255, 99, 132)",
-                backgroundColor: "rgba(255, 99, 132, 0.05)",
+                borderColor: "rgb(239, 68, 68)",
+                backgroundColor: "rgba(239, 68, 68, 0.05)",
                 borderWidth: 2,
                 pointRadius: 0,
                 data: power,
@@ -998,7 +998,7 @@ Monitor{% endblock %} {% block additional_head %}
       }, 100);
 
       // Show the modal
-      $("#reportModal").modal("show");
+      showModal();
     }
 
     function downloadReportAsPDF() {
@@ -1057,7 +1057,7 @@ Monitor{% endblock %} {% block additional_head %}
       ivCurveChart.update();
 
       // Hide the diagnosis results
-      diagnosisResultsCard.style.display = "none";
+      diagnosisResultsCard.classList.add("hidden");
 
       // Reset current diagnosis result
       currentDiagnosisResult = null;

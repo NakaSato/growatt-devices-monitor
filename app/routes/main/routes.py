@@ -10,7 +10,7 @@ from app.core.growatt import Growatt
 # Import from the common helpers module
 from app.routes.common import get_plants, initialize
 from app.views.templates import (
-    render_analytics, render_devices, render_index, render_error_404, render_maps, render_plants, render_weather, render_management
+    render_analytics, render_devices, render_index, render_error_404, render_maps, render_plants, render_weather, render_operation
 )
 # Import the prediction routes
 from app.routes.prediction import prediction_routes
@@ -261,20 +261,6 @@ def analytics_page() -> Union[str, Tuple[str, int]]:
         logging.error(f"Error in weather_page: {str(e)}")
         return render_error_404()
     
-@api_blueprint.route('/management', methods=['GET'])
-def management_page() -> Union[str, Tuple[str, int]]:
-    """
-    Render the management page for system administration.
-    
-    Returns:
-        Union[str, Tuple[str, int]]: Rendered HTML template or error response
-    """
-    try:
-        return render_management()
-    except Exception as e:
-        logging.error(f"Error in management_page: {str(e)}")
-        return render_error_404()
-
 @api_blueprint.route('/activities', methods=['GET'])
 def activities_page() -> Union[str, Tuple[str, int]]:
     """
@@ -287,4 +273,18 @@ def activities_page() -> Union[str, Tuple[str, int]]:
         return render_template('activities.html')
     except Exception as e:
         logging.error(f"Error in activities_page: {str(e)}")
+        return render_error_404()
+    
+@api_blueprint.route('/operation', methods=['GET'])
+def operation_page() -> Union[str, Tuple[str, int]]:
+    """
+    Render the operation page for monitoring system operations.
+    
+    Returns:
+        Union[str, Tuple[str, int]]: Rendered HTML template or error response
+    """
+    try:
+        return render_operation()
+    except Exception as e:
+        logging.error(f"Error in operation_page: {str(e)}")
         return render_error_404()

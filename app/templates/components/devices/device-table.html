@@ -45,26 +45,62 @@
           <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
             <span
               class="text-slate-gray font-mono text-xs bg-slate-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded line-clamp-1"
-              x-text="device.serial_number || 'N/A'"
-              :title="device.serial_number || 'N/A'"
+              x-text="device.serial_number || device.sn || 'N/A'"
+              :title="device.serial_number || device.sn || 'N/A'"
             ></span>
           </td>
           <td class="px-3 py-2 sm:px-4 sm:py-3">
             <span
               class="status-indicator text-xs whitespace-nowrap px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full inline-block"
               :class="getStatusClass(device.status)"
-              x-text="device.status || 'Unknown'"
+              x-text="getStatusText(device.status)"
             ></span>
           </td>
           <td class="px-3 py-2 sm:px-4 sm:py-3">
-            <span
-              class="energy-value font-medium text-eco-green text-xs sm:text-sm whitespace-nowrap"
-              x-text="device.total_energy || '0 kWh'"
-            ></span>
+            <div class="flex flex-col">
+              <span
+                class="current-power font-medium text-xs sm:text-sm whitespace-nowrap text-deep-forest"
+                x-text="formatPower(device.pac) || '0 W'"
+                :title="`Current power output: ${formatPower(device.pac) || '0 W'}`"
+              ></span>
+              <span
+                class="nominal-power text-xs text-slate-500 whitespace-nowrap"
+                x-text="formatNominalPower(device.nominalPower)"
+                :title="`Nominal capacity: ${formatNominalPower(device.nominalPower)}`"
+              ></span>
+            </div>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3">
+            <div class="flex flex-col">
+              <span
+                class="energy-value font-medium text-eco-green text-xs sm:text-sm whitespace-nowrap"
+                x-text="formatEnergyValue(device.eTotal) || '0 kWh'"
+                :title="`Total energy: ${formatEnergyValue(device.eTotal) || '0 kWh'}`"
+              ></span>
+              <span
+                class="energy-today text-xs text-slate-500 whitespace-nowrap"
+                x-text="formatTodayEnergy(device.eToday)"
+                :title="`Today: ${formatTodayEnergy(device.eToday)}`"
+              ></span>
+            </div>
+          </td>
+          <td class="px-3 py-2 sm:px-4 sm:py-3 device-cell">
+            <div class="flex flex-col">
+              <span
+                class="device-model text-xs sm:text-sm line-clamp-1 font-medium"
+                x-text="device.deviceModel || 'N/A'"
+                :title="device.deviceModel || 'N/A'"
+              ></span>
+              <span
+                class="text-slate-500 text-xs line-clamp-1"
+                x-text="device.deviceType ? `Type: ${device.deviceType}` : ''"
+                :title="device.deviceType ? `Type: ${device.deviceType}` : ''"
+              ></span>
+            </div>
           </td>
           <td
             class="px-3 py-2 sm:px-4 sm:py-3 text-slate-gray text-xs sm:text-sm whitespace-nowrap"
-            x-text="formatDate(device.last_update_time)"
+            x-text="formatDate(device.lastUpdateTime || device.last_update_time)"
           ></td>
         </tr>
       </template>

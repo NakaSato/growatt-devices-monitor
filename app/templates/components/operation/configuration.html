@@ -1,0 +1,561 @@
+<!-- Configuration Component -->
+<div class="space-y-6">
+  <!-- System Configuration -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        System Configuration
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Manage global system settings and appearance
+      </p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <!-- General Settings -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">
+            General Settings
+          </h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="system-name"
+                class="block text-sm font-medium text-gray-700"
+                >System Name</label
+              >
+              <div class="mt-1">
+                <input
+                  type="text"
+                  name="system-name"
+                  id="system-name"
+                  x-model="systemConfig.name"
+                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="system-timezone"
+                class="block text-sm font-medium text-gray-700"
+                >Time Zone</label
+              >
+              <div class="mt-1">
+                <select
+                  id="system-timezone"
+                  name="system-timezone"
+                  x-model="systemConfig.timezone"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="UTC">UTC</option>
+                  <option value="Asia/Bangkok">Asia/Bangkok</option>
+                  <option value="Asia/Singapore">Asia/Singapore</option>
+                  <option value="Asia/Tokyo">Asia/Tokyo</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="America/Los_Angeles">
+                    America/Los_Angeles
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="data-refresh-interval"
+                class="block text-sm font-medium text-gray-700"
+                >Data Refresh Interval</label
+              >
+              <div class="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="number"
+                  name="data-refresh-interval"
+                  id="data-refresh-interval"
+                  x-model="systemConfig.refreshInterval"
+                  min="1"
+                  max="60"
+                  class="flex-1 min-w-0 block w-full px-3 py-2 rounded-md focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300"
+                />
+                <span
+                  class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"
+                >
+                  minutes
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="enable-auto-refresh"
+                name="enable-auto-refresh"
+                type="checkbox"
+                x-model="systemConfig.autoRefresh"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="enable-auto-refresh"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable Auto-Refresh</label
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- User Interface Settings -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">User Interface</h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="theme-color"
+                class="block text-sm font-medium text-gray-700"
+                >Theme Color</label
+              >
+              <div class="mt-1">
+                <select
+                  id="theme-color"
+                  name="theme-color"
+                  x-model="systemConfig.themeColor"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="blue">Blue</option>
+                  <option value="teal">Teal</option>
+                  <option value="green">Green</option>
+                  <option value="indigo">Indigo</option>
+                  <option value="purple">Purple</option>
+                  <option value="pink">Pink</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="ui-density"
+                class="block text-sm font-medium text-gray-700"
+                >UI Density</label
+              >
+              <div class="mt-1">
+                <select
+                  id="ui-density"
+                  name="ui-density"
+                  x-model="systemConfig.uiDensity"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="comfortable">Comfortable</option>
+                  <option value="compact">Compact</option>
+                  <option value="dense">Dense</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="date-format"
+                class="block text-sm font-medium text-gray-700"
+                >Date Format</label
+              >
+              <div class="mt-1">
+                <select
+                  id="date-format"
+                  name="date-format"
+                  x-model="systemConfig.dateFormat"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="enable-dark-mode"
+                name="enable-dark-mode"
+                type="checkbox"
+                x-model="systemConfig.darkMode"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="enable-dark-mode"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable Dark Mode</label
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Collection Settings -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Data Collection
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure data collection and storage preferences
+      </p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <!-- Collection Settings -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">
+            Collection Schedule
+          </h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="plants-collection-schedule"
+                class="block text-sm font-medium text-gray-700"
+                >Plants Data Collection</label
+              >
+              <div class="mt-1">
+                <select
+                  id="plants-collection-schedule"
+                  name="plants-collection-schedule"
+                  x-model="dataConfig.plantSchedule"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="*/15 * * * *">Every 15 minutes</option>
+                  <option value="*/30 * * * *">Every 30 minutes</option>
+                  <option value="0 * * * *">Hourly</option>
+                  <option value="0 */2 * * *">Every 2 hours</option>
+                  <option value="0 */4 * * *">Every 4 hours</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="devices-collection-schedule"
+                class="block text-sm font-medium text-gray-700"
+                >Devices Data Collection</label
+              >
+              <div class="mt-1">
+                <select
+                  id="devices-collection-schedule"
+                  name="devices-collection-schedule"
+                  x-model="dataConfig.deviceSchedule"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="*/15 * * * *">Every 15 minutes</option>
+                  <option value="*/30 * * * *">Every 30 minutes</option>
+                  <option value="0 * * * *">Hourly</option>
+                  <option value="0 */2 * * *">Every 2 hours</option>
+                  <option value="0 */4 * * *">Every 4 hours</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="status-check-interval"
+                class="block text-sm font-medium text-gray-700"
+                >Device Status Check Interval</label
+              >
+              <div class="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="number"
+                  name="status-check-interval"
+                  id="status-check-interval"
+                  x-model="dataConfig.statusInterval"
+                  min="1"
+                  max="60"
+                  class="flex-1 min-w-0 block w-full px-3 py-2 rounded-md focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300"
+                />
+                <span
+                  class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"
+                >
+                  minutes
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="enable-24h-collection"
+                name="enable-24h-collection"
+                type="checkbox"
+                x-model="dataConfig.enable24hCollection"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="enable-24h-collection"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable 24-hour Data Collection</label
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Storage Settings -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">Data Storage</h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="data-retention-period"
+                class="block text-sm font-medium text-gray-700"
+                >Data Retention Period</label
+              >
+              <div class="mt-1">
+                <select
+                  id="data-retention-period"
+                  name="data-retention-period"
+                  x-model="dataConfig.retentionPeriod"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="30">30 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                  <option value="180">6 months</option>
+                  <option value="365">1 year</option>
+                  <option value="730">2 years</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="data-compression"
+                class="block text-sm font-medium text-gray-700"
+                >Data Compression</label
+              >
+              <div class="mt-1">
+                <select
+                  id="data-compression"
+                  name="data-compression"
+                  x-model="dataConfig.compression"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="none">None</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="db-backup-schedule"
+                class="block text-sm font-medium text-gray-700"
+                >Database Backup Schedule</label
+              >
+              <div class="mt-1">
+                <select
+                  id="db-backup-schedule"
+                  name="db-backup-schedule"
+                  x-model="dataConfig.backupSchedule"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="none">No automatic backup</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="enable-data-export"
+                name="enable-data-export"
+                type="checkbox"
+                x-model="dataConfig.enableExport"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="enable-data-export"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable Scheduled Data Export</label
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Integration Settings -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        API Integration
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Configure external API integrations and authentication
+      </p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <!-- Growatt API -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">Growatt API</h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="growatt-username"
+                class="block text-sm font-medium text-gray-700"
+                >Username</label
+              >
+              <div class="mt-1">
+                <input
+                  type="text"
+                  name="growatt-username"
+                  id="growatt-username"
+                  x-model="apiConfig.growatt.username"
+                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="growatt-password"
+                class="block text-sm font-medium text-gray-700"
+                >Password</label
+              >
+              <div class="mt-1">
+                <input
+                  type="password"
+                  name="growatt-password"
+                  id="growatt-password"
+                  x-model="apiConfig.growatt.password"
+                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="growatt-api-key"
+                class="block text-sm font-medium text-gray-700"
+                >API Key (if available)</label
+              >
+              <div class="mt-1">
+                <input
+                  type="text"
+                  name="growatt-api-key"
+                  id="growatt-api-key"
+                  x-model="apiConfig.growatt.apiKey"
+                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="growatt-api-enabled"
+                name="growatt-api-enabled"
+                type="checkbox"
+                x-model="apiConfig.growatt.enabled"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="growatt-api-enabled"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable Growatt API Integration</label
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Weather API -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-4">Weather API</h4>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="weather-api-provider"
+                class="block text-sm font-medium text-gray-700"
+                >Provider</label
+              >
+              <div class="mt-1">
+                <select
+                  id="weather-api-provider"
+                  name="weather-api-provider"
+                  x-model="apiConfig.weather.provider"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="openweathermap">OpenWeatherMap</option>
+                  <option value="weatherapi">WeatherAPI.com</option>
+                  <option value="accuweather">AccuWeather</option>
+                  <option value="visualcrossing">Visual Crossing</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="weather-api-key"
+                class="block text-sm font-medium text-gray-700"
+                >API Key</label
+              >
+              <div class="mt-1">
+                <input
+                  type="text"
+                  name="weather-api-key"
+                  id="weather-api-key"
+                  x-model="apiConfig.weather.apiKey"
+                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="weather-update-frequency"
+                class="block text-sm font-medium text-gray-700"
+                >Update Frequency</label
+              >
+              <div class="mt-1">
+                <select
+                  id="weather-update-frequency"
+                  name="weather-update-frequency"
+                  x-model="apiConfig.weather.frequency"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                >
+                  <option value="hourly">Hourly</option>
+                  <option value="3hours">Every 3 hours</option>
+                  <option value="6hours">Every 6 hours</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input
+                id="weather-api-enabled"
+                name="weather-api-enabled"
+                type="checkbox"
+                x-model="apiConfig.weather.enabled"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label
+                for="weather-api-enabled"
+                class="ml-2 block text-sm text-gray-900"
+                >Enable Weather API Integration</label
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Settings Button -->
+  <div class="flex justify-end">
+    <button
+      @click="saveConfiguration()"
+      class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+    >
+      Save All Settings
+    </button>
+  </div>
+</div>

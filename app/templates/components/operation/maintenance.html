@@ -4,7 +4,7 @@
   <div class="bg-white shadow rounded-lg p-4 sm:p-6">
     <div class="md:flex md:items-center md:justify-between mb-4">
       <h2 class="text-xl font-bold leading-tight text-gray-900">
-        Maintenance Management
+        Maintenance Operation
       </h2>
       <div class="mt-3 md:mt-0 flex space-x-2">
         <button
@@ -274,33 +274,11 @@
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    </button>
-                    <button class="text-primary-600 hover:text-primary-900">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
                           d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                         />
                       </svg>
                     </button>
-                    <button class="text-red-600 hover:text-red-900">
+                    <button class="text-primary-600 hover:text-primary-900">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         class="h-5 w-5"
@@ -326,7 +304,28 @@
                 colspan="7"
                 class="px-6 py-4 text-center text-sm text-gray-500"
               >
-                No maintenance tasks found
+                <div class="py-8">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-12 w-12 text-gray-400 mx-auto mb-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <h3 class="text-sm font-medium text-gray-900 mb-1">
+                    No maintenance tasks found
+                  </h3>
+                  <p class="text-sm text-gray-500">
+                    Click "Schedule Task" to create a new maintenance task.
+                  </p>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -358,7 +357,8 @@
             <p class="text-sm text-gray-700">
               Showing <span class="font-medium">1</span> to
               <span class="font-medium">10</span> of
-              <span class="font-medium">20</span> results
+              <span class="font-medium" x-text="maintenanceTasks.length"></span>
+              results
             </p>
           </div>
           <div>
@@ -387,33 +387,9 @@
               </a>
               <a
                 href="#"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-primary-600 hover:bg-gray-50"
               >
                 1
-              </a>
-              <a
-                href="#"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                2
-              </a>
-              <a
-                href="#"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary-50 text-sm font-medium text-primary-600 hover:bg-primary-100"
-              >
-                3
-              </a>
-              <a
-                href="#"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                4
-              </a>
-              <a
-                href="#"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                5
               </a>
               <a
                 href="#"
@@ -429,7 +405,7 @@
                 >
                   <path
                     fill-rule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
                     clip-rule="evenodd"
                   />
                 </svg>
@@ -483,7 +459,7 @@
       >
         <div class="absolute top-0 right-0 pt-4 pr-4">
           <button
-            @click="closeMaintenanceForm"
+            @click="showMaintenanceForm = false"
             type="button"
             class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
@@ -535,15 +511,16 @@
             </h3>
             <div class="mt-2">
               <p class="text-sm text-gray-500">
-                Fill in the details to schedule a new maintenance task.
+                Create a new maintenance task for your solar equipment.
               </p>
             </div>
           </div>
         </div>
 
         <div class="mt-5 sm:mt-4">
-          <form @submit.prevent="submitMaintenanceForm">
+          <form @submit.prevent="saveMaintenanceTask()">
             <div class="space-y-4">
+              <!-- Task Title -->
               <div>
                 <label
                   for="task-title"
@@ -554,11 +531,14 @@
                   type="text"
                   name="task-title"
                   id="task-title"
+                  x-model="maintenanceForm.title"
                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   placeholder="Enter task title"
+                  required
                 />
               </div>
 
+              <!-- Description -->
               <div>
                 <label
                   for="task-description"
@@ -569,97 +549,114 @@
                   id="task-description"
                   name="task-description"
                   rows="3"
+                  x-model="maintenanceForm.description"
                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   placeholder="Describe the maintenance task"
                 ></textarea>
               </div>
 
-              <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    for="task-priority"
-                    class="block text-sm font-medium text-gray-700"
-                    >Priority</label
-                  >
-                  <select
-                    id="task-priority"
-                    name="task-priority"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    for="task-status"
-                    class="block text-sm font-medium text-gray-700"
-                    >Status</label
-                  >
-                  <select
-                    id="task-status"
-                    name="task-status"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                  >
-                    <option value="scheduled">Scheduled</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    for="task-date"
-                    class="block text-sm font-medium text-gray-700"
-                    >Scheduled Date</label
-                  >
-                  <input
-                    type="date"
-                    name="task-date"
-                    id="task-date"
-                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    for="task-assignee"
-                    class="block text-sm font-medium text-gray-700"
-                    >Assign To</label
-                  >
-                  <select
-                    id="task-assignee"
-                    name="task-assignee"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                  >
-                    <option value="john">John Doe</option>
-                    <option value="jane">Jane Smith</option>
-                    <option value="bob">Bob Johnson</option>
-                  </select>
-                </div>
-              </div>
-
+              <!-- Target Selection (Plant or Device) -->
               <div>
                 <label
-                  for="target-select"
+                  for="target-type"
                   class="block text-sm font-medium text-gray-700"
-                  >Plant/Device</label
+                  >Target Type</label
                 >
                 <select
-                  id="target-select"
-                  name="target-select"
+                  id="target-type"
+                  name="target-type"
+                  x-model="maintenanceForm.targetType"
                   class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                 >
-                  <option value="plant-1">Plant 1</option>
-                  <option value="plant-2">Plant 2</option>
-                  <option value="inverter-1">Inverter ABC-123</option>
-                  <option value="inverter-2">Inverter XYZ-456</option>
+                  <option value="plant">Plant</option>
+                  <option value="device">Device</option>
                 </select>
+              </div>
+
+              <!-- Target ID (Plant or Device ID) -->
+              <div>
+                <label
+                  for="target-id"
+                  class="block text-sm font-medium text-gray-700"
+                  x-text="`Select ${maintenanceForm.targetType === 'plant' ? 'Plant' : 'Device'}`"
+                  >Select Target</label
+                >
+                <select
+                  id="target-id"
+                  name="target-id"
+                  x-model="maintenanceForm.targetId"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                >
+                  <option value="">
+                    Select a
+                    <span
+                      x-text="maintenanceForm.targetType === 'plant' ? 'plant' : 'device'"
+                    ></span>
+                  </option>
+                  <template
+                    x-for="target in maintenanceForm.targetType === 'plant' ? plants : devices"
+                    :key="target.id"
+                  >
+                    <option
+                      :value="target.id"
+                      x-text="target.name || target.plantName"
+                    ></option>
+                  </template>
+                </select>
+              </div>
+
+              <!-- Priority -->
+              <div>
+                <label
+                  for="task-priority"
+                  class="block text-sm font-medium text-gray-700"
+                  >Priority</label
+                >
+                <select
+                  id="task-priority"
+                  name="task-priority"
+                  x-model="maintenanceForm.priority"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+
+              <!-- Scheduled Date -->
+              <div>
+                <label
+                  for="scheduled-date"
+                  class="block text-sm font-medium text-gray-700"
+                  >Scheduled Date</label
+                >
+                <input
+                  type="date"
+                  name="scheduled-date"
+                  id="scheduled-date"
+                  x-model="maintenanceForm.scheduledDate"
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  required
+                />
+              </div>
+
+              <!-- Assigned To -->
+              <div>
+                <label
+                  for="assigned-to"
+                  class="block text-sm font-medium text-gray-700"
+                  >Assigned To</label
+                >
+                <input
+                  type="text"
+                  name="assigned-to"
+                  id="assigned-to"
+                  x-model="maintenanceForm.assignedTo"
+                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  placeholder="Enter name or team"
+                />
               </div>
             </div>
 
@@ -670,11 +667,11 @@
                 type="submit"
                 class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm"
               >
-                Schedule
+                Schedule Task
               </button>
               <button
                 type="button"
-                @click="closeMaintenanceForm"
+                @click="showMaintenanceForm = false"
                 class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm"
               >
                 Cancel
@@ -689,29 +686,158 @@
 
 <script>
   document.addEventListener("alpine:init", () => {
-    // Add maintenance form functionality to the operationsApp
-    Alpine.data("operationsApp", () => ({
-      // Existing properties from operationsApp
-
-      // Additional properties for maintenance
+    // Extend operationsApp with maintenance functionality
+    Alpine.data("operationsApp", (app) => ({
+      // Add maintenance-specific properties
+      maintenanceTasks: [],
       showMaintenanceForm: false,
+      maintenanceForm: {
+        title: "",
+        description: "",
+        targetType: "plant",
+        targetId: "",
+        priority: "medium",
+        scheduledDate: new Date().toISOString().split("T")[0],
+        assignedTo: "",
+      },
 
-      // Methods for maintenance
+      // Initialize maintenance data
+      initMaintenance() {
+        this.loadMaintenanceTasks();
+      },
+
+      // Load maintenance tasks from API
+      loadMaintenanceTasks() {
+        fetch("/api/operations/maintenance-tasks")
+          .then((response) => {
+            if (!response.ok) throw new Error("Failed to load tasks");
+            return response.json();
+          })
+          .then((data) => {
+            this.maintenanceTasks = data.tasks || [];
+          })
+          .catch((error) => {
+            console.error("Error loading maintenance tasks:", error);
+            // Load mock data for development
+            this.loadMockMaintenanceTasks();
+          });
+      },
+
+      // Load mock data for development
+      loadMockMaintenanceTasks() {
+        this.maintenanceTasks = [
+          {
+            id: 1,
+            title: "Inverter Annual Maintenance",
+            description:
+              "Perform annual maintenance check on inverters including cleaning and firmware updates.",
+            target: {
+              name: "Commercial Building 2",
+              type: "Plant",
+            },
+            priority: "high",
+            status: "scheduled",
+            scheduledDate: new Date(
+              Date.now() + 7 * 24 * 60 * 60 * 1000
+            ).toISOString(), // 7 days from now
+            assignedTo: "Maintenance Team A",
+          },
+          {
+            id: 2,
+            title: "Panel Cleaning",
+            description:
+              "Clean solar panels to remove dust and debris. Inspect for any damage.",
+            target: {
+              name: "Residential Array 5",
+              type: "Plant",
+            },
+            priority: "medium",
+            status: "in-progress",
+            scheduledDate: new Date().toISOString(), // Today
+            assignedTo: "Cleaning Crew 3",
+          },
+          {
+            id: 3,
+            title: "Replace Faulty Sensor",
+            description:
+              "Replace temperature sensor on inverter SN:2039485766 which is reporting incorrect values.",
+            target: {
+              name: "Inverter SN:2039485766",
+              type: "Device",
+            },
+            priority: "critical",
+            status: "overdue",
+            scheduledDate: new Date(
+              Date.now() - 3 * 24 * 60 * 60 * 1000
+            ).toISOString(), // 3 days ago
+            assignedTo: "John Technician",
+          },
+          {
+            id: 4,
+            title: "Quarterly Inspection",
+            description:
+              "Perform quarterly inspection of wiring, connections, and mounting hardware.",
+            target: {
+              name: "Solar Farm Alpha",
+              type: "Plant",
+            },
+            priority: "low",
+            status: "completed",
+            scheduledDate: new Date(
+              Date.now() - 15 * 24 * 60 * 60 * 1000
+            ).toISOString(), // 15 days ago
+            assignedTo: "Inspection Team",
+          },
+        ];
+      },
+
+      // Open maintenance form modal
       openMaintenanceForm() {
+        // Reset form
+        this.maintenanceForm = {
+          title: "",
+          description: "",
+          targetType: "plant",
+          targetId: "",
+          priority: "medium",
+          scheduledDate: new Date().toISOString().split("T")[0],
+          assignedTo: "",
+        };
         this.showMaintenanceForm = true;
       },
 
-      closeMaintenanceForm() {
+      // Save maintenance task
+      saveMaintenanceTask() {
+        // In a real app, this would send data to the server
+        const newTask = {
+          id: Date.now(), // Use timestamp as temporary ID
+          title: this.maintenanceForm.title,
+          description: this.maintenanceForm.description,
+          target: {
+            name:
+              this.maintenanceForm.targetType === "plant"
+                ? this.plants.find((p) => p.id == this.maintenanceForm.targetId)
+                    ?.name || "Unknown Plant"
+                : this.devices.find(
+                    (d) => d.id == this.maintenanceForm.targetId
+                  )?.name || "Unknown Device",
+            type:
+              this.maintenanceForm.targetType === "plant" ? "Plant" : "Device",
+          },
+          priority: this.maintenanceForm.priority,
+          status: "scheduled",
+          scheduledDate: new Date(
+            this.maintenanceForm.scheduledDate
+          ).toISOString(),
+          assignedTo: this.maintenanceForm.assignedTo,
+        };
+
+        // Add the new task to the list
+        this.maintenanceTasks.unshift(newTask);
         this.showMaintenanceForm = false;
-      },
 
-      submitMaintenanceForm() {
-        // Handle form submission logic here
-        // Add to maintenance tasks and close modal
-        this.closeMaintenanceForm();
-
-        // Refresh data after adding a new task
-        this.refreshOperationsData();
+        // In a real app, you would wait for the server response
+        // before updating the UI
       },
     }));
   });

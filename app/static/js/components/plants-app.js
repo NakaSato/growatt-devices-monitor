@@ -399,6 +399,8 @@ document.addEventListener("alpine:init", () => {
           // Update the plant data with normalized properties
           const updatedPlant = {
             ...plantData,
+            plantName:
+              plantData.plantName || plantData.name || `Plant ${plantId}`,
             totalPower:
               plantData.totalPower ||
               plantData.power ||

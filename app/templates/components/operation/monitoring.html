@@ -1,0 +1,361 @@
+<!-- Monitoring Component -->
+<div class="space-y-6">
+  <!-- Real-time Monitoring Section -->
+  <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Real-time Monitoring
+      </h3>
+      <div>
+        <button
+          @click="refreshMonitoring()"
+          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          :disabled="isRefreshing"
+          :class="{'opacity-50 cursor-not-allowed': isRefreshing}"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            :class="{'animate-spin': isRefreshing}"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span x-text="isRefreshing ? 'Refreshing...' : 'Refresh'"></span>
+        </button>
+      </div>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Current Power Output -->
+        <div
+          class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg shadow-sm"
+        >
+          <h4 class="text-sm font-medium text-green-700">
+            Current Power Output
+          </h4>
+          <div class="mt-2 flex items-baseline">
+            <p
+              class="text-2xl font-semibold text-green-900"
+              x-text="formatPowerValue(solarData.production.currentPower)"
+            ></p>
+            <p
+              class="ml-2 flex items-baseline text-sm font-semibold text-green-600"
+            >
+              <span class="sr-only">Peak: </span>
+              <span
+                x-text="formatPowerValue(solarData.production.peakPower) + ' peak'"
+              ></span>
+            </p>
+          </div>
+          <div class="mt-4">
+            <div class="relative h-3 rounded-full overflow-hidden bg-green-200">
+              <div
+                class="absolute h-full bg-green-500 rounded-full"
+                :style="'width: ' + (solarData.production.currentPower / solarData.production.peakPower * 100) + '%'"
+              ></div>
+            </div>
+            <div class="mt-1 text-xs text-green-700 flex justify-between">
+              <span>0 kW</span>
+              <span
+                x-text="formatPowerValue(solarData.production.peakPower)"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Production -->
+        <div
+          class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg shadow-sm"
+        >
+          <h4 class="text-sm font-medium text-blue-700">Today's Production</h4>
+          <div class="mt-2 flex items-baseline">
+            <p
+              class="text-2xl font-semibold text-blue-900"
+              x-text="formatEnergyValue(solarData.production.daily)"
+            ></p>
+            <p
+              class="ml-2 flex items-baseline text-sm font-semibold text-blue-600"
+            >
+              <svg
+                class="self-center flex-shrink-0 h-4 w-4 text-blue-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span class="sr-only">Increase of: </span>
+              <span>4.3%</span>
+            </p>
+          </div>
+          <div class="mt-4">
+            <div class="text-xs text-blue-700">
+              vs. daily average:
+              <span
+                x-text="formatEnergyValue(solarData.production.daily * 0.96)"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Ratio -->
+        <div
+          class="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-lg shadow-sm"
+        >
+          <h4 class="text-sm font-medium text-amber-700">Performance Ratio</h4>
+          <div class="mt-2 flex items-baseline">
+            <p
+              class="text-2xl font-semibold text-amber-900"
+              x-text="solarData.performance.dailyPR + '%'"
+            ></p>
+            <p
+              class="ml-2 flex items-baseline text-sm font-semibold text-amber-600"
+            >
+              <svg
+                class="self-center flex-shrink-0 h-4 w-4 text-amber-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span class="sr-only">Increase of: </span>
+              <span>2.1%</span>
+            </p>
+          </div>
+          <div class="mt-4">
+            <div class="relative h-3 rounded-full overflow-hidden bg-amber-200">
+              <div
+                class="absolute h-full rounded-full"
+                :class="getPerformanceColor(solarData.performance.dailyPR)"
+                :style="'width: ' + (solarData.performance.dailyPR) + '%'"
+              ></div>
+            </div>
+            <div class="mt-1 text-xs text-amber-700 flex justify-between">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weather Conditions -->
+        <div
+          class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-lg shadow-sm"
+        >
+          <h4 class="text-sm font-medium text-indigo-700">
+            Weather Conditions
+          </h4>
+          <div class="mt-2 flex items-center">
+            <div class="flex-shrink-0 mr-3">
+              <svg
+                class="h-10 w-10 text-indigo-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p class="text-xl font-semibold text-indigo-900">Clear Sky</p>
+              <p class="text-sm text-indigo-700">28°C, 3 m/s wind</p>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-indigo-700">
+            Irradiance: 850 W/m² | Humidity: 45%
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Status Section -->
+  <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Device Status</h3>
+      <div class="flex space-x-2">
+        <button
+          @click="filterDevices('all')"
+          class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          :class="{'bg-gray-100 font-semibold': deviceFilter === 'all'}"
+        >
+          All
+        </button>
+        <button
+          @click="filterDevices('online')"
+          class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          :class="{'bg-gray-100 font-semibold': deviceFilter === 'online'}"
+        >
+          Online
+        </button>
+        <button
+          @click="filterDevices('offline')"
+          class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          :class="{'bg-gray-100 font-semibold': deviceFilter === 'offline'}"
+        >
+          Offline
+        </button>
+        <button
+          @click="filterDevices('warning')"
+          class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          :class="{'bg-gray-100 font-semibold': deviceFilter === 'warning'}"
+        >
+          Warning
+        </button>
+      </div>
+    </div>
+    <div class="border-t border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Device
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Plant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Current Output
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Last Update
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <template x-if="filteredDevices.length === 0">
+              <tr>
+                <td
+                  colspan="7"
+                  class="px-6 py-4 text-center text-sm text-gray-500"
+                >
+                  No devices match the current filter.
+                </td>
+              </tr>
+            </template>
+            <template
+              x-for="(device, index) in filteredDevices"
+              :key="device.id"
+            >
+              <tr>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                  x-text="device.name"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="device.plant"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="device.type"
+                ></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="getDeviceStatusClass(device.status)"
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    x-text="device.status"
+                  ></span>
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="formatPowerValue(device.currentOutput)"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="formatDateTime(device.lastUpdate)"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                >
+                  <button
+                    @click="viewDeviceDetails(device)"
+                    class="text-primary-600 hover:text-primary-900 mr-2"
+                  >
+                    Details
+                  </button>
+                  <button
+                    @click="pingDevice(device)"
+                    class="text-blue-600 hover:text-blue-900"
+                  >
+                    Ping
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power Distribution Chart -->
+  <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Power Distribution
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Real-time power flow throughout your system
+      </p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="h-80">
+        <canvas id="power-distribution-chart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>

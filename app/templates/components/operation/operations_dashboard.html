@@ -1,0 +1,310 @@
+<!-- Operations Dashboard Component -->
+<div class="space-y-6">
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Plant Stats Card -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-green-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Plants</dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span x-text="solarData.summary.totalPlants"></span>
+                  <span class="text-sm text-green-600 ml-2">
+                    <span x-text="solarData.summary.activeDevices"></span>
+                    active
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Device Stats Card -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Devices
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span x-text="solarData.summary.totalDevices"></span>
+                  <span class="text-sm text-blue-600 ml-2">
+                    <span
+                      class="text-red-500"
+                      x-text="solarData.summary.offlineDevices"
+                    ></span>
+                    offline
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Energy Stats Card -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-yellow-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Today's Energy
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span
+                    x-text="formatEnergyValue(solarData.production.daily)"
+                  ></span>
+                  <span class="text-sm text-green-600 ml-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                    2.4%
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Stats Card -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-red-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Alerts</dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span x-text="solarData.summary.alertCount"></span>
+                  <span class="text-sm text-red-600 ml-2">
+                    <span
+                      x-text="solarData.summary.alertCount > 0 ? 'Requires Attention' : 'All Clear'"
+                    ></span>
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Production Charts -->
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <!-- Energy Production Chart -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Energy Production
+        </h3>
+        <div class="mt-4 h-80">
+          <canvas id="energy-production-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Metrics Chart -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Performance Metrics
+        </h3>
+        <div class="mt-4 h-80">
+          <canvas id="performance-metrics-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Alerts -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Alerts</h3>
+      <a
+        href="#"
+        @click.prevent="activeTab = 'alerts'"
+        class="text-sm font-medium text-primary-600 hover:text-primary-500"
+      >
+        View all
+      </a>
+    </div>
+    <div class="border-t border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Alert
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Device
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Plant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Time
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Severity
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <template x-if="alerts.length === 0">
+              <tr>
+                <td
+                  colspan="6"
+                  class="px-6 py-4 text-center text-sm text-gray-500"
+                >
+                  No recent alerts.
+                </td>
+              </tr>
+            </template>
+            <template x-for="(alert, index) in alerts.slice(0, 5)" :key="index">
+              <tr>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                  x-text="alert.message"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="alert.device"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="alert.plant"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="formatDateTime(alert.timestamp)"
+                ></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="getAlertSeverityClass(alert.severity)"
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    x-text="alert.severity"
+                  ></span>
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="alert.status"
+                ></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

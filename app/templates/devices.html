@@ -42,10 +42,12 @@
       columns: [
         { label: "Plant Name", key: "plant_name" },
         { label: "Device Alias", key: "alias" },
-        { label: "Serial Number", key: "serial_number" },
+        { label: "Serial Number", key: "sn" },
         { label: "Status", key: "status" },
-        { label: "Total Energy", key: "total_energy" },
-        { label: "Last Update", key: "last_update_time" },
+        { label: "Power Output", key: "pac" },
+        { label: "Energy", key: "eTotal" },
+        { label: "Model", key: "deviceModel" },
+        { label: "Last Update", key: "lastUpdateTime" },
       ],
 
       init() {
@@ -60,7 +62,31 @@
       get paginatedDevices() {
         const startIndex = (this.currentPage - 1) * this.pageSize;
         const endIndex = startIndex + this.pageSize;
-        return this.filteredDevices.slice(startIndex, endIndex);
+
+        // Process devices to normalize field names before paginating
+        const processedDevices = this.filteredDevices.map((device) => {
+          // Create a processed copy of the device
+          const processedDevice = { ...device };
+
+          // Normalize plant name field (handle both plantName and plant_name)
+          if (device.plantName && !device.plant_name) {
+            processedDevice.plant_name = device.plantName;
+          }
+
+          // Normalize serial number field (handle both sn and serial_number)
+          if (device.sn && !device.serial_number) {
+            processedDevice.serial_number = device.sn;
+          }
+
+          // Ensure last_update_time field exists
+          if (device.lastUpdateTime && !device.last_update_time) {
+            processedDevice.last_update_time = device.lastUpdateTime;
+          }
+
+          return processedDevice;
+        });
+
+        return processedDevices.slice(startIndex, endIndex);
       },
 
       // Calculate total pages
@@ -434,6 +460,100 @@
         }
       },
 
+      getStatusText(status) {
+        if (!status) return "Waiting";
+
+        const statusVal = parseInt(status);
+        if (isNaN(statusVal)) {
+          // Handle string status
+          const statusLower = status.toLowerCase();
+          if (
+            statusLower.includes("normal") ||
+            statusLower.includes("online")
+          ) {
+            return "Online";
+          } else if (
+            statusLower.includes("offline") ||
+            statusLower.includes("lost")
+          ) {
+            return "Offline";
+          } else {
+            return "Waiting";
+          }
+        } else {
+          // Handle numeric status (Growatt API)
+          switch (statusVal) {
+            case 1:
+              return "Online";
+            case 0:
+              return "Offline";
+            default:
+              return "Waiting";
+          }
+        }
+      },
+
+      formatPower(powerValue) {
+        if (!powerValue) return "0 W";
+
+        // Convert to number if it's a string
+        const power = parseFloat(powerValue);
+        if (isNaN(power)) return "0 W";
+
+        // Format based on magnitude
+        if (power >= 1000000) {
+          return `${(power / 1000000).toFixed(2)} MW`;
+        } else if (power >= 1000) {
+          return `${(power / 1000).toFixed(2)} kW`;
+        } else {
+          return `${power.toFixed(1)} W`;
+        }
+      },
+
+      formatEnergyValue(energyValue) {
+        if (!energyValue) return "0 kWh";
+
+        // Convert to number if it's a string
+        const energy = parseFloat(energyValue);
+        if (isNaN(energy)) return "0 kWh";
+
+        // Format based on magnitude
+        if (energy >= 1000000) {
+          return `${(energy / 1000000).toFixed(2)} GWh`;
+        } else if (energy >= 1000) {
+          return `${(energy / 1000).toFixed(2)} MWh`;
+        } else {
+          return `${energy.toFixed(1)} kWh`;
+        }
+      },
+
+      formatTodayEnergy(todayValue) {
+        if (!todayValue) return "Today: 0 kWh";
+
+        // Convert to number if it's a string
+        const energy = parseFloat(todayValue);
+        if (isNaN(energy)) return "Today: 0 kWh";
+
+        return `Today: ${energy.toFixed(1)} kWh`;
+      },
+
+      formatNominalPower(nominalPower) {
+        if (!nominalPower) return "";
+
+        // Convert to number if it's a string
+        const power = parseFloat(nominalPower);
+        if (isNaN(power)) return "";
+
+        // Format based on magnitude
+        if (power >= 1000000) {
+          return `${(power / 1000000).toFixed(2)} MW`;
+        } else if (power >= 1000) {
+          return `${(power / 1000).toFixed(1)} kW`;
+        } else {
+          return `${power} W`;
+        }
+      },
+
       exportToCSV() {
         if (this.filteredDevices.length === 0) {
           this.errorMessage = "No data to export.";
@@ -450,10 +570,32 @@
         // Add rows
         this.filteredDevices.forEach((device) => {
           const row = this.columns.map((column) => {
-            let value = device[column.key] || "";
-            if (column.key === "last_update_time") {
-              value = this.formatDate(value);
+            let value = "";
+
+            // Map column keys to device fields, ensuring consistent naming
+            if (column.key === "plant_name") {
+              value = device.plant_name || "";
+            } else if (column.key === "alias") {
+              value = device.alias || "";
+            } else if (column.key === "sn") {
+              value = device.serial_number || device.sn || "";
+            } else if (column.key === "status") {
+              value = this.getStatusText(device.status) || "";
+            } else if (column.key === "pac") {
+              value = this.formatPower(device.pac) || "0 W";
+            } else if (column.key === "eTotal") {
+              value = this.formatEnergyValue(device.eTotal) || "0 kWh";
+            } else if (column.key === "deviceModel") {
+              value = device.deviceModel || "";
+            } else if (column.key === "lastUpdateTime") {
+              value = this.formatDate(
+                device.lastUpdateTime || device.last_update_time
+              );
+            } else {
+              // Default fallback for other fields
+              value = device[column.key] || "";
             }
+
             return `"${value.toString().replace(/"/g, '""')}"`;
           });
           csvContent += row.join(",") + "\n";

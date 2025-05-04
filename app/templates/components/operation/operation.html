@@ -1,0 +1,362 @@
+<!-- Operations / Maintenance Component -->
+<div class="space-y-6">
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Maintenance Tasks
+      </h3>
+      <div>
+        <button
+          @click="openMaintenanceModal()"
+          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          </svg>
+          Add Task
+        </button>
+      </div>
+    </div>
+    <div class="border-t border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Task
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Plant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Device
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Due Date
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Assigned To
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <template x-if="maintenanceTasks.length === 0">
+              <tr>
+                <td
+                  colspan="7"
+                  class="px-6 py-4 text-center text-sm text-gray-500"
+                >
+                  No maintenance tasks scheduled. Click "Add Task" to create
+                  one.
+                </td>
+              </tr>
+            </template>
+            <template x-for="(task, index) in maintenanceTasks" :key="index">
+              <tr>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                  x-text="task.title"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="task.plant"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="task.device"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="formatDate(task.dueDate)"
+                ></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="getTaskStatusClass(task.status)"
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    x-text="task.status"
+                  ></span>
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="task.assignedTo"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                >
+                  <button
+                    @click="editMaintenanceTask(index)"
+                    class="text-primary-600 hover:text-primary-900 mr-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="deleteMaintenanceTask(index)"
+                    class="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Preventive Maintenance Schedule
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Upcoming scheduled maintenance for your solar system components.
+      </p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+      <dl
+        class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div>
+          <dt class="text-sm font-medium text-gray-500">
+            Next Inverter Checkup
+          </dt>
+          <dd class="mt-1 text-sm text-gray-900">June 15, 2025</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Next Panel Cleaning</dt>
+          <dd class="mt-1 text-sm text-gray-900">May 20, 2025</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">
+            Next Full System Inspection
+          </dt>
+          <dd class="mt-1 text-sm text-gray-900">July 10, 2025</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Maintenance Task Modal -->
+  <div
+    x-show="showMaintenanceModal"
+    class="fixed inset-0 z-10 overflow-y-auto"
+    aria-labelledby="modal-title"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div
+      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+    >
+      <!-- Background overlay -->
+      <div
+        x-show="showMaintenanceModal"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        @click="showMaintenanceModal = false"
+      ></div>
+
+      <!-- Modal panel -->
+      <div
+        x-show="showMaintenanceModal"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+      >
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="sm:flex sm:items-start">
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+              <h3
+                class="text-lg leading-6 font-medium text-gray-900"
+                id="modal-title"
+              >
+                <span
+                  x-text="editingMaintenanceTask ? 'Edit Maintenance Task' : 'Add Maintenance Task'"
+                ></span>
+              </h3>
+              <div class="mt-4">
+                <form @submit.prevent="saveMaintenanceTask" class="space-y-4">
+                  <div>
+                    <label
+                      for="task-title"
+                      class="block text-sm font-medium text-gray-700"
+                      >Task Title</label
+                    >
+                    <input
+                      type="text"
+                      name="task-title"
+                      id="task-title"
+                      x-model="taskForm.title"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="task-plant"
+                      class="block text-sm font-medium text-gray-700"
+                      >Plant</label
+                    >
+                    <select
+                      id="task-plant"
+                      name="task-plant"
+                      x-model="taskForm.plant"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    >
+                      <option value="">Select Plant</option>
+                      <option>Plant 1</option>
+                      <option>Plant 2</option>
+                      <option>Plant 3</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      for="task-device"
+                      class="block text-sm font-medium text-gray-700"
+                      >Device</label
+                    >
+                    <select
+                      id="task-device"
+                      name="task-device"
+                      x-model="taskForm.device"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    >
+                      <option value="">Select Device</option>
+                      <option>Inverter 1</option>
+                      <option>Inverter 2</option>
+                      <option>Solar Panel Array 1</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      for="task-due-date"
+                      class="block text-sm font-medium text-gray-700"
+                      >Due Date</label
+                    >
+                    <input
+                      type="date"
+                      name="task-due-date"
+                      id="task-due-date"
+                      x-model="taskForm.dueDate"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="task-status"
+                      class="block text-sm font-medium text-gray-700"
+                      >Status</label
+                    >
+                    <select
+                      id="task-status"
+                      name="task-status"
+                      x-model="taskForm.status"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    >
+                      <option>Pending</option>
+                      <option>In Progress</option>
+                      <option>Completed</option>
+                      <option>Overdue</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      for="task-assigned"
+                      class="block text-sm font-medium text-gray-700"
+                      >Assigned To</label
+                    >
+                    <input
+                      type="text"
+                      name="task-assigned"
+                      id="task-assigned"
+                      x-model="taskForm.assignedTo"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="task-notes"
+                      class="block text-sm font-medium text-gray-700"
+                      >Notes</label
+                    >
+                    <textarea
+                      id="task-notes"
+                      name="task-notes"
+                      rows="3"
+                      x-model="taskForm.notes"
+                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    ></textarea>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button
+            type="button"
+            @click="saveMaintenanceTask"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            @click="showMaintenanceModal = false"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

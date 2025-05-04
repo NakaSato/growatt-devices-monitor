@@ -16,7 +16,7 @@ def render_index() -> str:
     authenticated = session.get('growatt_authenticated', False)
     
     # Fetch plants data to display on the index page
-    from app.routes.api_helpers import get_plants
+    from app.routes.common import get_plants
     plants_data = get_plants() if authenticated else []
     
     # If plants_data contains an error, provide an empty list instead
@@ -124,18 +124,77 @@ def render_analytics() -> Tuple[str, int]:
     return render_template('analytics.html', authenticated=authenticated), 200
 
 
-def render_management() -> Tuple[str, int]:
+def render_operation() -> Tuple[str, int]:
     """
-    Render the management template for system administration.
+    Render the operation template for system administration.
     
     Returns:
-        Tuple[str, int]: Rendered HTML template for the management page with HTTP 200 status
+        Tuple[str, int]: Rendered HTML template for the operation page with HTTP 200 status
     """
     # Check authentication status from session
     authenticated = session.get('growatt_authenticated', False)
     
-    logger.debug("Rendering management page with authentication status: %s", authenticated)
-    return render_template('management.html', authenticated=authenticated), 200
+    # Get operation data - prepare initial data for the operations dashboard
+    from app.services.plant_service import PlantService
+    from app.services.device_status_tracker import DeviceStatusTracker
+    
+    plant_service = PlantService()
+    device_tracker = DeviceStatusTracker()
+    
+    try:
+        # Get basic plant statistics
+        plants = plant_service.get_all_plants()
+        # Fix: Change attribute access to dictionary key access
+        active_plants = [p for p in plants if p.get('status') == 'active']
+        
+        # Get active devices count
+        devices = device_tracker.get_all_devices()
+        online_devices = [d for d in devices if d.get('status') == 'Online']
+        
+        # Calculate total energy today by summing today_energy from all active plants
+        total_energy_today = sum(float(p.get('today_energy', 0) or p.get('eToday', 0) or 0) for p in active_plants)
+        
+        # Prepare operations data
+        operations_data = {
+            'plantStats': {
+                'totalCount': len(plants),
+                'activeCount': len(active_plants)
+            },
+            'deviceStats': {
+                'totalCount': len(devices),
+                'onlineCount': len(online_devices),
+                'newCount': 0  # This would need a more complex query to determine new devices
+            },
+            'energyStats': {
+                'todayKwh': round(total_energy_today, 2),
+                'percentChange': 0  # Would need historical data to calculate
+            },
+            'alertStats': {
+                'criticalCount': 0,  # These would need a dedicated alerts service
+                'warningCount': 0
+            }
+        }
+        
+        # Sample data for maintenance tasks and alerts
+        maintenance_tasks = []
+        alerts = []
+        
+        # Prepare context with all necessary data
+        context = {
+            'authenticated': authenticated,
+            'operations_data': operations_data,
+            'maintenance_tasks': maintenance_tasks,
+            'alerts': alerts
+        }
+        
+        logger.debug("Rendering operation page with authentication status: %s", authenticated)
+        return render_template('operation.html', **context), 200
+    except Exception as e:
+        logger.error(f"Error preparing operation page data: {str(e)}")
+        # Still render the page but without data
+        return render_template('operation.html', 
+                              authenticated=authenticated,
+                              error=str(e)), 200
 
 def render_diagnosis() -> Tuple[str, int]:
     """

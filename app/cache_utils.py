@@ -68,7 +68,7 @@ def cached_route(timeout: Optional[int] = None, key_prefix: str = 'route_'):
             cache_key = f"{key_prefix}{make_cache_key(*args, **kwargs)}"
             
             # Try to get from cache
-            cached_result = cache.get(cache_key)
+            cached_result = cache.get(cache_key) if hasattr(cache, 'get') else None
             if cached_result is not None:
                 current_app.logger.debug(f"Cache hit for {request.path} ({cache_key})")
                 return cached_result
@@ -79,8 +79,15 @@ def cached_route(timeout: Optional[int] = None, key_prefix: str = 'route_'):
             # Only cache if result is cacheable (tuple with response, status code)
             if isinstance(result, tuple) and len(result) == 2:
                 cache_ttl = timeout or current_app.config.get('CACHE_DEFAULT_TIMEOUT', 300)
-                cache.set(cache_key, result, timeout=cache_ttl)
-                current_app.logger.debug(f"Cached result for {request.path} ({cache_key}) with TTL {cache_ttl}s")
+                
+                # Check if cache object has the set method before calling it
+                if hasattr(cache, 'set'):
+                    cache.set(cache_key, result, timeout=cache_ttl)
+                    current_app.logger.debug(f"Cached result for {request.path} ({cache_key}) with TTL {cache_ttl}s")
+                elif isinstance(cache, dict):
+                    # Fallback for dict-like caches
+                    cache[cache_key] = result
+                    current_app.logger.debug(f"Cached result for {request.path} ({cache_key}) using dictionary storage")
             
             return result
         return decorated_function

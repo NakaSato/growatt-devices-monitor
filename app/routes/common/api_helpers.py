@@ -195,10 +195,77 @@ def get_devices_for_plant(plant_id: str) -> Union[List[Dict[str, Any]], Dict[str
     """
     try:
         # Ensure session is valid
-        ensure_login()
+        login_status = ensure_login()
+        if not login_status.get("success", False):
+            current_app.logger.error("Failed to establish session before fetching devices")
+            return [{"error": "Authentication failed", "code": "AUTH_ERROR", 
+                    "ui_message": "Please log in to access device data",
+                    "authenticated": False}]
+    
+        # Use the updated get_device_list method which returns a dictionary of device types
         devices = growatt_api.get_device_list(plant_id)
-        current_app.logger.debug(f"Retrieved devices for plant ID {plant_id}")
-        return devices
+        
+        # Handle integer responses (API error or unexpected response format)
+        if isinstance(devices, int):
+            current_app.logger.warning(f"Received integer response ({devices}) for plant {plant_id} devices")
+            # Return empty list with error format
+            return {
+                "result": 0,
+                "obj": {
+                    "datas": [],
+                    "totalCount": 0
+                },
+                "error": f"API returned numeric code: {devices}"
+            }
+        
+        # Handle standard API response format with different structures
+        if isinstance(devices, dict):
+            # Handle standard response format with 'obj' containing 'datas'
+            if 'obj' in devices and isinstance(devices['obj'], dict) and 'datas' in devices['obj']:
+                data_list = devices['obj']['datas']
+                total_count = len(data_list)
+                current_app.logger.info(f"Retrieved {total_count} devices for plant ID {plant_id} from standard format")
+                return devices
+            
+            # Handle direct device types dictionary format
+            else:
+                try:
+                    total_devices = 0
+                    device_types = []
+                    
+                    for device_type in devices.keys():
+                        type_devices = devices.get(device_type, [])
+                        if isinstance(type_devices, list):
+                            type_count = len(type_devices)
+                            total_devices += type_count
+                            device_types.append(f"{device_type}: {type_count}")
+                    
+                    current_app.logger.info(f"Retrieved {total_devices} devices for plant ID {plant_id}")
+                    
+                    if device_types:
+                        current_app.logger.debug(f"Device types for plant ID {plant_id}: {', '.join(device_types)}")
+                    
+                    return devices
+                except Exception as calc_error:
+                    current_app.logger.warning(f"Error calculating device counts: {calc_error}")
+                    # Return the original response even if we can't calculate counts
+                    return devices
+        elif isinstance(devices, list):
+            # Handle direct list response format
+            current_app.logger.info(f"Retrieved {len(devices)} devices for plant ID {plant_id} (list format)")
+            return devices
+        else:
+            # Handle any other unexpected response type
+            current_app.logger.warning(f"Unexpected response type for plant {plant_id} devices: {type(devices)}")
+            return {
+                "result": 0,
+                "obj": {
+                    "datas": [],
+                    "totalCount": 0
+                },
+                "error": f"Unexpected response type: {type(devices).__name__}"
+            }
+    
     except Exception as e:
         current_app.logger.error(f"Error fetching devices for plant ID {plant_id}: {e}")
         return [{"error": str(e), "code": "API_ERROR", 

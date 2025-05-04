@@ -158,7 +158,7 @@ function normalizeAPIResponse(response) {
       if (Array.isArray(response.datas)) {
         result.plants = response.datas.map((plant) => ({
           id: plant.id,
-          plantName: plant.plantName,
+          plantName: plant.plantName || plant.name || `Plant ${plant.id}`,
           status: getPlantStatus(plant),
           totalPower: parseFloat(plant.currentPac || 0),
           todayEnergy: parseFloat(plant.eToday || 0),
@@ -174,7 +174,7 @@ function normalizeAPIResponse(response) {
       // Handle case where response is an array of plants
       result.plants = response.map((plant) => ({
         id: plant.id,
-        plantName: plant.plantName || plant.name,
+        plantName: plant.plantName || plant.name || `Plant ${plant.id}`,
         status: getPlantStatus(plant),
         totalPower: parseFloat(
           plant.currentPac || plant.totalPower || plant.current_power || 0
@@ -183,7 +183,9 @@ function normalizeAPIResponse(response) {
           plant.eToday || plant.todayEnergy || plant.today_energy || 0
         ),
         // Add additional normalized properties as needed
-        formattedLastUpdate: formatDate(plant.lastUpdateTime),
+        formattedLastUpdate: formatDate(
+          plant.lastUpdateTime || plant.last_update_time
+        ),
       }));
       result.totalCount = response.length;
     } else if (response.plants && Array.isArray(response.plants)) {
@@ -193,7 +195,7 @@ function normalizeAPIResponse(response) {
         ...response,
         plants: response.plants.map((plant) => ({
           id: plant.id,
-          plantName: plant.plantName || plant.name,
+          plantName: plant.plantName || plant.name || `Plant ${plant.id}`,
           status: getPlantStatus(plant),
           totalPower: parseFloat(
             plant.currentPac || plant.totalPower || plant.current_power || 0
@@ -202,7 +204,9 @@ function normalizeAPIResponse(response) {
             plant.eToday || plant.todayEnergy || plant.today_energy || 0
           ),
           // Add additional normalized properties as needed
-          formattedLastUpdate: formatDate(plant.lastUpdateTime),
+          formattedLastUpdate: formatDate(
+            plant.lastUpdateTime || plant.last_update_time
+          ),
         })),
       };
     }

@@ -111,6 +111,15 @@ class DeviceStatusTracker:
             logger.error(f"Error getting devices from database: {e}")
             return []
     
+    def get_all_devices(self):
+        """
+        Get all devices from the database (alias for get_devices)
+        
+        Returns:
+            List[Dict[str, Any]]: List of device data
+        """
+        return self.get_devices()
+    
     def get_offline_devices(self):
         """
         Get all currently offline devices

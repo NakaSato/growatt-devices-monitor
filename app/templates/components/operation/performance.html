@@ -1,0 +1,478 @@
+<!-- Performance Component -->
+<div class="space-y-6">
+  <!-- Time Range Selector -->
+  <div class="bg-white shadow-sm rounded-lg p-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Performance Analysis
+        </h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Analyze historical and current performance metrics
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative">
+          <select
+            x-model="timeRange"
+            @change="updatePerformanceData()"
+            class="appearance-none rounded-md border border-gray-300 py-2 pl-3 pr-10 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+          >
+            <option value="day">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          <div
+            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"
+          >
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center space-x-2"
+          x-show="timeRange === 'custom'"
+        >
+          <input
+            type="date"
+            x-model="customStartDate"
+            class="rounded-md border border-gray-300 py-2 px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+          />
+          <span class="text-gray-500">to</span>
+          <input
+            type="date"
+            x-model="customEndDate"
+            class="rounded-md border border-gray-300 py-2 px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+          />
+          <button
+            @click="updatePerformanceData()"
+            class="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Summary Cards -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Energy Production -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-green-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Energy Production
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span
+                    x-text="formatEnergyValue(performanceData.energy.total)"
+                  ></span>
+                  <span
+                    class="text-sm text-green-600 ml-2"
+                    x-show="performanceData.energy.trend > 0"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                    <span x-text="performanceData.energy.trend + '%'"></span>
+                  </span>
+                  <span
+                    class="text-sm text-red-600 ml-2"
+                    x-show="performanceData.energy.trend < 0"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                      />
+                    </svg>
+                    <span
+                      x-text="Math.abs(performanceData.energy.trend) + '%'"
+                    ></span>
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Ratio -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Performance Ratio
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span x-text="performanceData.performanceRatio + '%'"></span>
+                  <span
+                    :class="performanceData.performanceRatio >= 80 ? 'text-green-600' : (performanceData.performanceRatio >= 70 ? 'text-yellow-600' : 'text-red-600')"
+                    class="text-sm ml-2"
+                  >
+                    <span
+                      x-text="getPerformanceRatingText(performanceData.performanceRatio)"
+                    ></span>
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Specific Yield -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-yellow-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                Specific Yield
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span
+                    x-text="performanceData.specificYield + ' kWh/kWp'"
+                  ></span>
+                  <span class="text-sm text-gray-500 ml-2">
+                    <span
+                      x-text="'Expected: ' + performanceData.expectedYield + ' kWh/kWp'"
+                    ></span>
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CO2 Avoided -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+            <svg
+              class="h-6 w-6 text-green-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">
+                CO2 Avoided
+              </dt>
+              <dd>
+                <div class="text-lg font-medium text-gray-900">
+                  <span x-text="performanceData.co2Avoided + ' kg'"></span>
+                  <span class="text-sm text-green-600 ml-2">
+                    <span
+                      x-text="'≈ ' + Math.round(performanceData.co2Avoided / 20) + ' trees'"
+                    ></span>
+                  </span>
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Charts -->
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <!-- Energy Production Chart -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Energy Production
+        </h3>
+        <div class="mt-4 h-80">
+          <canvas id="energy-production-performance-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Ratio Chart -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Performance Ratio
+        </h3>
+        <div class="mt-4 h-80">
+          <canvas id="performance-ratio-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Performance Comparison -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Device Performance Comparison
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        Compare performance across devices to identify potential issues
+      </p>
+    </div>
+    <div class="border-t border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Device
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Plant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Energy Production
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Performance Ratio
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Efficiency
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Deviation
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <template x-if="devicePerformance.length === 0">
+              <tr>
+                <td
+                  colspan="6"
+                  class="px-6 py-4 text-center text-sm text-gray-500"
+                >
+                  No device performance data available for the selected period.
+                </td>
+              </tr>
+            </template>
+            <template
+              x-for="(device, index) in devicePerformance"
+              :key="device.id"
+            >
+              <tr>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                  x-text="device.name"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="device.plant"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="formatEnergyValue(device.energyProduction)"
+                ></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="mr-2 w-20 bg-gray-200 rounded-full h-2.5">
+                      <div
+                        :class="getPerformanceColor(device.performanceRatio)"
+                        class="h-2.5 rounded-full"
+                        :style="'width: ' + device.performanceRatio + '%'"
+                      ></div>
+                    </div>
+                    <span
+                      class="text-sm text-gray-500"
+                      x-text="device.performanceRatio + '%'"
+                    ></span>
+                  </div>
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                  x-text="device.efficiency + '%'"
+                ></td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm"
+                  :class="device.deviation < 0 ? 'text-red-600' : 'text-green-600'"
+                >
+                  <span
+                    x-text="(device.deviation > 0 ? '+' : '') + device.deviation + '%'"
+                  ></span>
+                  <span class="text-gray-500 ml-1">from avg</span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Performance Report -->
+  <div class="bg-white shadow-sm rounded-lg">
+    <div
+      class="px-4 py-5 sm:px-6 flex flex-wrap justify-between items-center gap-4"
+    >
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Performance Reports
+        </h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Generate detailed performance reports for the selected period
+        </p>
+      </div>
+      <div class="flex space-x-3">
+        <button
+          @click="exportPerformanceReport('pdf')"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            />
+          </svg>
+          PDF Report
+        </button>
+        <button
+          @click="exportPerformanceReport('excel')"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          Excel Export
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

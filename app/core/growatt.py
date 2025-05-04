@@ -649,33 +649,204 @@ class Growatt:
 
     def get_device_list(self, plantId: str):
         """
-        Fetch yearly energy statistics.
-
-        Parameters:
-        year (str): The year for the energy statistics in 'YYYY' format.
-        plantId (str): The ID of the plant.
-        mixSn (str): The serial number of the mix device.
-
-        Example:
-        api.get_energy_stats_daily(year="2024", plantId="1234567", mixSn="ODCUTJF8IFP")
-
+        Retrieves a list of MAX devices associated with a plant, handling pagination.
+        
+        This method automatically fetches all pages of device data by checking the total
+        page count from the first response.
+        
+        Args:
+            plantId (str): The ID of the plant to retrieve devices for.
+            
+        Returns:
+            dict: A dictionary containing all MAX devices from all pages.
+            Example:
+                {
+                    "result": 1,
+                    "obj": {
+                        "datas": [
+                            {
+                                "deviceSn": "MAX123456",
+                                "deviceName": "MAX Device 1",
+                                ...
+                            },
+                            ...
+                        ],
+                        "totalCount": 10
+                    }
+                }
+            
+        Raises:
+            ValueError: If the API returns an empty or invalid response.
         """
-        data = {
-            "plantId": str(plantId),
-            "currPage": 1,
+        all_devices = []
+        current_page = 1
+        total_pages = None
+        
+        # Ensure we have a valid session before making requests
+        if not hasattr(self, 'is_logged_in') or not self.is_logged_in:
+            raise ValueError("Not logged in. Please login before fetching device data.")
+        
+        # Add more detailed user agent and headers to mimic browser behavior
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Referer": f"{self.BASE_URL}/panel/plant/plantDetail?plantId={plantId}"
         }
+        
+        while total_pages is None or current_page <= total_pages:
+            data = {
+                "plantId": str(plantId),
+                "currPage": current_page,
+            }
+            
+            try:
+                print(f"Requesting page {current_page} of MAX devices for plant {plantId}...")
+                
+                # Try using alternative endpoint path first
+                try:
+                    url = f"{self.BASE_URL}/device/getMAXList"
+                    res = self.session.post(url, data=data, headers=headers, timeout=30)
+                    
+                    # If this fails with 404, we'll try the alternative endpoint in the except block
+                    res.raise_for_status()
+                    
+                    # Debug response info
+                    print(f"Response status code: {res.status_code}")
+                    print(f"Response headers: {res.headers}")
+                    
+                    # Print first 200 chars of response for debugging
+                    response_preview = res.text[:200] + ("..." if len(res.text) > 200 else "")
+                    print(f"Response body (preview): {response_preview}")
+                    
+                    # Try to parse JSON response
+                    json_res = res.json()
+                    
+                except re.exceptions.HTTPError as e:
+                    if res.status_code == 404:
+                        # Try alternative endpoint if primary endpoint returns 404
+                        print(f"Primary endpoint returned 404, trying alternative endpoint...")
+                        url = f"{self.BASE_URL}/panel/max/getMAXList"
+                        res = self.session.post(url, data=data, headers=headers, timeout=30)
+                        res.raise_for_status()
+                        
+                        # Debug info for alternative endpoint
+                        print(f"Alternative endpoint response status: {res.status_code}")
+                        response_preview = res.text[:200] + ("..." if len(res.text) > 200 else "")
+                        print(f"Alternative response body (preview): {response_preview}")
+                        
+                        json_res = res.json()
+                    else:
+                        # Re-raise if it's not a 404 error
+                        raise
 
-        res = self.session.post(f"{self.BASE_URL}/device/getMAXList", data=data)
-        res.raise_for_status()
-
-        try:
-            json_res = res.json()
-
-            if not json_res:
-                raise ValueError("Empty response. Please ensure you are logged in.")
-            return json_res
-        except re.exceptions.JSONDecodeError:
-            raise ValueError("Invalid response received. Please ensure you are logged in.")
+                # Check if the response is empty
+                if not json_res:
+                    print(f"Warning: Empty JSON response for page {current_page}")
+                    break
+                
+                # Handle case where response is an integer (API error or unexpected response)
+                if isinstance(json_res, int):
+                    print(f"Warning: Received integer response ({json_res}) instead of expected object for plant {plantId}")
+                    # Return empty result in the expected format to avoid len() errors
+                    return {
+                        "result": 0,
+                        "obj": {
+                            "datas": [],
+                            "totalCount": 0
+                        }
+                    }
+                
+                # Handle different response formats:
+                # 1. Old format: {"result": 1, "obj": {"datas": [...]}}
+                # 2. New format: {"currPage": 1, "pages": 2, "datas": [...]}
+                
+                if "obj" in json_res:
+                    # Old format
+                    if "datas" in json_res["obj"]:
+                        page_devices = json_res["obj"]["datas"]
+                        device_count = len(page_devices)
+                        
+                        if device_count > 0:
+                            all_devices.extend(page_devices)
+                            print(f"Retrieved {device_count} devices from page {current_page} for plant {plantId} (old format)")
+                        else:
+                            print(f"Page {current_page} contains no devices for plant {plantId} (old format)")
+                    
+                    # Determine total pages from old format
+                    if total_pages is None:
+                        if "pageCount" in json_res["obj"]:
+                            total_pages = int(json_res["obj"]["pageCount"])
+                        elif "totalPage" in json_res["obj"]:
+                            total_pages = int(json_res["obj"]["totalPage"])
+                        elif "totalCount" in json_res["obj"] and "pageSize" in json_res["obj"]:
+                            total_count = int(json_res["obj"]["totalCount"])
+                            page_size = int(json_res["obj"]["pageSize"])
+                            total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+                        else:
+                            total_pages = 1
+                            
+                        print(f"Total pages: {total_pages} (old format)")
+                        
+                elif "datas" in json_res:
+                    # New format - direct access to datas array
+                    page_devices = json_res["datas"]
+                    device_count = len(page_devices)
+                    
+                    if device_count > 0:
+                        all_devices.extend(page_devices)
+                        print(f"Retrieved {device_count} devices from page {current_page} for plant {plantId} (new format)")
+                    else:
+                        print(f"Page {current_page} contains no devices for plant {plantId} (new format)")
+                    
+                    # Determine total pages from new format
+                    if total_pages is None:
+                        if "pages" in json_res:
+                            total_pages = int(json_res["pages"])
+                            print(f"Total pages: {total_pages} (new format)")
+                        else:
+                            total_pages = 1
+                            print(f"No pages info, assuming single page (new format)")
+                else:
+                    print(f"Warning: Unknown response format. Keys: {list(json_res.keys())}")
+                    # If we can't determine the format, assume it's a single page
+                    if total_pages is None:
+                        total_pages = 1
+                        print("Assuming single page for unknown format")
+                
+                # Move to next page
+                current_page += 1
+                
+                # Check if we've processed all pages
+                if current_page > total_pages:
+                    break
+                    
+            except re.exceptions.JSONDecodeError as e:
+                print(f"JSON decode error for page {current_page}: {str(e)}")
+                print(f"Response text (first 300 chars): {res.text[:300]}")
+                # If we can't parse the JSON, it might be an HTML login page
+                if "<html" in res.text.lower() and "login" in res.text.lower():
+                    print("Session may have expired. Response contains HTML login page.")
+                    self.is_logged_in = False
+                    raise ValueError("Session expired. Please login again.")
+                else:
+                    raise ValueError(f"Invalid JSON response for page {current_page}: {str(e)}")
+            except re.exceptions.RequestException as e:
+                print(f"Request error for page {current_page}: {str(e)}")
+                raise ValueError(f"Request failed for page {current_page}: {str(e)}")
+        
+        print(f"Finished retrieving devices. Total devices found: {len(all_devices)}")
+        
+        # Return in the format that the rest of the code expects
+        # We'll maintain the same output structure for compatibility
+        return {
+            "result": 1,
+            "obj": {
+                "datas": all_devices,
+                "totalCount": len(all_devices)
+            }
+        }
 
     def get_weather(self, plantId: str):
         """

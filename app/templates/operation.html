@@ -28,7 +28,7 @@ Monitoring System{% endblock %} {% block styles %}
         </h1>
         <div class="flex space-x-2">
           <button
-            @click="refreshOperationsData"
+            @click="refreshData"
             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <svg
@@ -75,51 +75,88 @@ Monitoring System{% endblock %} {% block styles %}
         <nav
           class="flex -mb-px space-x-8 sm:px-6 px-4"
           aria-label="Operations Tabs"
+          role="tablist"
         >
           <button
             @click="activeTab = 'dashboard'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
             :class="{ 'border-primary-600 text-primary-600': activeTab === 'dashboard', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'dashboard' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-dashboard"
+            role="tab"
+            :aria-selected="activeTab === 'dashboard'"
+            aria-controls="panel-dashboard"
           >
             Dashboard
           </button>
 
           <button
-            @click="activeTab = 'maintenance'"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'maintenance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'maintenance' }"
+            @click="activeTab = 'operation'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
+            :class="{ 'border-primary-600 text-primary-600': activeTab === 'operation', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'operation' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-operation"
+            role="tab"
+            :aria-selected="activeTab === 'operation'"
+            aria-controls="panel-operation"
           >
             Maintenance
           </button>
 
           <button
             @click="activeTab = 'monitoring'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
             :class="{ 'border-primary-600 text-primary-600': activeTab === 'monitoring', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'monitoring' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-monitoring"
+            role="tab"
+            :aria-selected="activeTab === 'monitoring'"
+            aria-controls="panel-monitoring"
           >
             Monitoring
           </button>
 
           <button
             @click="activeTab = 'performance'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
             :class="{ 'border-primary-600 text-primary-600': activeTab === 'performance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'performance' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-performance"
+            role="tab"
+            :aria-selected="activeTab === 'performance'"
+            aria-controls="panel-performance"
           >
             Performance
           </button>
 
           <button
             @click="activeTab = 'alerts'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
             :class="{ 'border-primary-600 text-primary-600': activeTab === 'alerts', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'alerts' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-alerts"
+            role="tab"
+            :aria-selected="activeTab === 'alerts'"
+            aria-controls="panel-alerts"
           >
             Alerts & Notifications
           </button>
 
           <button
             @click="activeTab = 'configuration'"
+            @keydown.right.prevent="navigateTab('next')"
+            @keydown.left.prevent="navigateTab('prev')"
             :class="{ 'border-primary-600 text-primary-600': activeTab === 'configuration', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'configuration' }"
             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
+            id="tab-configuration"
+            role="tab"
+            :aria-selected="activeTab === 'configuration'"
+            aria-controls="panel-configuration"
           >
             Configuration
           </button>
@@ -174,45 +211,66 @@ Monitoring System{% endblock %} {% block styles %}
     <div
       x-show="activeTab === 'dashboard' && !isLoading && !hasError"
       class="p-6"
+      id="panel-dashboard"
+      role="tabpanel"
+      aria-labelledby="tab-dashboard"
     >
-      {% include 'components/management/operations_dashboard.html' %}
+      {% include 'components/operation/operations_dashboard.html' %}
     </div>
 
     <!-- Maintenance Tab -->
     <div
-      x-show="activeTab === 'maintenance' && !isLoading && !hasError"
+      x-show="activeTab === 'operation' && !isLoading && !hasError"
       class="p-6"
+      id="panel-operation"
+      role="tabpanel"
+      aria-labelledby="tab-operation"
     >
-      {% include 'components/management/maintenance.html' %}
+      {% include 'components/operation/operation.html' %}
     </div>
 
     <!-- Monitoring Tab -->
     <div
       x-show="activeTab === 'monitoring' && !isLoading && !hasError"
       class="p-6"
+      id="panel-monitoring"
+      role="tabpanel"
+      aria-labelledby="tab-monitoring"
     >
-      {% include 'components/management/monitoring.html' %}
+      {% include 'components/operation/monitoring.html' %}
     </div>
 
     <!-- Performance Tab -->
     <div
       x-show="activeTab === 'performance' && !isLoading && !hasError"
       class="p-6"
+      id="panel-performance"
+      role="tabpanel"
+      aria-labelledby="tab-performance"
     >
-      {% include 'components/management/performance.html' %}
+      {% include 'components/operation/performance.html' %}
     </div>
 
     <!-- Alerts & Notifications Tab -->
-    <div x-show="activeTab === 'alerts' && !isLoading && !hasError" class="p-6">
-      {% include 'components/management/alerts.html' %}
+    <div
+      x-show="activeTab === 'alerts' && !isLoading && !hasError"
+      class="p-6"
+      id="panel-alerts"
+      role="tabpanel"
+      aria-labelledby="tab-alerts"
+    >
+      {% include 'components/operation/alerts.html' %}
     </div>
 
     <!-- Configuration Tab -->
     <div
       x-show="activeTab === 'configuration' && !isLoading && !hasError"
       class="p-6"
+      id="panel-configuration"
+      role="tabpanel"
+      aria-labelledby="tab-configuration"
     >
-      {% include 'components/management/configuration.html' %}
+      {% include 'components/operation/configuration.html' %}
     </div>
   </div>
 </div>

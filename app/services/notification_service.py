@@ -40,6 +40,36 @@ class NotificationService:
             f"Telegram: {'enabled' if self.telegram_enabled else 'disabled'}"
         )
     
+    def send_notification(self, message: str, subject: str = "Growatt Device Notification") -> bool:
+        """
+        General method to send notifications through all configured channels
+        
+        Args:
+            message: Message content to send
+            subject: Subject line for email notifications
+            
+        Returns:
+            bool: True if at least one notification channel succeeded
+        """
+        success = False
+        
+        # Try email notification
+        if self.email_enabled:
+            email_success = self._send_email(subject, message)
+            success = email_success
+        
+        # Try Telegram notification
+        if self.telegram_enabled:
+            telegram_success = self._send_telegram(message)
+            success = success or telegram_success
+        
+        if success:
+            logger.debug(f"Notification sent: {subject}")
+        else:
+            logger.warning(f"Failed to send notification: {subject}")
+            
+        return success
+    
     def send_device_offline_notification(self, device_data: Dict[str, Any]) -> bool:
         """
         Send a notification that a device has gone offline
@@ -71,154 +101,51 @@ class NotificationService:
         plant_name = device_data.get('plant_name', 'Unknown Plant')
         last_seen = device_data.get('last_update_time', 'Unknown')
         
-        subject = f"🔴 Alert: Growatt Device Offline - {alias}"
-        
+        subject = f"Device Offline: {alias} ({serial_number})"
         message = (
-            f"⚠️ A Growatt device has gone OFFLINE ⚠️\n\n"
-            f"Device: {alias}\n"
-            f"Serial Number: {serial_number}\n"
-            f"Plant: {plant_name}\n"
-            f"Last Seen: {last_seen}\n\n"
-            f"Please check the device status and connection."
+            f"Device '{alias}' ({serial_number}) belonging to plant '{plant_name}' "
+            f"was last seen at {last_seen} and is now offline."
         )
         
-        success = False
+        # Send notification
+        notification_sent = self.send_notification(message, subject)
         
-        # Try to send email notification
-        if self.email_enabled:
-            email_success = self._send_email(subject, message)
-            success = email_success
-        
-        # Try to send Telegram notification
-        if self.telegram_enabled:
-            telegram_success = self._send_telegram(message)
-            success = success or telegram_success
-        
-        # Update last notification timestamp if any notification was successful
-        if success:
+        if notification_sent:
             self.last_notification_sent[serial_number] = now
-            logger.info(f"Offline notification sent for device {alias} ({serial_number})")
+            logger.info(f"Offline notification sent for device {serial_number}")
+        else:
+            logger.warning(f"Failed to send offline notification for device {serial_number}")
         
-        return success
-    
-    def send_device_online_notification(self, device_data: Dict[str, Any]) -> bool:
-        """
-        Send a notification that a device has come back online
-        
-        Args:
-            device_data: Dictionary containing device information
-                - serial_number: Device serial number
-                - alias: Device friendly name
-                - plant_id: ID of the plant the device belongs to
-                - plant_name: Name of the plant (if available)
-                - status: Current device status
-                - last_update_time: Last time the device was updated
-                
-        Returns:
-            bool: True if notification was sent successfully, False otherwise
-        """
-        serial_number = device_data.get('serial_number', 'Unknown')
-        
-        # Only send "back online" notifications if we previously sent an offline notification
-        if serial_number not in self.last_notification_sent:
-            logger.debug(f"Skipping online notification for device {serial_number} - no previous offline notification")
-            return False
-        
-        # Check cooldown
-        now = datetime.now().timestamp()
-        last_sent = self.last_notification_sent.get(serial_number, 0)
-        
-        if now - last_sent < self.notification_cooldown:
-            logger.debug(f"Skipping notification for device {serial_number} - in cooldown period")
-            return False
-        
-        # Prepare notification content
-        alias = device_data.get('alias', 'Unknown Device')
-        plant_name = device_data.get('plant_name', 'Unknown Plant')
-        last_seen = device_data.get('last_update_time', 'Unknown')
-        
-        subject = f"🟢 Growatt Device Back Online - {alias}"
-        
-        message = (
-            f"✅ A Growatt device is back ONLINE ✅\n\n"
-            f"Device: {alias}\n"
-            f"Serial Number: {serial_number}\n"
-            f"Plant: {plant_name}\n"
-            f"Last Seen: {last_seen}\n\n"
-            f"The device has reconnected and is now online."
-        )
-        
-        success = False
-        
-        # Try to send email notification
-        if self.email_enabled:
-            email_success = self._send_email(subject, message)
-            success = email_success
-        
-        # Try to send Telegram notification
-        if self.telegram_enabled:
-            telegram_success = self._send_telegram(message)
-            success = success or telegram_success
-        
-        # Update last notification timestamp if any notification was successful
-        if success:
-            self.last_notification_sent[serial_number] = now
-            logger.info(f"Online notification sent for device {alias} ({serial_number})")
-            
-        return success
+        return notification_sent
     
     def _send_email(self, subject: str, message: str) -> bool:
         """
         Send an email notification
         
         Args:
-            subject: Email subject
-            message: Email message content
+            subject: Subject line for the email
+            message: Message content for the email
             
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        if not self.email_enabled or not all([self.email_from, self.email_to, self.smtp_server, self.smtp_port]):
-            logger.warning("Email notifications disabled or missing configuration")
-            return False
-        
         try:
-            # Create message
             msg = MIMEMultipart()
             msg['From'] = self.email_from
-            
-            # Handle multiple recipients
-            if isinstance(self.email_to, list):
-                msg['To'] = ', '.join(self.email_to)
-            else:
-                msg['To'] = self.email_to
-                
+            msg['To'] = self.email_to
             msg['Subject'] = subject
-            
-            # Attach message body
             msg.attach(MIMEText(message, 'plain'))
             
-            # Connect to SMTP server
-            if self.smtp_use_tls:
-                smtp = smtplib.SMTP(self.smtp_server, self.smtp_port)
-                smtp.starttls()
-            else:
-                smtp = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                if self.smtp_use_tls:
+                    server.starttls()
+                server.login(self.smtp_username, self.smtp_password)
+                server.send_message(msg)
             
-            # Login if credentials are provided
-            if self.smtp_username and self.smtp_password:
-                smtp.login(self.smtp_username, self.smtp_password)
-            
-            # Send email
-            recipients = self.email_to if isinstance(self.email_to, list) else [self.email_to]
-            smtp.sendmail(self.email_from, recipients, msg.as_string())
-            smtp.quit()
-            
-            logger.debug(f"Email notification sent: {subject}")
+            logger.info(f"Email sent: {subject}")
             return True
-            
         except Exception as e:
-            logger.error(f"Failed to send email notification: {str(e)}")
+            logger.error(f"Failed to send email: {e}")
             return False
     
     def _send_telegram(self, message: str) -> bool:
@@ -226,71 +153,25 @@ class NotificationService:
         Send a Telegram notification
         
         Args:
-            message: Message content to send
+            message: Message content for the Telegram notification
             
         Returns:
-            bool: True if message was sent successfully, False otherwise
+            bool: True if Telegram message was sent successfully, False otherwise
         """
-        if not self.telegram_enabled or not all([self.telegram_bot_token, self.telegram_chat_id]):
-            logger.warning("Telegram notifications disabled or missing configuration")
-            return False
-        
         try:
             url = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+            payload = {
+                'chat_id': self.telegram_chat_id,
+                'text': message
+            }
+            response = requests.post(url, json=payload)
             
-            # Handle multiple chat IDs
-            chat_ids = self.telegram_chat_id
-            if not isinstance(chat_ids, list):
-                chat_ids = [chat_ids]
-            
-            success = False
-            
-            for chat_id in chat_ids:
-                data = {
-                    "chat_id": chat_id,
-                    "text": message,
-                    "parse_mode": "HTML"
-                }
-                
-                response = requests.post(url, data=data, timeout=10)
-                
-                if response.status_code == 200:
-                    logger.debug(f"Telegram notification sent to chat ID {chat_id}")
-                    success = True
-                else:
-                    logger.error(f"Failed to send Telegram notification to {chat_id}: {response.text}")
-            
-            return success
-            
+            if response.status_code == 200:
+                logger.info("Telegram message sent successfully")
+                return True
+            else:
+                logger.error(f"Failed to send Telegram message: {response.text}")
+                return False
         except Exception as e:
-            logger.error(f"Failed to send Telegram notification: {str(e)}")
+            logger.error(f"Error sending Telegram message: {e}")
             return False
-    
-    def test_notification_channels(self) -> Dict[str, bool]:
-        """
-        Test all configured notification channels
-        
-        Returns:
-            Dict[str, bool]: Dictionary with test results for each channel
-        """
-        results = {
-            "email": False,
-            "telegram": False
-        }
-        
-        test_message = (
-            f"🧪 This is a test notification from Growatt Devices Monitor\n"
-            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"If you're receiving this, notifications are working correctly."
-        )
-        
-        # Test email
-        if self.email_enabled:
-            subject = "Test Notification - Growatt Devices Monitor"
-            results["email"] = self._send_email(subject, test_message)
-        
-        # Test Telegram
-        if self.telegram_enabled:
-            results["telegram"] = self._send_telegram(test_message)
-        
-        return results

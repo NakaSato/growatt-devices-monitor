@@ -238,9 +238,11 @@ def api_plant_detail(plant_id: int) -> Tuple[Response, int]:
         }), 500
 
 @api_blueprint.route('/devices', methods=['GET'])
+@cached_route(timeout=300, key_prefix='api_devices_')
 def api_get_devices() -> Tuple[Response, int]:
     """
     API endpoint to get the list of devices for all plants.
+    Gets devices for all plants using the pagination-aware get_device_list method.
     
     Returns:
         Tuple[Response, int]: JSON response with status code
@@ -248,96 +250,187 @@ def api_get_devices() -> Tuple[Response, int]:
     start_time = log_api_request('/api/devices')
     
     try:
-        # Check if request has cache-control header to bypass cache
-        force_refresh = request.headers.get('Cache-Control') == 'no-cache'
-        
-        if not force_refresh:
-            # Try to get from cache - access cache through current_app.extensions
-            # Try to get from cache - access cache through current_app.extensions
-            cache = current_app.extensions.get('cache')
-            if cache:
-                cached_result = None
-                # Handle different cache implementations
-                if hasattr(cache, 'get'):
-                    cached_result = cache.get('api_devices')
-                elif isinstance(cache, dict):
-                    cached_result = cache.get('api_devices')
-                
-                if cached_result:
-                    current_app.logger.info("Returning devices from cache")
-                    log_api_response('/api/devices', start_time, 200, cached_result)
-                    return jsonify(cached_result), 200
+        # Get all plants
         plants = get_plants()
-        # Validate plants data
-        if not isinstance(plants, list):
-            current_app.logger.error(f"Invalid plants data type: {type(plants)}")
-            log_api_response('/api/devices', start_time, 500, error="Invalid plants data")
-            return jsonify({"status": "error", "message": "Invalid plants data"}), 500
-            
-        plant_ids = [plant['id'] for plant in plants if isinstance(plant, dict) and 'id' in plant]
         
-        if not plant_ids:
-            log_api_response('/api/devices', start_time, 200, [])
-            return jsonify([]), 200
+        # Log detailed information about plants
+        current_app.logger.info(f"Retrieved {len(plants) if isinstance(plants, list) else 0} plants for device listing")
         
-        # Create a copy of the app context to pass to worker threads
-        app_context = current_app._get_current_object()
+        # Check for authentication errors
+        if plants and isinstance(plants, list) and len(plants) > 0 and plants[0].get('error'):
+            error_msg = plants[0].get('error', 'Authentication error')
+            log_api_response('/api/devices', start_time, 401, error=error_msg)
+            return jsonify({"status": "error", "message": error_msg}), 401
         
-        # Function to fetch and process devices for a single plant
-        def fetch_plant_devices(plant_id):
-            # Create a new application context for this thread
-            with app_context.app_context():
-                try:
-                    plant_devices = get_devices_for_plant(plant_id)
-                    
-                    if isinstance(plant_devices, list):
-                        device_data = plant_devices
-                    else:
-                        device_data = plant_devices.get('datas', [])
-                    
-                    result = []
-                    status_map = {
-                        '0': 'Waiting',
-                        '1': 'Online',
-                        None: 'Unknown'
-                    }
-                    
-                    for device in device_data:
-                        status = status_map.get(device.get('status'), 'Offline')
-                        
-                        result.append({
-                            "alias": device.get('alias', ''),
-                            "serial_number": device.get('sn', ''),
-                            "plant_name": device.get('plantName', ''),
-                            "total_energy": f"{device.get('eTotal', 0)} kWh",
-                            "last_update_time": device.get('lastUpdateTime', ''),
-                            "status": status
-                        })
-                    
-                    return result
-                except Exception as e:
-                    # Log the error but don't halt execution
-                    app_context.logger.error(f"Error fetching devices for plant {plant_id}: {str(e)}")
-                    return []
-        
-        # Use concurrent.futures to fetch device data in parallel
-        import concurrent.futures
-        
+        # Collect devices for all plants
         all_devices = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(plant_ids))) as executor:
-            # Submit all plant fetch tasks
-            future_to_plant = {executor.submit(fetch_plant_devices, plant_id): plant_id for plant_id in plant_ids}
-            
-            # Process results as they complete
-            for future in concurrent.futures.as_completed(future_to_plant):
-                plant_id = future_to_plant[future]
+        plants_with_errors = []
+        successful_plants_count = 0
+        retrieved_devices_count = 0
+        
+        if isinstance(plants, list):
+            for plant in plants:
                 try:
-                    devices = future.result()
-                    all_devices.extend(devices)
-                except Exception as exc:
-                    current_app.logger.error(f"Error processing plant {plant_id}: {exc}")
-                    
-        # Store in cache with TTL from config
+                    plant_id = plant.get('id')
+                    if plant_id:
+                        current_app.logger.info(f"Fetching devices for plant: {plant_id} - {plant.get('plantName', '')}")
+                        
+                        # Get start time for this plant's device fetch operation
+                        plant_fetch_start = datetime.datetime.now()
+                        
+                        try:
+                            # Use get_devices_for_plant which calls the pagination-aware get_device_list method
+                            plant_devices = get_devices_for_plant(plant_id)
+                            
+                            # Log the API response structure to help with debugging
+                            if current_app.config.get('DEBUG', False):
+                                if isinstance(plant_devices, dict):
+                                    current_app.logger.debug(f"Device response keys: {plant_devices.keys()}")
+                                    # Log additional information if result and obj keys exist
+                                    if 'result' in plant_devices and 'obj' in plant_devices:
+                                        current_app.logger.debug(f"Response contains standard Growatt API format with result: {plant_devices['result']}")
+                                        if isinstance(plant_devices['obj'], dict):
+                                            obj_keys = plant_devices['obj'].keys()
+                                            current_app.logger.debug(f"Obj keys: {obj_keys}")
+                                            if 'totalCount' in obj_keys:
+                                                current_app.logger.debug(f"Total device count: {plant_devices['obj']['totalCount']}")
+                                current_app.logger.debug(f"Device response type: {type(plant_devices)}")
+                            
+                            # Print full response data for debugging
+                            if current_app.config.get('DEBUG', False):
+                                current_app.logger.debug(f"Full response data for plant {plant_id}:")
+                                current_app.logger.debug(json.dumps(plant_devices, indent=2, ensure_ascii=False))
+                                current_app.logger.debug("="*80)
+                            
+                            # Handle case where response is an empty list, integer, or other non-list/dict type
+                            if isinstance(plant_devices, int) or (not isinstance(plant_devices, (list, dict))):
+                                error_msg = f"Unexpected response type: {type(plant_devices).__name__}"
+                                current_app.logger.error(f"Error fetching devices for plant ID {plant_id}: object of type '{type(plant_devices).__name__}' has no len()")
+                                plants_with_errors.append({
+                                    'plant_id': plant_id,
+                                    'plant_name': plant.get('plantName', ''),
+                                    'error': error_msg
+                                })
+                                continue
+                            
+                            # Handle empty list response
+                            if isinstance(plant_devices, list) and len(plant_devices) == 0:
+                                current_app.logger.info(f"No devices found for plant {plant_id}")
+                                continue
+                                
+                        except Exception as fetch_error:
+                            error_msg = f"API error: {str(fetch_error)}"
+                            current_app.logger.error(f"Error fetching devices for plant ID {plant_id}: {error_msg}")
+                            plants_with_errors.append({
+                                'plant_id': plant_id,
+                                'plant_name': plant.get('plantName', ''),
+                                'error': error_msg
+                            })
+                            continue
+                        
+                        # Calculate fetch time for this plant
+                        plant_fetch_time = (datetime.datetime.now() - plant_fetch_start).total_seconds() * 1000  # in ms
+                        
+                        # Handle dict response format (pagination response)
+                        if isinstance(plant_devices, dict):
+                            # Check for data in dict response
+                            if 'obj' in plant_devices and isinstance(plant_devices['obj'], dict) and 'datas' in plant_devices['obj']:
+                                data_list = plant_devices['obj']['datas']
+                                if isinstance(data_list, list):
+                                    devices_count = len(data_list)
+                                    retrieved_devices_count += devices_count
+                                    successful_plants_count += 1
+                                    
+                                    current_app.logger.info(
+                                        f"Successfully retrieved {devices_count} devices for plant {plant_id} "
+                                        f"in {plant_fetch_time:.2f}ms"
+                                    )
+                                    plant_devices = data_list  # Use the extracted data list for further processing
+                                else:
+                                    current_app.logger.warning(
+                                        f"Unexpected 'datas' type in response for plant {plant_id}: {type(data_list)}"
+                                    )
+                                    continue
+                            elif 'error' in plant_devices:
+                                error_msg = plant_devices.get('error', 'Unknown error')
+                                current_app.logger.warning(
+                                    f"Error fetching devices for plant {plant_id}: {error_msg} "
+                                    f"in {plant_fetch_time:.2f}ms"
+                                )
+                                plants_with_errors.append({
+                                    'plant_id': plant_id,
+                                    'plant_name': plant.get('plantName', ''),
+                                    'error': error_msg
+                                })
+                                continue
+                        
+                        # Log the response with timing information
+                        if isinstance(plant_devices, list):
+                            devices_count = len(plant_devices)
+                            retrieved_devices_count += devices_count
+                            successful_plants_count += 1
+                            
+                            current_app.logger.info(
+                                f"Successfully retrieved {devices_count} devices for plant {plant_id} "
+                                f"in {plant_fetch_time:.2f}ms"
+                            )
+                        else:
+                            current_app.logger.warning(
+                                f"Unexpected response type for plant {plant_id} devices: {type(plant_devices)} "
+                                f"in {plant_fetch_time:.2f}ms"
+                            )
+                            plants_with_errors.append({
+                                'plant_id': plant_id,
+                                'plant_name': plant.get('plantName', ''),
+                                'error': f"Unexpected response type: {type(plant_devices)}"
+                            })
+                            continue
+                        
+                        # Add plant information to each device and filter out invalid devices
+                        if isinstance(plant_devices, list):
+                            valid_devices = []
+                            for device in plant_devices:
+                                if isinstance(device, dict):
+                                    # Add plant context to each device
+                                    device['plantId'] = plant_id
+                                    device['plantName'] = plant.get('plantName', '')
+                                    
+                                    # Map API field names to frontend-friendly names for consistency
+                                    if 'deviceSn' in device and 'serial_number' not in device:
+                                        device['serial_number'] = device['deviceSn']
+                                    if 'deviceName' in device and 'alias' not in device:
+                                        device['alias'] = device['deviceName']
+                                    if 'eTotal' in device and 'total_energy' not in device:
+                                        device['total_energy'] = f"{device['eTotal']} kWh"
+                                    if 'lastUpdateTime' in device and 'last_update_time' not in device:
+                                        device['last_update_time'] = device['lastUpdateTime']
+                                    
+                                    # Check for required device fields to ensure it's a valid device
+                                    if 'deviceSn' in device or 'sn' in device or 'serial_number' in device:
+                                        valid_devices.append(device)
+                                    else:
+                                        current_app.logger.debug(f"Skipping invalid device without serial number: {device.keys() if isinstance(device, dict) else type(device)}")
+                            
+                            all_devices.extend(valid_devices)
+                            current_app.logger.debug(f"Added {len(valid_devices)} valid devices from plant {plant_id}")
+                except Exception as plant_error:
+                    error_msg = str(plant_error)
+                    current_app.logger.warning(f"Error fetching devices for plant {plant.get('id')}: {error_msg}")
+                    plants_with_errors.append({
+                        'plant_id': plant.get('id'),
+                        'plant_name': plant.get('plantName', ''),
+                        'error': error_msg
+                    })
+                    # Continue with other plants even if one fails
+        
+        # Log the final devices count and error statistics
+        current_app.logger.info(
+            f"Total devices retrieved: {len(all_devices)} from "
+            f"{successful_plants_count}/{len(plants) if isinstance(plants, list) else 0} plants. "
+            f"Plants with errors: {len(plants_with_errors)}"
+        )
+        
+        # Cache the result
         cache_ttl = current_app.config.get('DEVICE_CACHE_TTL', 300)
         
         # Access cache through current_app.extensions
@@ -345,17 +438,37 @@ def api_get_devices() -> Tuple[Response, int]:
         if cache and hasattr(cache, 'set'):
             # Use cache.set() method to store the device list
             cache.set('api_devices', all_devices, timeout=cache_ttl)
+            current_app.logger.debug(f"Cached {len(all_devices)} devices with TTL {cache_ttl}s")
         elif cache and isinstance(cache, dict):
             # Handle the case where cache is a dictionary-like object
             cache['api_devices'] = all_devices
+            current_app.logger.debug(f"Cached {len(all_devices)} devices in dictionary cache")
         
-        # Add metrics about response time to the log
+        # Create the response with success metrics
+        response = {
+            "devices": all_devices,
+            "meta": {
+                "total_devices": len(all_devices),
+                "plants_processed": len(plants) if isinstance(plants, list) else 0,
+                "successful_plants": successful_plants_count,
+                "plants_with_errors": len(plants_with_errors),
+                "errors": plants_with_errors if plants_with_errors else None,
+                "cached": cache is not None,
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+        }
         
-        # Add metrics about response time to the log
+        log_api_response('/api/devices', start_time, 200, response)
         return jsonify(all_devices), 200
     except Exception as e:
+        error_message = f"Error fetching devices: {str(e)}"
         log_api_response('/api/devices', start_time, 500, error=e)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({
+            "status": "error", 
+            "message": error_message,
+            "code": "API_ERROR",
+            "ui_message": "An error occurred while fetching devices. Please try again later."
+        }), 500
 
 @api_blueprint.route('/weather', methods=['GET'])
 def api_weather() -> Tuple[Response, int]:

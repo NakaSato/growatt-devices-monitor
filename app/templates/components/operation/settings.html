@@ -1,0 +1,29 @@
+<div class="space-y-6">
+  <!-- Settings Operation Header -->
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3"
+  >
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">
+      System Settings
+    </h2>
+    <div class="flex space-x-2">
+      <button
+        @click="saveSettings()"
+        class="flex items-center space-x-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-sm font-medium"
+        :disabled="savingSettings"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          :class="{'animate-spin': savingSettings}"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M5 13l4 4L19 7"
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
