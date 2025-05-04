@@ -1,3 +1,4 @@
+apscheduler==3.11.0
 blinker==1.9.0
 brotli==1.1.0
 cachelib==0.13.0
@@ -25,6 +26,7 @@ matplotlib==3.10.1
 numpy==2.2.5
 packaging==25.0
 pillow==11.2.1
+psutil==7.0.0
 psycopg2-binary==2.9.10
 pycparser==2.22
 pydyf==0.11.0
@@ -42,6 +44,7 @@ threadpoolctl==3.6.0
 tinycss2==1.4.0
 tinyhtml5==2.0.0
 tzdata==2025.2
+tzlocal==5.3.1
 urllib3==2.4.0
 weasyprint==65.1
 webencodings==0.5.1
