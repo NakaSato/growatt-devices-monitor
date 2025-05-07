@@ -44,6 +44,13 @@ class Config:
     POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'growattpassword')
     POSTGRES_DB = os.getenv('POSTGRES_DB', 'growattdb')
     
+    # Database connection retry settings
+    POSTGRES_MAX_RETRIES = int(os.getenv('POSTGRES_MAX_RETRIES', '5'))
+    POSTGRES_RETRY_DELAY = int(os.getenv('POSTGRES_RETRY_DELAY', '2'))
+    POSTGRES_CONNECT_TIMEOUT = int(os.getenv('POSTGRES_CONNECT_TIMEOUT', '15'))
+    POSTGRES_USE_IPV4_ONLY = os.getenv('POSTGRES_USE_IPV4_ONLY', 'False').lower() in ('true', '1', 't')
+    POSTGRES_IP_ADDRESS = os.getenv('POSTGRES_IP_ADDRESS', '')
+    
     # Growatt API credentials
     GROWATT_USERNAME = os.getenv('GROWATT_USERNAME', '')
     GROWATT_PASSWORD = os.getenv('GROWATT_PASSWORD', '')

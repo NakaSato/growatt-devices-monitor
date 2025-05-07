@@ -335,27 +335,59 @@
         const searchQuery = this.searchQuery.toLowerCase().trim();
 
         this.filteredDevices = this.devices.filter((device) => {
-          const deviceStatus = (device.status || "unknown").toLowerCase();
-          const deviceText = JSON.stringify(device).toLowerCase();
+          // Normalize status for consistent filtering - use an enhanced version of getStatusText logic
+          let deviceStatus = "waiting"; // Default status
 
-          // Status filter
-          let statusMatch = statusFilter === "all";
-          if (statusFilter === "online" && deviceStatus.includes("online")) {
-            statusMatch = true;
-          } else if (
-            statusFilter === "offline" &&
-            deviceStatus.includes("offline")
-          ) {
-            statusMatch = true;
-          } else if (
-            statusFilter === "waiting" &&
-            (deviceStatus.includes("wait") || deviceStatus === "unknown")
-          ) {
-            statusMatch = true;
+          if (device.status !== undefined && device.status !== null) {
+            // Try to parse as number first
+            const statusVal = parseInt(device.status);
+            if (!isNaN(statusVal)) {
+              // Handle numeric status codes
+              switch (statusVal) {
+                case 1:
+                  deviceStatus = "online";
+                  break;
+                case 0:
+                  deviceStatus = "offline";
+                  break;
+                case 2:
+                case 3:
+                  deviceStatus = "waiting";
+                  break;
+                default:
+                  // For any other numeric value, check if there's a string representation
+                  if (typeof device.status === 'string' && device.status.trim() !== '') {
+                    const statusLower = device.status.toLowerCase();
+                    deviceStatus = this.determineStatusFromString(statusLower);
+                  }
+              }
+            } else if (typeof device.status === 'string') {
+              // Handle string status
+              const statusLower = device.status.toLowerCase();
+              deviceStatus = this.determineStatusFromString(statusLower);
+            }
+          } else if (device.deviceStatus !== undefined && device.deviceStatus !== null) {
+            // Some APIs use deviceStatus instead of status
+            const statusLower = String(device.deviceStatus).toLowerCase();
+            deviceStatus = this.determineStatusFromString(statusLower);
+          } else if (device.last_update_time || device.lastUpdateTime) {
+            // If we have a last update time but no status, check if it's recent
+            // Use current time minus 30 minutes as threshold for offline status
+            const lastUpdate = new Date(device.last_update_time || device.lastUpdateTime);
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+            
+            if (!isNaN(lastUpdate.getTime()) && lastUpdate < thirtyMinutesAgo) {
+              deviceStatus = "offline";
+            }
           }
 
-          // Search filter
+          // Search filter (search in all device properties)
+          const deviceText = JSON.stringify(device).toLowerCase();
           const searchMatch = !searchQuery || deviceText.includes(searchQuery);
+
+          // Status filter
+          const statusMatch =
+            statusFilter === "all" || deviceStatus === statusFilter;
 
           return statusMatch && searchMatch;
         });
@@ -368,6 +400,29 @@
 
         // After filtering, calculate pagination
         this.calculatePaginationRange();
+      },
+
+      determineStatusFromString(statusLower) {
+        // Extract status from string based on common terms
+        if (statusLower.includes("normal") || 
+            statusLower.includes("online") || 
+            statusLower.includes("connected") ||
+            statusLower.includes("active")) {
+          return "online";
+        } else if (statusLower.includes("offline") || 
+                  statusLower.includes("lost") ||
+                  statusLower.includes("disconnected") ||
+                  statusLower.includes("error") ||
+                  statusLower.includes("fault")) {
+          return "offline";
+        } else if (statusLower.includes("wait") ||
+                  statusLower.includes("pending") ||
+                  statusLower.includes("connecting")) {
+          return "waiting";
+        } else {
+          // If no match, default to waiting
+          return "waiting";
+        }
       },
 
       debounceSearch() {

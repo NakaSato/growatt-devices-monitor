@@ -89,22 +89,51 @@ class DeviceStatusTracker:
             List[Dict[str, Any]]: List of device data
         """
         try:
-            query = """
-                SELECT 
-                    serial_number, 
-                    plant_id, 
-                    plant_name, 
-                    alias, 
-                    status, 
-                    last_update_time 
-                FROM devices
-                ORDER BY plant_name, alias
+            # First, check what columns are available in the devices table
+            check_columns_query = """
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'devices'
             """
             
+            column_results = self.db.query(check_columns_query)
+            columns = [col.get('column_name') for col in column_results] if column_results else []
+            
+            logger.info(f"Available columns in devices table: {columns}")
+            
+            # Build query based on available columns
+            select_columns = ['serial_number', 'plant_id', 'alias', 'status']
+            
+            # Add optional columns if they exist
+            if 'last_update_time' in columns:
+                select_columns.append('last_update_time')
+            elif 'collected_at' in columns:
+                select_columns.append('collected_at as last_update_time')
+            else:
+                # If neither time column exists, use current timestamp as fallback
+                select_columns.append("CURRENT_TIMESTAMP::text as last_update_time")
+            
+            # Construct the final query
+            columns_str = ', '.join(select_columns)
+            query = f"""
+                SELECT 
+                    {columns_str}
+                FROM devices
+                ORDER BY serial_number, alias
+            """
+            
+            logger.debug(f"Executing query: {query}")
             results = self.db.query(query)
+            
             if not results:
                 logger.warning("No devices found in database")
                 return []
+            
+            # Add a placeholder for plant_name if needed by other parts of the code
+            for device in results:
+                if 'plant_name' not in device:
+                    device['plant_name'] = device.get('alias', 'Unknown Plant')
                 
             return results
         except Exception as e:
