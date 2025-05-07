@@ -21,7 +21,7 @@ sys.path.append(parent_dir)
 
 # Import from the Growatt monitoring app
 from app.core.growatt import Growatt
-from app.config import settings
+from app.config import Config
 
 # Configure logging
 logging.basicConfig(
@@ -142,7 +142,7 @@ class GrowattSQLiteCollector:
         try:
             # Authenticate with Growatt API
             logger.info("Authenticating with Growatt API")
-            if not self.api.login(settings.GROWATT_USERNAME, settings.GROWATT_PASSWORD):
+            if not self.api.login(Config.GROWATT_USERNAME, Config.GROWATT_PASSWORD):
                 logger.error("Failed to authenticate with Growatt API")
                 self._log_collection_event("full_collection", "failed", "Authentication failed")
                 return False
@@ -177,143 +177,71 @@ class GrowattSQLiteCollector:
                 
                 logger.info(f"Processing plant {plant.get('name', 'Unknown')} (ID: {plant_id})")
                 
-                # Get devices for this plant using get_devices_by_plant_list method
+                # Try to get devices using get_device_list method instead
                 logger.info(f"Retrieving devices for plant {plant_id}")
-                devices_data = self.api.get_devices_by_plant_list(plant_id)
                 
-                if not devices_data or not devices_data.get('obj'):
-                    logger.warning(f"No devices found for plant {plant_id}")
-                    continue
-                
-                # Extract devices from different device types
-                all_devices = []
-                obj_data = devices_data.get('obj', {})
-                
-                # Process different device types (mix, max, tlx, inv, storage, etc.)
-                for device_type in ['mix', 'max', 'tlx', 'inv', 'storage']:
-                    if device_type in obj_data and obj_data[device_type]:
-                        for device in obj_data[device_type]:
+                try:
+                    # Using get_device_list method which handles pagination and has better error handling
+                    devices_response = self.api.get_device_list(plant_id)
+                    
+                    # Extract device data
+                    if devices_response and devices_response.get('result') == 1 and 'obj' in devices_response:
+                        devices_data = devices_response['obj'].get('datas', [])
+                        logger.info(f"Retrieved {len(devices_data)} devices for plant {plant_id}")
+                        
+                        # Format device data for database
+                        all_devices = []
+                        for device in devices_data:
                             # Get serial number from different possible fields
-                            sn = device.get('sn', device.get('serialNum', device.get('deviceSn')))
+                            sn = device.get('deviceSn', device.get('sn', device.get('serialNum')))
                             if sn:
+                                # Determine device type based on available fields
+                                device_type = device.get('deviceType', 'unknown')
+                                if 'deviceTypeName' in device:
+                                    device_type = device['deviceTypeName'].lower()
+                                elif device_type == '1':
+                                    device_type = 'inverter'
+                                elif device_type == '2':
+                                    device_type = 'datalogger'
+                                
                                 all_devices.append({
                                     'serial_number': sn,
                                     'plant_id': plant_id,
-                                    'alias': device.get('alias', device.get('deviceAilas', '')),
+                                    'alias': device.get('deviceAilas', device.get('alias', '')),
                                     'type': device_type,
                                     'status': device.get('status', 'unknown'),
                                     'data': json.dumps(device)
                                 })
-                
-                # Process any other device types
-                if 'other devices' in obj_data and obj_data['other devices']:
-                    for device in obj_data['other devices']:
-                        sn = device.get('sn', device.get('serialNum', device.get('deviceSn')))
-                        if sn:
-                            all_devices.append({
-                                'serial_number': sn,
-                                'plant_id': plant_id,
-                                'alias': device.get('alias', device.get('deviceAilas', '')),
-                                'type': 'other',
-                                'status': device.get('status', 'unknown'),
-                                'data': json.dumps(device)
-                            })
-                
-                logger.info(f"Retrieved {len(all_devices)} devices for plant {plant_id}")
-                
-                if all_devices:
-                    self._save_devices(all_devices)
-                
-                # Collect energy data for each device
-                for device in all_devices:
-                    sn = device['serial_number']
-                    logger.info(f"Collecting energy data for device {sn}")
-                    
-                    # For each day in the range, fetch energy data
-                    energy_records = []
-                    end_date = datetime.now()
-                    start_date = end_date - timedelta(days=days_back)
-                    
-                    # For MIX devices, use the energy_stats_daily method
-                    if device['type'] == 'mix':
-                        current_date = start_date
-                        while current_date <= end_date:
-                            date_str = current_date.strftime('%Y-%m-%d')
-                            logger.info(f"Fetching energy data for {sn} on {date_str}")
+                        
+                        if all_devices:
+                            self._save_devices(all_devices)
                             
+                            # Try to fetch mix IDs if available
                             try:
-                                # Get energy data from the API
-                                energy_data = self.api.get_energy_stats_daily(date_str, plant_id, sn)
-                                
-                                if energy_data and energy_data.get('result') == 1 and energy_data.get('obj'):
-                                    obj_data = energy_data.get('obj', {})
-                                    daily_energy = obj_data.get('etouser', 0)
+                                mix_ids = self.api.get_mix_ids(plant_id)
+                                if mix_ids:
+                                    logger.info(f"Found {len(mix_ids)} MIX IDs for plant {plant_id}")
                                     
-                                    # Try to extract peak power from charts data
-                                    peak_power = 0
-                                    if 'charts' in obj_data and 'ppv' in obj_data['charts']:
-                                        ppv_data = obj_data['charts']['ppv']
-                                        if ppv_data and isinstance(ppv_data, list):
-                                            # Get max value from the ppv chart data
-                                            ppv_values = [float(val) for val in ppv_data if val and val != '0']
-                                            if ppv_values:
-                                                peak_power = max(ppv_values)
-                                    
-                                    energy_record = {
-                                        'plant_id': plant_id,
-                                        'mix_sn': sn,
-                                        'date': date_str,
-                                        'daily_energy': daily_energy,
-                                        'peak_power': peak_power
-                                    }
-                                    energy_records.append(energy_record)
-                                
-                                # To avoid overloading the API
-                                time.sleep(0.5)
-                            except Exception as e:
-                                logger.error(f"Error fetching energy data for {sn} on {date_str}: {e}")
-                            
-                            current_date += timedelta(days=1)
+                                    # Process MIX devices
+                                    for mix_data in mix_ids:
+                                        if len(mix_data) >= 1:
+                                            mix_sn = mix_data[0]
+                                            logger.info(f"Processing MIX device: {mix_sn}")
+                                            
+                                            # Collect energy data for the MIX
+                                            energy_records = self._collect_mix_energy_data(plant_id, mix_sn, days_back)
+                                            if energy_records:
+                                                self._save_energy_data(energy_records)
+                            except Exception as mix_error:
+                                logger.error(f"Error fetching MIX IDs for plant {plant_id}: {mix_error}")
+                    else:
+                        logger.warning(f"No devices found for plant {plant_id} or invalid response format")
                     
-                    if energy_records:
-                        self._save_energy_data(energy_records)
+                except Exception as device_error:
+                    logger.error(f"Error fetching devices for plant {plant_id}: {device_error}")
                 
                 # Collect weather data for the plant
-                logger.info(f"Collecting weather data for plant {plant_id}")
-                try:
-                    weather_data = self.api.get_weather(plant_id)
-                    if weather_data and weather_data.get('result') == 1 and weather_data.get('obj'):
-                        obj_data = weather_data.get('obj', {})
-                        
-                        # If the API returns weather data in a different format,
-                        # we'll need to adapt this extraction logic
-                        current_date = datetime.now().strftime('%Y-%m-%d')
-                        
-                        # Extract temperature and condition from the response
-                        temperature = None
-                        condition = None
-                        
-                        # Try to find temperature and condition in the response
-                        if 'weatherTemper' in obj_data:
-                            temperature = obj_data.get('weatherTemper')
-                        elif 'weatherInfo' in obj_data and 'temp' in obj_data['weatherInfo']:
-                            temperature = obj_data['weatherInfo'].get('temp')
-                        
-                        if 'weatherType' in obj_data:
-                            condition = obj_data.get('weatherType')
-                        elif 'weatherInfo' in obj_data and 'condition' in obj_data['weatherInfo']:
-                            condition = obj_data['weatherInfo'].get('condition')
-                        
-                        if temperature is not None or condition is not None:
-                            weather_record = {
-                                'plant_id': plant_id,
-                                'date': current_date,
-                                'temperature': temperature,
-                                'condition': condition
-                            }
-                            self._save_weather_data([weather_record])
-                except Exception as e:
-                    logger.error(f"Error fetching weather data for plant {plant_id}: {e}")
+                self._collect_weather_data(plant_id)
             
             # Log collection completion
             self._log_collection_event("full_collection", "completed", 
@@ -331,6 +259,93 @@ class GrowattSQLiteCollector:
             logger.error(f"Error in data collection process: {e}", exc_info=True)
             self._log_collection_event("full_collection", "failed", f"Error: {str(e)}")
             return False
+    
+    def _collect_mix_energy_data(self, plant_id, mix_sn, days_back):
+        """Collect energy data for a MIX device"""
+        logger.info(f"Collecting energy data for MIX device {mix_sn}")
+        
+        energy_records = []
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.strftime('%Y-%m-%d')
+            logger.info(f"Fetching energy data for {mix_sn} on {date_str}")
+            
+            try:
+                # Get energy data from the API
+                energy_data = self.api.get_energy_stats_daily(date_str, plant_id, mix_sn)
+                
+                if energy_data and energy_data.get('result') == 1 and energy_data.get('obj'):
+                    obj_data = energy_data.get('obj', {})
+                    daily_energy = obj_data.get('etouser', 0)
+                    
+                    # Try to extract peak power from charts data
+                    peak_power = 0
+                    if 'charts' in obj_data and 'ppv' in obj_data['charts']:
+                        ppv_data = obj_data['charts']['ppv']
+                        if ppv_data and isinstance(ppv_data, list):
+                            # Get max value from the ppv chart data
+                            ppv_values = [float(val) for val in ppv_data if val and val != '0']
+                            if ppv_values:
+                                peak_power = max(ppv_values)
+                    
+                    energy_record = {
+                        'plant_id': plant_id,
+                        'mix_sn': mix_sn,
+                        'date': date_str,
+                        'daily_energy': daily_energy,
+                        'peak_power': peak_power
+                    }
+                    energy_records.append(energy_record)
+                
+                # To avoid overloading the API
+                time.sleep(0.5)
+            except Exception as e:
+                logger.error(f"Error fetching energy data for {mix_sn} on {date_str}: {e}")
+            
+            current_date += timedelta(days=1)
+        
+        return energy_records
+    
+    def _collect_weather_data(self, plant_id):
+        """Collect weather data for a plant"""
+        logger.info(f"Collecting weather data for plant {plant_id}")
+        try:
+            weather_data = self.api.get_weather(plant_id)
+            if weather_data and weather_data.get('result') == 1 and weather_data.get('obj'):
+                obj_data = weather_data.get('obj', {})
+                
+                # If the API returns weather data in a different format,
+                # we'll need to adapt this extraction logic
+                current_date = datetime.now().strftime('%Y-%m-%d')
+                
+                # Extract temperature and condition from the response
+                temperature = None
+                condition = None
+                
+                # Try to find temperature and condition in the response
+                if 'weatherTemper' in obj_data:
+                    temperature = obj_data.get('weatherTemper')
+                elif 'weatherInfo' in obj_data and 'temp' in obj_data['weatherInfo']:
+                    temperature = obj_data['weatherInfo'].get('temp')
+                
+                if 'weatherType' in obj_data:
+                    condition = obj_data.get('weatherType')
+                elif 'weatherInfo' in obj_data and 'condition' in obj_data['weatherInfo']:
+                    condition = obj_data['weatherInfo'].get('condition')
+                
+                if temperature is not None or condition is not None:
+                    weather_record = {
+                        'plant_id': plant_id,
+                        'date': current_date,
+                        'temperature': temperature,
+                        'condition': condition
+                    }
+                    self._save_weather_data([weather_record])
+        except Exception as e:
+            logger.error(f"Error fetching weather data for plant {plant_id}: {e}")
     
     def _save_plants(self, plants):
         """Save plant data to the database"""
@@ -364,6 +379,7 @@ class GrowattSQLiteCollector:
     def _save_devices(self, devices):
         """Save device data to the database"""
         try:
+            new_devices = 0
             for device in devices:
                 sn = device.get('serial_number')
                 
@@ -385,11 +401,12 @@ class GrowattSQLiteCollector:
                     datetime.now()
                 ))
                 
+                new_devices += 1
                 self.devices_count += 1
             
             self.conn.commit()
-            logger.info(f"Saved {self.devices_count} devices to database")
-            self._log_collection_event("devices", "saved", f"Saved {self.devices_count} devices")
+            logger.info(f"Saved {new_devices} devices to database (total: {self.devices_count})")
+            self._log_collection_event("devices", "saved", f"Saved {new_devices} devices")
             return True
         except sqlite3.Error as e:
             logger.error(f"Error saving devices to database: {e}")
@@ -418,7 +435,7 @@ class GrowattSQLiteCollector:
                 self.energy_records_count += 1
             
             self.conn.commit()
-            logger.info(f"Saved {records_saved} energy records to database")
+            logger.info(f"Saved {records_saved} energy records to database (total: {self.energy_records_count})")
             self._log_collection_event("energy", "saved", f"Saved {records_saved} energy records")
             return True
         except sqlite3.Error as e:
@@ -447,7 +464,7 @@ class GrowattSQLiteCollector:
                 self.weather_records_count += 1
             
             self.conn.commit()
-            logger.info(f"Saved {records_saved} weather records to database")
+            logger.info(f"Saved {records_saved} weather records to database (total: {self.weather_records_count})")
             self._log_collection_event("weather", "saved", f"Saved {records_saved} weather records")
             return True
         except sqlite3.Error as e:
@@ -500,6 +517,7 @@ def main():
     parser = argparse.ArgumentParser(description='Collect and store Growatt data in SQLite')
     parser.add_argument('--days', type=int, default=7, help='Number of days of historical data to collect')
     parser.add_argument('--reset', action='store_true', help='Reset the database before collection')
+    parser.add_argument('--limit', type=int, default=0, help='Limit the number of plants to process (0 for all)')
     
     args = parser.parse_args()
     

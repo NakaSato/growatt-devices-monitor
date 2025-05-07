@@ -239,10 +239,34 @@ def init_db():
                 )
             ''')
             
+            # Create files table for storing files
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS files (
+                    id SERIAL PRIMARY KEY,
+                    filename TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    file_type TEXT,
+                    content BYTEA NOT NULL,
+                    plant_id TEXT,
+                    device_id TEXT,
+                    size_bytes INTEGER,
+                    md5_hash TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    metadata JSONB,
+                    FOREIGN KEY (plant_id) REFERENCES plants (id),
+                    FOREIGN KEY (device_id) REFERENCES devices (serial_number),
+                    UNIQUE(file_path)
+                )
+            ''')
+            
             # Create indexes for faster queries
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_energy_date ON energy_stats(date)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_energy_mix_sn ON energy_stats(mix_sn)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_devices_plant_id ON devices(plant_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_files_plant_id ON files(plant_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_files_device_id ON files(device_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_files_filename ON files(filename)')
             
             conn.commit()
             logger.info("Database tables initialized successfully for PostgreSQL database")
@@ -478,4 +502,263 @@ class DatabaseConnector:
             return False
         except Exception as e:
             logger.error(f"Unexpected error saving weather data: {e}")
+            return False
+    
+    def save_file_to_db(self, 
+                        filename: str, 
+                        file_path: str, 
+                        content: bytes, 
+                        file_type: Optional[str] = None, 
+                        plant_id: Optional[str] = None, 
+                        device_id: Optional[str] = None, 
+                        metadata: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Save a file to the database as binary data.
+        
+        Args:
+            filename: Original filename
+            file_path: Path of the file (used as a unique identifier)
+            content: Binary content of the file
+            file_type: MIME type or extension of the file
+            plant_id: Associated plant ID (optional)
+            device_id: Associated device ID (optional)
+            metadata: Additional metadata as a JSON dictionary (optional)
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            import hashlib
+            
+            # Calculate MD5 hash for file integrity
+            md5_hash = hashlib.md5(content).hexdigest()
+            size_bytes = len(content)
+            
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    """
+                    INSERT INTO files
+                    (filename, file_path, file_type, content, plant_id, device_id, 
+                     size_bytes, md5_hash, created_at, last_updated, metadata)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s)
+                    ON CONFLICT (file_path) DO UPDATE
+                    SET content = %s, 
+                        file_type = %s,
+                        plant_id = %s,
+                        device_id = %s,
+                        size_bytes = %s,
+                        md5_hash = %s,
+                        last_updated = NOW(),
+                        metadata = %s
+                    """,
+                    (
+                        filename, 
+                        file_path, 
+                        file_type, 
+                        psycopg2.Binary(content), 
+                        plant_id, 
+                        device_id, 
+                        size_bytes, 
+                        md5_hash,
+                        psycopg2.extras.Json(metadata) if metadata else None,
+                        # Values for the ON CONFLICT UPDATE
+                        psycopg2.Binary(content),
+                        file_type,
+                        plant_id,
+                        device_id,
+                        size_bytes,
+                        md5_hash,
+                        psycopg2.extras.Json(metadata) if metadata else None
+                    )
+                )
+                conn.commit()
+                
+            logger.info(f"Successfully saved file to database: {file_path} ({size_bytes} bytes)")
+            return True
+            
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving file: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error saving file: {e}")
+            return False
+    
+    def get_file_from_db(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a file from the database by its path.
+        
+        Args:
+            file_path: Path of the file to retrieve
+            
+        Returns:
+            Optional[Dict[str, Any]]: Dictionary with file information and content, or None if not found
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    """
+                    SELECT id, filename, file_path, file_type, content, plant_id, device_id, 
+                           size_bytes, md5_hash, created_at, last_updated, metadata
+                    FROM files
+                    WHERE file_path = %s
+                    """,
+                    (file_path,)
+                )
+                
+                result = cursor.fetchone()
+                
+                if result:
+                    # Convert to regular dict and ensure content is bytes
+                    file_info = dict(result)
+                    
+                    # psycopg2 returns memoryview, convert to bytes
+                    if isinstance(file_info.get('content'), memoryview):
+                        file_info['content'] = bytes(file_info['content'])
+                        
+                    # Calculate MD5 to verify integrity
+                    import hashlib
+                    md5_hash = hashlib.md5(file_info['content']).hexdigest()
+                    if md5_hash != file_info.get('md5_hash'):
+                        logger.warning(f"MD5 hash mismatch for file {file_path}. Stored: {file_info.get('md5_hash')}, Calculated: {md5_hash}")
+                    
+                    return file_info
+                else:
+                    logger.info(f"File not found in database: {file_path}")
+                    return None
+                
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error retrieving file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error retrieving file: {e}")
+            return None
+    
+    def file_exists_in_db(self, file_path: str) -> bool:
+        """
+        Check if a file exists in the database.
+        
+        Args:
+            file_path: Path of the file to check
+            
+        Returns:
+            bool: True if the file exists, False otherwise
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    """
+                    SELECT 1 FROM files WHERE file_path = %s LIMIT 1
+                    """,
+                    (file_path,)
+                )
+                
+                return cursor.fetchone() is not None
+                
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error checking file existence: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error checking file existence: {e}")
+            return False
+    
+    def list_files_in_db(self, 
+                         plant_id: Optional[str] = None, 
+                         device_id: Optional[str] = None, 
+                         file_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        List files in the database with optional filtering.
+        
+        Args:
+            plant_id: Filter by plant ID (optional)
+            device_id: Filter by device ID (optional)
+            file_type: Filter by file type (optional)
+            
+        Returns:
+            List[Dict[str, Any]]: List of file information dictionaries (without content)
+        """
+        try:
+            query = """
+                SELECT id, filename, file_path, file_type, plant_id, device_id, 
+                       size_bytes, md5_hash, created_at, last_updated, metadata
+                FROM files
+                WHERE 1=1
+            """
+            
+            params = []
+            
+            if plant_id:
+                query += " AND plant_id = %s"
+                params.append(plant_id)
+                
+            if device_id:
+                query += " AND device_id = %s"
+                params.append(device_id)
+                
+            if file_type:
+                query += " AND file_type = %s"
+                params.append(file_type)
+                
+            query += " ORDER BY created_at DESC"
+            
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                if params:
+                    cursor.execute(query, tuple(params))
+                else:
+                    cursor.execute(query)
+                
+                results = cursor.fetchall()
+                
+                return [dict(row) for row in results]
+                
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error listing files: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error listing files: {e}")
+            return []
+    
+    def delete_file_from_db(self, file_path: str) -> bool:
+        """
+        Delete a file from the database.
+        
+        Args:
+            file_path: Path of the file to delete
+            
+        Returns:
+            bool: True if the file was deleted, False otherwise
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    """
+                    DELETE FROM files WHERE file_path = %s
+                    """,
+                    (file_path,)
+                )
+                
+                deleted = cursor.rowcount > 0
+                conn.commit()
+                
+                if deleted:
+                    logger.info(f"Deleted file from database: {file_path}")
+                else:
+                    logger.info(f"File not found for deletion: {file_path}")
+                
+                return deleted
+                
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error deleting file: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error deleting file: {e}")
             return False

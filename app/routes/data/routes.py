@@ -51,7 +51,9 @@ def collect_data() -> Tuple[Dict[str, Any], int]:
     Request body (optional):
         {
             "days_back": 7,  # Number of days of historical data to collect
-            "include_weather": true  # Whether to collect weather data
+            "include_weather": true,  # Whether to collect weather data
+            "collect_all": true,  # Whether to collect all available data including raw JSON
+            "save_to_file": false  # Whether to save raw data to JSON files
         }
     
     Returns:
@@ -62,6 +64,8 @@ def collect_data() -> Tuple[Dict[str, Any], int]:
         params = request.get_json() or {}
         days_back = params.get('days_back', 7)
         include_weather = params.get('include_weather', True)
+        collect_all = params.get('collect_all', True)
+        save_to_file = params.get('save_to_file', False)
         
         # Validate parameters
         if not isinstance(days_back, int) or days_back < 1 or days_back > 30:
@@ -71,20 +75,37 @@ def collect_data() -> Tuple[Dict[str, Any], int]:
             }), 400
         
         # Initialize collector and run collection
-        collector = GrowattDataCollector()
+        collector = GrowattDataCollector(data_dir='data', save_to_file=save_to_file)
+        
+        # Enable JSON data collection if collect_all is True
+        if collect_all:
+            collector.enable_json_collection()
+            current_app.logger.info("Enabled collection of all available data including raw JSON")
+        
+        # Run the data collection
+        current_app.logger.info(f"Starting data collection with days_back={days_back}, include_weather={include_weather}")
         result = collector.collect_and_store_all_data(days_back=days_back, include_weather=include_weather)
+        
+        # Log collection stats
+        stats = result.get('results', {})
+        json_count = len(result.get('json_data', [])) if result.get('json_data') else 0
+        current_app.logger.info(f"Collection completed: {stats.get('plants', 0)} plants, {stats.get('devices', 0)} devices, "
+                       f"{stats.get('energy_stats', 0)} energy records, {stats.get('weather', 0)} weather records, "
+                       f"{json_count} JSON data items")
         
         if result.get('success'):
             return jsonify({
                 "status": "success",
                 "message": "Data collection completed successfully",
-                "stats": result.get('results', {})
+                "stats": stats,
+                "json_data_count": json_count
             }), 200
         else:
             return jsonify({
                 "status": "error",
                 "message": f"Data collection failed: {result.get('message')}",
-                "partial_results": result.get('partial_results', {})
+                "partial_results": result.get('results', {}),
+                "has_partial_data": result.get('has_partial_data', False)
             }), 500
         
     except Exception as e:
