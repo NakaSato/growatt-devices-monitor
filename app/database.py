@@ -11,10 +11,11 @@ import time
 import socket
 from pathlib import Path
 from contextlib import contextmanager
+import json
 from typing import List, Dict, Any, Optional, Union, Tuple, Generator
-
+from datetime import datetime, timedelta, date
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import RealDictCursor, Json
 from psycopg2 import pool
 
 from app.config import Config
@@ -204,6 +205,7 @@ def init_db():
                     alias TEXT,
                     type TEXT,
                     status TEXT,
+                    last_update_time TIMESTAMP,
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     raw_data JSONB,
                     FOREIGN KEY (plant_id) REFERENCES plants (id)
@@ -344,6 +346,14 @@ class DatabaseConnector:
                         logger.warning(f"Skipping plant with no ID: {plant}")
                         continue
                     
+                    # Convert last_update_time to datetime if it's a string
+                    if isinstance(plant.get('last_update_time'), str):
+                        try:
+                            plant['last_update_time'] = datetime.strptime(plant['last_update_time'], '%Y-%m-%d %H:%M:%S')
+                        except ValueError:
+                            logger.warning(f"Invalid date format for plant {plant_id}: {plant['last_update_time']}")
+                            plant['last_update_time'] = datetime.now()
+                    
                     cursor.execute(
                         """
                         INSERT INTO plants
@@ -369,71 +379,212 @@ class DatabaseConnector:
             logger.error(f"Unexpected error saving plants: {e}")
             return False
     
-    def save_device_data(self, devices: List[Dict[str, Any]]) -> bool:
+    def save_devices(self, devices_data: List[Dict[str, Any]]) -> bool:
+        """
+        Save devices data to the database
+        """
+        if not devices_data:
+            return True
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            for device in devices_data:
+                # Ensure we have all required fields
+                if not all(k in device for k in ['serial_number', 'plant_id', 'alias', 'type', 'status']):
+                    logger.warning(f"Device data missing required fields: {device}")
+                    continue
+                
+                # Convert the last_update_time string to a proper datetime object if it's a string
+                if 'last_update_time' in device and isinstance(device['last_update_time'], str):
+                    try:
+                        # Try to parse the date string in format "YYYY-MM-DD HH:MM:SS"
+                        device['last_update_time'] = datetime.strptime(device['last_update_time'], "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        # If parsing fails, use current datetime
+                        logger.warning(f"Invalid date format for last_update_time: {device['last_update_time']}")
+                        device['last_update_time'] = datetime.now()
+                
+                # Prepare raw_data as JSON
+                raw_data = json.dumps(device.get('raw_data', {}))
+                
+                # Check if the device already exists
+                cursor.execute(
+                    """
+                    SELECT serial_number FROM devices 
+                    WHERE serial_number = %s
+                    """,
+                    (device['serial_number'],)
+                )
+                exists = cursor.fetchone()
+                
+                if exists:
+                    # Update existing device
+                    cursor.execute(
+                        """
+                        UPDATE devices 
+                        SET plant_id = %s,
+                            alias = %s,
+                            type = %s,
+                            status = %s,
+                            last_update_time = %s,
+                            last_updated = NOW(),
+                            raw_data = %s
+                        WHERE serial_number = %s
+                        """,
+                        (
+                            device['plant_id'],
+                            device['alias'],
+                            device['type'],
+                            device['status'],
+                            device['last_update_time'],
+                            raw_data,
+                            device['serial_number']
+                        )
+                    )
+                else:
+                    # Insert new device
+                    cursor.execute(
+                        """
+                        INSERT INTO devices 
+                        (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
+                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
+                        """,
+                        (
+                            device['serial_number'],
+                            device['plant_id'],
+                            device['alias'],
+                            device['type'],
+                            device['status'],
+                            device['last_update_time'],
+                            raw_data
+                        )
+                    )
+            
+            conn.commit()
+            return True
+        
+        except Exception as e:
+            logger.error(f"Unexpected error saving devices: {e}")
+            if conn:
+                conn.rollback()
+                logger.info("Transaction rolled back due to error")
+            
+            # Log the first device data for debugging
+            if devices_data:
+                logger.error(f"Failed to save device data: {json.dumps(devices_data, default=str, indent=2)}")
+            
+            return False
+        
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    def save_device_data(self, devices_data: List[Dict[str, Any]]) -> bool:
         """
         Save device data to the database.
+        This is used by the data collector to save device data retrieved from the Growatt API.
         
         Args:
-            devices: List of device data dictionaries with keys:
-                     serial_number, plant_id, alias, type, status
+            devices_data: List of device data dictionaries
             
         Returns:
             bool: True if successful, False otherwise
         """
         try:
-            if not devices:
-                logger.warning("No devices to save")
-                return False
-                
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                for device in devices:
-                    sn = device.get('serial_number')
-                    plant_id = device.get('plant_id')
-                    
-                    if not sn or not plant_id:
-                        logger.warning(f"Skipping device with missing serial number or plant_id: {device}")
+                
+                for device in devices_data:
+                    if not device.get('serial_number'):
+                        logger.warning(f"Skipping device with no serial number: {device}")
                         continue
-                        
-                    # Log the device data being saved
-                    logger.debug(f"Saving device: SN={sn}, Plant={plant_id}, Type={device.get('type')}, Status={device.get('status')}")
                     
+                    # Handle last_update_time field - could be string or datetime
+                    if isinstance(device.get('last_update_time'), str):
+                        try:
+                            # Convert to datetime object if it's a string
+                            device['last_update_time'] = datetime.strptime(device['last_update_time'], '%Y-%m-%d %H:%M:%S')
+                        except ValueError:
+                            # If parsing fails, use current datetime
+                            logger.warning(f"Invalid date format for last_update_time: {device['last_update_time']}")
+                            device['last_update_time'] = datetime.now()
+                    
+                    # Prepare raw_data as JSON if present
+                    raw_data = Json(device.get('raw_data', {})) if device.get('raw_data') else Json({})
+                    
+                    # Check if the device already exists
                     cursor.execute(
                         """
-                        INSERT INTO devices
-                        (serial_number, plant_id, alias, type, status, last_updated, raw_data)
-                        VALUES (%s, %s, %s, %s, %s, NOW(), %s)
-                        ON CONFLICT (serial_number) DO UPDATE
-                        SET plant_id = %s, alias = %s, type = %s, status = %s, last_updated = NOW(), raw_data = %s
+                        SELECT serial_number FROM devices 
+                        WHERE serial_number = %s
                         """,
-                        (
-                            sn,
-                            plant_id,
-                            device.get('alias', ''),
-                            device.get('type', 'unknown'),
-                            device.get('status', 'unknown'),
-                            psycopg2.extras.Json(device),
-                            plant_id,
-                            device.get('alias', ''),
-                            device.get('type', 'unknown'),
-                            device.get('status', 'unknown'),
-                            psycopg2.extras.Json(device)
-                        )
+                        (device['serial_number'],)
                     )
+                    exists = cursor.fetchone()
                     
-                    # Log the result of the save operation
-                    logger.debug(f"Successfully saved device {sn} to database")
+                    if exists:
+                        # Update existing device
+                        cursor.execute(
+                            """
+                            UPDATE devices 
+                            SET plant_id = %s,
+                                alias = %s,
+                                type = %s,
+                                status = %s,
+                                last_update_time = %s,
+                                last_updated = NOW(),
+                                raw_data = %s
+                            WHERE serial_number = %s
+                            """,
+                            (
+                                device['plant_id'],
+                                device.get('alias', ''),
+                                device.get('type', ''),
+                                device.get('status', 'unknown'),
+                                device['last_update_time'],
+                                raw_data,
+                                device['serial_number']
+                            )
+                        )
+                    else:
+                        # Insert new device
+                        cursor.execute(
+                            """
+                            INSERT INTO devices 
+                            (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
+                            VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
+                            """,
+                            (
+                                device['serial_number'],
+                                device['plant_id'],
+                                device.get('alias', ''),
+                                device.get('type', ''),
+                                device.get('status', 'unknown'),
+                                device['last_update_time'],
+                                raw_data
+                            )
+                        )
                 
                 conn.commit()
-                logger.info(f"Successfully saved {len(devices)} devices to database")
-            return True
+                return True
+            
         except psycopg2.Error as e:
-            logger.error(f"PostgreSQL error saving devices: {e}")
+            logger.error(f"PostgreSQL error saving device data: {e}")
+            if conn:
+                conn.rollback()
             return False
         except Exception as e:
-            logger.error(f"Unexpected error saving devices: {e}")
+            logger.error(f"Unexpected error saving device data: {e}")
+            if conn:
+                conn.rollback()
             return False
-    
+
     def save_energy_data_batch(self, batch_data: List[Dict[str, Any]]) -> int:
         """
         Save energy data in batch to the database.
@@ -454,6 +605,14 @@ class DatabaseConnector:
                     if not all(key in data for key in ['plant_id', 'mix_sn', 'date', 'daily_energy']):
                         logger.warning(f"Skipping energy data with missing required fields: {data}")
                         continue
+                    
+                    # Convert date to datetime if it's a string
+                    if isinstance(data.get('date'), str):
+                        try:
+                            data['date'] = datetime.strptime(data['date'], '%Y-%m-%d')
+                        except ValueError:
+                            logger.warning(f"Invalid date format for energy data: {data['date']}")
+                            data['date'] = datetime.now().date()
                     
                     cursor.execute(
                         """
@@ -499,6 +658,14 @@ class DatabaseConnector:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
+                
+                # Convert date to datetime if it's a string
+                if isinstance(date, str):
+                    try:
+                        date = datetime.strptime(date, '%Y-%m-%d').date()
+                    except ValueError:
+                        logger.warning(f"Invalid date format for weather data: {date}")
+                        date = datetime.now().date()
                 
                 cursor.execute(
                     """

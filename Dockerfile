@@ -2,8 +2,8 @@ FROM python:3-alpine AS builder
  
 WORKDIR /app
  
-# Install build dependencies for scientific packages
-RUN apk add --no-cache build-base gcc g++ musl-dev python3-dev linux-headers
+# Install build dependencies for scientific packages and PostgreSQL
+RUN apk add --no-cache build-base gcc g++ musl-dev python3-dev linux-headers postgresql-dev
 
 RUN python3 -m venv venv
 ENV VIRTUAL_ENV=/app/venv
@@ -32,7 +32,8 @@ EXPOSE 8000
 # - libstdc++ is needed for matplotlib and other scientific packages
 # - curl for healthcheck
 # - tzdata for proper timezone support
-RUN apk add --no-cache curl libstdc++ tzdata
+# - postgresql-libs for PostgreSQL client
+RUN apk add --no-cache curl libstdc++ tzdata postgresql-libs
 
 # Change the CMD to use wsgi.py
 CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "wsgi:app"]

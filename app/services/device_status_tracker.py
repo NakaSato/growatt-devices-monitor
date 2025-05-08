@@ -68,6 +68,19 @@ class DeviceStatusTracker:
             logger.error(f"Error loading device status cache: {e}")
             self.device_statuses = {}
     
+    def load_status_cache(self):
+        """Public method to load status cache (calls the internal implementation)"""
+        if not hasattr(self, 'device_statuses') or not self.device_statuses:
+            self._load_status_cache()
+        return self.device_statuses
+    
+    def _serialize_datetime(self, obj):
+        """Helper function to serialize datetime objects to ISO format strings"""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        # Return default for other types
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+    
     def _save_status_cache(self):
         """Save current device statuses to disk"""
         cache_file = os.path.join('app', 'data', 'device_status_cache.json')
@@ -75,11 +88,29 @@ class DeviceStatusTracker:
             # Ensure directory exists
             os.makedirs(os.path.dirname(cache_file), exist_ok=True)
             
+            # Create a deep copy of the status data to avoid modifying the original
+            status_copy = {}
+            for serial, status in self.device_statuses.items():
+                status_copy[serial] = status.copy()
+                # Convert datetime objects to ISO format strings
+                if 'last_update_time' in status_copy[serial] and isinstance(status_copy[serial]['last_update_time'], datetime):
+                    status_copy[serial]['last_update_time'] = status_copy[serial]['last_update_time'].isoformat()
+                if 'last_notification_time' in status_copy[serial] and isinstance(status_copy[serial]['last_notification_time'], datetime):
+                    status_copy[serial]['last_notification_time'] = status_copy[serial]['last_notification_time'].isoformat()
+            
+            # Save to file
             with open(cache_file, 'w') as f:
-                json.dump(self.device_statuses, f)
+                json.dump(status_copy, f)
+                
             logger.debug(f"Saved status cache for {len(self.device_statuses)} devices")
         except Exception as e:
             logger.error(f"Error saving device status cache: {e}")
+    
+    def save_status_cache(self, new_status=None):
+        """Public method to save status cache"""
+        if new_status is not None:
+            self.device_statuses = new_status
+        self._save_status_cache()
     
     def get_devices(self):
         """
@@ -233,6 +264,149 @@ class DeviceStatusTracker:
         except Exception as e:
             logger.error(f"Error checking device statuses: {e}")
             return {'offline': 0, 'online': 0}
+    
+    def check_and_notify_status_changes(self, devices: List[Dict[str, Any]]) -> Dict[str, int]:
+        """
+        Check for device status changes and send notifications if needed.
+        
+        Args:
+            devices: List of device dictionaries with status information
+            
+        Returns:
+            Dict with counts of notifications sent by type
+        """
+        if not devices:
+            logger.info("No devices to check for status changes")
+            return {"online": 0, "offline": 0}
+            
+        # Initialize counters for notification tracking
+        notification_counts = {
+            "online": 0,
+            "offline": 0,
+            "failed": 0
+        }
+        
+        # Get current time for comparison
+        current_time = datetime.now()
+        
+        # Load the current device status cache
+        current_status = self.load_status_cache()
+        new_status = {}
+        
+        # Check each device for status changes
+        for device in devices:
+            serial_number = device.get("serial_number")
+            if not serial_number:
+                continue
+                
+            # Get the alias - use serial number as fallback
+            alias = device.get("alias") or serial_number
+                
+            # Get current status and last update time
+            status = device.get("status", "unknown")
+            
+            # Process timestamp - allow both datetime objects and strings
+            last_update_time_raw = device.get("last_update_time")
+            last_update_time = None
+            
+            if isinstance(last_update_time_raw, datetime):
+                last_update_time = last_update_time_raw
+            elif isinstance(last_update_time_raw, str):
+                try:
+                    # Try parsing as ISO format first (most accurate)
+                    try:
+                        last_update_time = datetime.fromisoformat(last_update_time_raw)
+                    except ValueError:
+                        # If not ISO format, try other common formats
+                        last_update_time = datetime.strptime(
+                            last_update_time_raw, "%Y-%m-%d %H:%M:%S"
+                        )
+                except ValueError:
+                    logger.warning(
+                        f"Invalid timestamp format for device {serial_number}: {last_update_time_raw}"
+                    )
+                    # Use current time as fallback
+                    last_update_time = current_time
+            else:
+                # Use current time if no timestamp provided
+                last_update_time = current_time
+                
+            # Store the new status in our cache
+            new_status[serial_number] = {
+                "status": status,
+                "last_update_time": last_update_time,
+                "alias": alias
+            }
+            
+            # Get previous status if available
+            prev_status = current_status.get(serial_number, {})
+            prev_status_value = prev_status.get("status", "unknown")
+            prev_update_time = prev_status.get("last_update_time")
+            
+            # Check for status changes that require notification
+            status_changed = status != prev_status_value
+            
+            # If device was previously unknown, don't trigger notification
+            if prev_status_value == "unknown" and status_changed:
+                logger.info(f"First status for device {alias} ({serial_number}): {status}")
+                continue
+                
+            # For offline devices, check if they've been offline for longer than the threshold
+            if status == "offline":
+                # If device wasn't previously tracked or status changed to offline
+                if status_changed or "notified_offline" not in prev_status:
+                    # Only notify if the device has been offline for longer than the threshold
+                    time_since_update = None
+                    
+                    if last_update_time:
+                        time_since_update = current_time - last_update_time
+                        
+                    # Check if we should send offline notification
+                    send_offline_notification = False
+                    
+                    # If status just changed to offline, wait for threshold
+                    if status_changed and prev_status_value != "unknown":
+                        if time_since_update and time_since_update > timedelta(minutes=self.offline_threshold_minutes):
+                            send_offline_notification = True
+                            logger.info(f"Device {alias} ({serial_number}) changed to offline and exceeds threshold")
+                    # If offline status unchanged but we haven't notified yet
+                    elif "notified_offline" not in prev_status and time_since_update and time_since_update > timedelta(minutes=self.offline_threshold_minutes):
+                        send_offline_notification = True
+                        logger.info(f"Device {alias} ({serial_number}) has gone offline")
+                        
+                    if send_offline_notification:
+                        # Send notification
+                        success = self._notify_device_offline(device)
+                        if success:
+                            new_status[serial_number]["notified_offline"] = True
+                            notification_counts["offline"] += 1
+                        else:
+                            notification_counts["failed"] += 1
+            
+            # Check for devices coming back online
+            elif status == "online" and prev_status_value == "offline" and "notified_offline" in prev_status:
+                # Device has come back online after being offline
+                success = self._notify_device_online(device)
+                if success:
+                    notification_counts["online"] += 1
+                else:
+                    notification_counts["failed"] += 1
+                    
+                # Remove the notified_offline flag
+                if "notified_offline" in new_status[serial_number]:
+                    del new_status[serial_number]["notified_offline"]
+        
+        # Save the updated status cache
+        self.save_status_cache(new_status)
+        
+        # Log results
+        logger.info(
+            f"Status check completed: {notification_counts['offline']} offline and "
+            f"{notification_counts['online']} online notifications sent, "
+            f"{notification_counts['failed']} notifications failed"
+        )
+        
+        return notification_counts
     
     def _notify_device_offline(self, device):
         """

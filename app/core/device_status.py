@@ -32,13 +32,50 @@ def is_device_offline(status: str, last_update_time: Optional[str],
     # Check if device hasn't been updated recently
     if last_update_time:
         try:
-            # Convert string timestamp to datetime
-            last_update = datetime.fromisoformat(last_update_time.replace('Z', '+00:00'))
-            threshold = datetime.now(last_update.tzinfo) - timedelta(minutes=offline_threshold_minutes)
+            # Try multiple datetime string formats
+            last_update = None
             
-            # If last update is older than threshold, consider device offline
+            # Handle different possible formats
+            try:
+                # Try ISO format (with optional Z or timezone)
+                if isinstance(last_update_time, str):
+                    last_update_time_clean = last_update_time.replace('Z', '+00:00')
+                    last_update = datetime.fromisoformat(last_update_time_clean)
+            except ValueError:
+                pass
+                
+            # Try parsing a datetime with microseconds format
+            if last_update is None and isinstance(last_update_time, str):
+                try:
+                    last_update = datetime.strptime(last_update_time, '%Y-%m-%d %H:%M:%S.%f')
+                except ValueError:
+                    pass
+            
+            # Try parsing a simple datetime format
+            if last_update is None and isinstance(last_update_time, str):
+                try:
+                    last_update = datetime.strptime(last_update_time, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    pass
+            
+            # Try parsing a unix timestamp (integer)
+            if last_update is None:
+                try:
+                    timestamp = float(last_update_time)
+                    last_update = datetime.fromtimestamp(timestamp)
+                except (ValueError, TypeError):
+                    pass
+            
+            # If we couldn't parse the timestamp in any format, log and return
+            if last_update is None:
+                logger.warning(f"Could not parse last_update_time '{last_update_time}' in any supported format")
+                return False
+            
+            # Use the parsed datetime to check if device is offline
+            threshold = datetime.now().replace(tzinfo=last_update.tzinfo) - timedelta(minutes=offline_threshold_minutes)
             return last_update < threshold
-        except (ValueError, TypeError) as e:
+            
+        except Exception as e:
             logger.warning(f"Error parsing last_update_time '{last_update_time}': {str(e)}")
     
     # Default to considering device online if we can't determine status

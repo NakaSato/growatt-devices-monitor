@@ -269,14 +269,6 @@ class GrowattDataCollector:
             logger.info("Fetching plant list from API")
             plants = self._safe_api_call(self.api.get_plants)
             
-            # Save raw plant data for debugging if needed
-            try:
-                with open('debug_plants_data.json', 'w') as f:
-                    json.dump(plants, f, indent=2)
-                logger.debug("Saved raw plants data to debug_plants_data.json")
-            except Exception as e:
-                logger.debug(f"Could not save debug data: {e}")
-            
             if not plants:
                 logger.error("No plants data returned from API")
                 return {"success": False, "message": "No plants data returned from API"}
@@ -311,13 +303,6 @@ class GrowattDataCollector:
                     logger.info(f"Fetching devices for plant {plant_id}")
                     devices = self._safe_api_call(self.api.get_device_list, plant_id)
                     
-                    # Save raw device data for debugging if needed
-                    try:
-                        with open(f'debug_devices_plant_{plant_id}.json', 'w') as f:
-                            json.dump(devices, f, indent=2)
-                    except Exception as e:
-                        logger.debug(f"Could not save debug device data: {e}")
-                    
                     if isinstance(devices, list):
                         device_data = devices
                     elif isinstance(devices, dict) and 'datas' in devices:
@@ -328,15 +313,62 @@ class GrowattDataCollector:
                     # Transform device data to match database schema
                     transformed_devices = []
                     for device in device_data:
+                        sn = device.get('sn')
+                        if not sn:
+                            logger.warning(f"Skipping device with no serial number: {device}")
+                            results["skipped_devices"].append(f"Missing SN: {device.get('alias', 'Unknown')} in plant {plant_name}")
+                            continue
+                        
+                        device_type = device.get('deviceType')
+                        device_status = device.get('status', 'unknown')
+                        last_update = device.get('lastUpdateTime') or datetime.now().isoformat()
+                        
+                        # Handle offline status
+                        is_offline = device.get('lost') == 'true' or device_status == '0'
+                        if is_offline:
+                            device_status = 'offline'
+                        elif device_status == '1':
+                            device_status = 'online'
+                        else:
+                            device_status = 'unknown'
+                        
+                        # Log device information for debugging
+                        logger.debug(f"Processing device: SN={sn}, Type={device_type}, Status={device_status}, Offline={is_offline}")
+                        
+                        # Convert datetime objects to strings in raw_data for proper JSON serialization for PostgreSQL
+                        raw_data = {}
+                        for key, value in device.items():
+                            # Handle datetime objects by converting to ISO format strings
+                            if isinstance(value, datetime):
+                                raw_data[key] = value.isoformat()
+                            else:
+                                raw_data[key] = value
+                        
+                        # Store current time as ISO format string
+                        current_time = datetime.now().isoformat()
+                        
+                        # Create the device entry with standardized field names
                         device_entry = {
-                            "serial_number": device.get('sn'),
+                            "serial_number": sn,
                             "plant_id": plant_id,
                             "plant_name": plant_name,
                             "alias": device.get('alias', ''),
-                            "type": device.get('deviceTypeName', ''),
-                            "status": device.get('status', ''),
-                            "last_update_time": device.get('lastUpdateTime', datetime.now().isoformat())
+                            "type": device_type,
+                            "status": device_status,
+                            "last_update_time": last_update,  # Add this field that's expected by the front end
+                            "last_updated": current_time,  # Add this field that's expected by database
+                            "raw_data": raw_data  # Store the preprocessed raw device data
                         }
+                        
+                        # Convert string last_update_time to datetime if it's a string
+                        if isinstance(device_entry["last_update_time"], str):
+                            try:
+                                # Try to parse the datetime string to ensure it's valid
+                                datetime.strptime(device_entry["last_update_time"], "%Y-%m-%d %H:%M:%S")
+                            except ValueError:
+                                # If parsing fails, use current time
+                                device_entry["last_update_time"] = current_time
+                        
                         transformed_devices.append(device_entry)
                         all_devices.append(device_entry)
                     
@@ -457,13 +489,6 @@ class GrowattDataCollector:
                                               start_date=start_date_str,
                                               end_date=end_date_str)
             
-            # Save raw energy data for debugging
-            try:
-                with open(f'debug_energy_device_{device_sn}.json', 'w') as f:
-                    json.dump(energy_data, f, indent=2)
-            except Exception as e:
-                logger.debug(f"Could not save debug energy data: {e}")
-            
             if not energy_data:
                 logger.warning(f"No energy data returned for device {device_sn}")
                 return
@@ -551,14 +576,6 @@ class GrowattDataCollector:
         logger.info("Fetching plant list from API")
         plants = self._safe_api_call(self.api.get_plants)
         
-        # Save raw plant data for debugging if needed
-        try:
-            with open('debug_plants_data.json', 'w') as f:
-                json.dump(plants, f, indent=2)
-            logger.debug("Saved raw plants data to debug_plants_data.json")
-        except Exception as e:
-            logger.debug(f"Could not save debug data: {e}")
-        
         if not plants:
             logger.error("No plants data returned from API")
             results["errors"].append("No plants data returned from API")
@@ -623,9 +640,6 @@ class GrowattDataCollector:
             stats = self.api.get_energy_stats_yearly(date_str, plant_id, mix_sn)
         else:
             stats = {}
-        
-        if self.save_to_file:
-            self._save_to_json(stats, f"energy_{time_period}_{plant_id}_{mix_sn}_{date_str}.json")
             
         return stats
     
@@ -749,7 +763,7 @@ def collect_device_data():
         
         for plant_index, plant in enumerate(plants):
             plant_id = plant.get('id')
-            plant_name = plant.get('name', 'Unknown')
+            plant_name = plant.get('plantName', 'Unknown')
             
             if not plant_id:
                 logger.warning(f"Skipping plant with no ID: {plant}")
@@ -763,37 +777,34 @@ def collect_device_data():
                 logger.info(f"Fetching devices for plant {plant_id}")
                 devices_response = collector._safe_api_call(collector.api.get_device_list, plant_id)
                 
-                # Log the raw response for debugging
-                logger.debug(f"Raw devices response for plant {plant_id}: {json.dumps(devices_response, indent=2)}")
-                
-                # Initialize empty device data list
+                # Extract devices from response based on its structure
                 device_data = []
                 
-                # Log the type of response we received
-                logger.debug(f"Response type: {type(devices_response)}")
-                
                 # Handle different response formats
-                if isinstance(devices_response, dict):
-                    # Log all top-level keys for debugging
+                if devices_response is None:
+                    logger.warning(f"No response received for plant {plant_id}")
+                    device_data = []
+                elif isinstance(devices_response, dict):
                     logger.debug(f"Response keys: {list(devices_response.keys())}")
                     
-                    # Check if we have a 'datas' key in the response
-                    if 'datas' in devices_response:
-                        logger.debug("Found 'datas' key in response")
+                    # Check for different possible data structures
+                    if 'obj' in devices_response and isinstance(devices_response['obj'], dict):
+                        if 'datas' in devices_response['obj']:
+                            device_data = devices_response['obj']['datas']
+                    elif 'datas' in devices_response:
                         device_data = devices_response['datas']
-                    else:
-                        logger.warning(f"No 'datas' key found in response: {json.dumps(devices_response, indent=2)}")
-                        device_data = []
-                    
-                    # Log the number of devices found
-                    logger.debug(f"Total devices found in response: {len(device_data)}")
-                    logger.debug(f"Device data structure: {json.dumps(device_data, indent=2)}")
-                    
-                    # Log the number of devices found
-                    logger.debug(f"Total devices found in response: {len(device_data)}")
-                    logger.debug(f"Device data structure: {json.dumps(device_data, indent=2)}")
-                else:
-                    logger.warning(f"Unexpected response type: {type(devices_response)}")
+                    elif 'data' in devices_response:
+                        if isinstance(devices_response['data'], dict) and 'data' in devices_response['data']:
+                            device_data = devices_response['data']['data']
+                        elif isinstance(devices_response['data'], list):
+                            device_data = devices_response['data']
+                elif isinstance(devices_response, list):
+                    device_data = devices_response
+                
+                # Ensure device_data is a list
+                if not isinstance(device_data, list):
+                    logger.warning(f"Device data is not a list: {type(device_data)}")
+                    device_data = []
                 
                 # Transform device data to match database schema
                 transformed_devices = []
@@ -805,57 +816,80 @@ def collect_device_data():
                         continue
                     
                     device_type = device.get('deviceType')
-                    device_status = device.get('status')
+                    device_status = device.get('status', 'unknown')
                     last_update = device.get('lastUpdateTime') or datetime.now().isoformat()
                     
-                    # Log device information for debugging
-                    logger.debug(f"Processing device: SN={sn}, Type={device_type}, Status={device_status}")
+                    # Handle offline status
+                    is_offline = device.get('lost') == 'true' or device_status == '0'
+                    if is_offline:
+                        device_status = 'offline'
+                    elif device_status == '1':
+                        device_status = 'online'
+                    else:
+                        device_status = 'unknown'
+                    
+                    # Handle device alias - ensure it's a string
+                    device_alias = device.get('alias') or device.get('deviceName') or f"{device_type} {sn[-4:]}"
+                    if not isinstance(device_alias, str):
+                        device_alias = str(device_alias)
+                    
+                    # Convert datetime objects to strings in raw_data for proper JSON serialization
+                    raw_data = {}
+                    for key, value in device.items():
+                        if isinstance(value, datetime):
+                            raw_data[key] = value.isoformat()
+                        else:
+                            raw_data[key] = value
+                    
+                    # Store current time as ISO format string
+                    current_time = datetime.now().isoformat()
                     
                     # Create the device entry with standardized field names
                     device_entry = {
                         "serial_number": sn,
                         "plant_id": plant_id,
-                        "plant_name": plant_name,
-                        "alias": device.get('alias') or f"{device_type} {sn[-4:]}",
+                        "alias": device_alias,
                         "type": device_type,
                         "status": device_status,
                         "last_update_time": last_update,
-                        "raw_data": device  # Store the raw device data for reference
+                        "last_updated": current_time,
+                        "raw_data": raw_data
                     }
+                    
+                    # Convert string last_update_time to datetime if it's a string
+                    if isinstance(device_entry["last_update_time"], str):
+                        try:
+                            # Try to parse the datetime string to ensure it's valid
+                            datetime.strptime(device_entry["last_update_time"], "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            # If parsing fails, use current time
+                            device_entry["last_update_time"] = current_time
                     
                     transformed_devices.append(device_entry)
                     all_devices.append(device_entry)
-                    
-                    logger.debug(f"Added device: {device_entry['alias']} ({device_entry['serial_number']}) - {device_entry['status']}")
-                    
-                    # Create the device entry with standardized field names
-                    device_entry = {
-                        "serial_number": sn,
-                        "plant_id": plant_id,
-                        "plant_name": plant_name,
-                        "alias": device.get('alias') or device.get('deviceName') or f"{device_type} {sn[-4:]}",
-                        "type": device_type,
-                        "status": device_status,
-                        "last_update_time": last_update,
-                        "raw_data": device  # Store the raw device data for reference
-                    }
-                    
-                    transformed_devices.append(device_entry)
-                    all_devices.append(device_entry)
-                    
-                    logger.debug(f"Processed device: {device_entry['alias']} ({device_entry['serial_number']}) - {device_entry['status']}")
                 
                 logger.info(f"Found {len(transformed_devices)} devices for plant {plant_name} ({plant_id})")
                 
                 if transformed_devices:
-                    logger.debug(f"Attempting to save {len(transformed_devices)} devices to database")
-                    device_store_result = collector.db.save_device_data(transformed_devices)
-                    if device_store_result:
-                        results["devices"] += len(transformed_devices)
-                        logger.info(f"Successfully saved {len(transformed_devices)} devices to database")
-                    else:
-                        logger.error("Failed to save devices to database")
-                
+                    try:
+                        # Save devices to database with better error handling
+                        saved = collector.db.save_device_data(transformed_devices)
+                        if saved:
+                            logger.info(f"Successfully saved {len(transformed_devices)} devices for plant {plant_name}")
+                            results["devices"] += len(transformed_devices)
+                        else:
+                            logger.error(f"Failed to save devices for plant {plant_name}")
+                            results["errors"].append(f"Failed to save devices for plant {plant_name}")
+                    except Exception as e:
+                        error_msg = f"Error saving devices for plant {plant_name}: {str(e)}"
+                        logger.error(error_msg)
+                        # Log sample of the problematic data
+                        sample_data = [{k: v for k, v in d.items() if k != 'raw_data'} for d in transformed_devices[:2]]
+                        logger.error(f"Sample of problematic data: {json.dumps(sample_data, ensure_ascii=False)}")
+                        results["errors"].append(error_msg)
+                else:
+                    logger.warning(f"No devices to save for plant {plant_name}")
+            
             except Exception as e:
                 error_msg = f"Error collecting devices for plant {plant_id} ({plant_name}): {str(e)}"
                 logger.error(error_msg)
@@ -865,7 +899,7 @@ def collect_device_data():
         if all_devices:
             logger.info(f"Checking status of {len(all_devices)} devices for notifications")
             tracker = DeviceStatusTracker()
-            notification_results = tracker.check_all_devices()
+            notification_results = tracker.check_and_notify_status_changes(all_devices)
             
             # Add notification results to the overall results
             results["notifications"] = notification_results
@@ -873,7 +907,7 @@ def collect_device_data():
             logger.info(f"Notification check completed: {notification_results.get('offline', 0)} offline notifications, "
                        f"{notification_results.get('online', 0)} online notifications sent")
         
-        success = not results["errors"]
+        success = results["devices"] > 0
         message = "Device data collection completed successfully"
         if results["errors"]:
             message = "Device data collection completed with some errors"
@@ -953,3 +987,73 @@ def collect_plant_data():
     except Exception as e:
         logger.error(f"Error in plant data collection: {str(e)}", exc_info=True)
         return {"success": False, "message": str(e)}
+
+def collect_and_store_all_data(days_back=7, include_weather=True):
+    """
+    Standalone function that creates a GrowattDataCollector instance and calls collect_and_store_all_data method.
+    This simplifies calling the functionality from command line or import.
+    
+    Args:
+        days_back: Number of days of historical data to collect
+        include_weather: Whether to collect weather data
+        
+    Returns:
+        dict: Collection results with success status and statistics
+    """
+    logger.info("Starting data collection using standalone function")
+    collector = GrowattDataCollector()
+    return collector.collect_and_store_all_data(days_back=days_back, include_weather=include_weather)
+
+def transform_device_data(device_info, plant_info=None):
+    """
+    Transform raw device data from API to a structured format
+    
+    Args:
+        device_info (dict): Raw device data from API
+        plant_info (dict, optional): Plant information for context
+        
+    Returns:
+        dict: Transformed device data
+    """
+    device_data = {}
+    
+    try:
+        # Extract core device data
+        device_data["serial_number"] = device_info.get("sn", "")
+        device_data["plant_id"] = device_info.get("plantId", "")
+        device_data["alias"] = device_info.get("alias", "")
+        device_data["type"] = device_info.get("deviceType", "")
+        
+        # Extract device status
+        # Status codes: 0 = online/normal, 1 = pending/fault, etc.
+        # For lost=True, the device is considered offline regardless of status code
+        raw_status = device_info.get("status", "-1")
+        is_lost = device_info.get("lost", "true").lower() == "true"
+        
+        if is_lost or raw_status == "-1":
+            device_data["status"] = "offline"
+        elif raw_status == "0":
+            device_data["status"] = "online"
+        else:
+            device_data["status"] = "fault"
+            
+        # Extract last update time
+        last_update_time = device_info.get("lastUpdateTime", "")
+        device_data["last_update_time"] = last_update_time
+        
+        # Set the current processing time
+        device_data["last_updated"] = datetime.now().isoformat()
+        
+        # Store the raw data
+        device_data["raw_data"] = device_info
+        
+        return device_data
+    except Exception as e:
+        logger.error(f"Error transforming device data: {str(e)}")
+        return {}
+
+# For direct script execution
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    result = collect_and_store_all_data()
+    print(result)
