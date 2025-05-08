@@ -148,6 +148,7 @@ class GrowattDataCollector:
         
         for attempt in range(self.retry_count):
             try:
+                logger.debug(f"Attempt {attempt + 1}/{self.retry_count} for {func_name}")
                 result = func(*args, **kwargs)
                 
                 # Debug log the response (truncated if too large)
@@ -155,6 +156,16 @@ class GrowattDataCollector:
                 if len(result_str) > 1000:
                     result_str = result_str[:1000] + "... [truncated]"
                 logger.debug(f"API response for {func_name}: {result_str}")
+                
+                # Log type and structure of the response
+                if result is not None:
+                    logger.debug(f"Response type: {type(result)}")
+                    if hasattr(result, 'keys') and callable(result.keys):
+                        logger.debug(f"Response keys: {list(result.keys())}")
+                    elif isinstance(result, (list, tuple)):
+                        logger.debug(f"Response length: {len(result)}")
+                        if result and hasattr(result[0], 'keys') and callable(result[0].keys):
+                            logger.debug(f"First item keys: {list(result[0].keys())}")
                 
                 # Store JSON data if collection is enabled
                 if self.collect_json:
@@ -750,34 +761,100 @@ def collect_device_data():
             try:
                 # Use the api instance to get devices
                 logger.info(f"Fetching devices for plant {plant_id}")
-                devices = collector._safe_api_call(collector.api.get_device_list, plant_id)
+                devices_response = collector._safe_api_call(collector.api.get_device_list, plant_id)
                 
-                if isinstance(devices, list):
-                    device_data = devices
-                elif isinstance(devices, dict) and 'datas' in devices:
-                    device_data = devices.get('datas', [])
+                # Log the raw response for debugging
+                logger.debug(f"Raw devices response for plant {plant_id}: {json.dumps(devices_response, indent=2)}")
+                
+                # Initialize empty device data list
+                device_data = []
+                
+                # Log the type of response we received
+                logger.debug(f"Response type: {type(devices_response)}")
+                
+                # Handle different response formats
+                if isinstance(devices_response, dict):
+                    # Log all top-level keys for debugging
+                    logger.debug(f"Response keys: {list(devices_response.keys())}")
+                    
+                    # Check if we have a 'datas' key in the response
+                    if 'datas' in devices_response:
+                        logger.debug("Found 'datas' key in response")
+                        device_data = devices_response['datas']
+                    else:
+                        logger.warning(f"No 'datas' key found in response: {json.dumps(devices_response, indent=2)}")
+                        device_data = []
+                    
+                    # Log the number of devices found
+                    logger.debug(f"Total devices found in response: {len(device_data)}")
+                    logger.debug(f"Device data structure: {json.dumps(device_data, indent=2)}")
+                    
+                    # Log the number of devices found
+                    logger.debug(f"Total devices found in response: {len(device_data)}")
+                    logger.debug(f"Device data structure: {json.dumps(device_data, indent=2)}")
                 else:
-                    device_data = []
+                    logger.warning(f"Unexpected response type: {type(devices_response)}")
                 
                 # Transform device data to match database schema
                 transformed_devices = []
                 for device in device_data:
+                    # Extract device information
+                    sn = device.get('sn')
+                    if not sn:
+                        logger.warning(f"Skipping device with missing serial number: {device}")
+                        continue
+                    
+                    device_type = device.get('deviceType')
+                    device_status = device.get('status')
+                    last_update = device.get('lastUpdateTime') or datetime.now().isoformat()
+                    
+                    # Log device information for debugging
+                    logger.debug(f"Processing device: SN={sn}, Type={device_type}, Status={device_status}")
+                    
+                    # Create the device entry with standardized field names
                     device_entry = {
-                        "serial_number": device.get('sn'),
+                        "serial_number": sn,
                         "plant_id": plant_id,
                         "plant_name": plant_name,
-                        "alias": device.get('alias', ''),
-                        "type": device.get('deviceTypeName', ''),
-                        "status": device.get('status', ''),
-                        "last_update_time": device.get('lastUpdateTime', datetime.now().isoformat())
+                        "alias": device.get('alias') or f"{device_type} {sn[-4:]}",
+                        "type": device_type,
+                        "status": device_status,
+                        "last_update_time": last_update,
+                        "raw_data": device  # Store the raw device data for reference
                     }
+                    
                     transformed_devices.append(device_entry)
                     all_devices.append(device_entry)
+                    
+                    logger.debug(f"Added device: {device_entry['alias']} ({device_entry['serial_number']}) - {device_entry['status']}")
+                    
+                    # Create the device entry with standardized field names
+                    device_entry = {
+                        "serial_number": sn,
+                        "plant_id": plant_id,
+                        "plant_name": plant_name,
+                        "alias": device.get('alias') or device.get('deviceName') or f"{device_type} {sn[-4:]}",
+                        "type": device_type,
+                        "status": device_status,
+                        "last_update_time": last_update,
+                        "raw_data": device  # Store the raw device data for reference
+                    }
+                    
+                    transformed_devices.append(device_entry)
+                    all_devices.append(device_entry)
+                    
+                    logger.debug(f"Processed device: {device_entry['alias']} ({device_entry['serial_number']}) - {device_entry['status']}")
+                
+                logger.info(f"Found {len(transformed_devices)} devices for plant {plant_name} ({plant_id})")
                 
                 if transformed_devices:
+                    logger.debug(f"Attempting to save {len(transformed_devices)} devices to database")
                     device_store_result = collector.db.save_device_data(transformed_devices)
                     if device_store_result:
                         results["devices"] += len(transformed_devices)
+                        logger.info(f"Successfully saved {len(transformed_devices)} devices to database")
+                    else:
+                        logger.error("Failed to save devices to database")
                 
             except Exception as e:
                 error_msg = f"Error collecting devices for plant {plant_id} ({plant_name}): {str(e)}"
@@ -796,7 +873,7 @@ def collect_device_data():
             logger.info(f"Notification check completed: {notification_results.get('offline', 0)} offline notifications, "
                        f"{notification_results.get('online', 0)} online notifications sent")
         
-        success = results["devices"] > 0
+        success = not results["errors"]
         message = "Device data collection completed successfully"
         if results["errors"]:
             message = "Device data collection completed with some errors"

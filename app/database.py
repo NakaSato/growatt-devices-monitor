@@ -205,6 +205,7 @@ def init_db():
                     type TEXT,
                     status TEXT,
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data JSONB,
                     FOREIGN KEY (plant_id) REFERENCES plants (id)
                 )
             ''')
@@ -380,6 +381,10 @@ class DatabaseConnector:
             bool: True if successful, False otherwise
         """
         try:
+            if not devices:
+                logger.warning("No devices to save")
+                return False
+                
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 for device in devices:
@@ -389,14 +394,17 @@ class DatabaseConnector:
                     if not sn or not plant_id:
                         logger.warning(f"Skipping device with missing serial number or plant_id: {device}")
                         continue
+                        
+                    # Log the device data being saved
+                    logger.debug(f"Saving device: SN={sn}, Plant={plant_id}, Type={device.get('type')}, Status={device.get('status')}")
                     
                     cursor.execute(
                         """
                         INSERT INTO devices
-                        (serial_number, plant_id, alias, type, status, last_updated)
-                        VALUES (%s, %s, %s, %s, %s, NOW())
+                        (serial_number, plant_id, alias, type, status, last_updated, raw_data)
+                        VALUES (%s, %s, %s, %s, %s, NOW(), %s)
                         ON CONFLICT (serial_number) DO UPDATE
-                        SET plant_id = %s, alias = %s, type = %s, status = %s, last_updated = NOW()
+                        SET plant_id = %s, alias = %s, type = %s, status = %s, last_updated = NOW(), raw_data = %s
                         """,
                         (
                             sn,
@@ -404,13 +412,20 @@ class DatabaseConnector:
                             device.get('alias', ''),
                             device.get('type', 'unknown'),
                             device.get('status', 'unknown'),
+                            psycopg2.extras.Json(device),
                             plant_id,
                             device.get('alias', ''),
                             device.get('type', 'unknown'),
-                            device.get('status', 'unknown')
+                            device.get('status', 'unknown'),
+                            psycopg2.extras.Json(device)
                         )
                     )
+                    
+                    # Log the result of the save operation
+                    logger.debug(f"Successfully saved device {sn} to database")
+                
                 conn.commit()
+                logger.info(f"Successfully saved {len(devices)} devices to database")
             return True
         except psycopg2.Error as e:
             logger.error(f"PostgreSQL error saving devices: {e}")

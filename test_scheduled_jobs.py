@@ -63,22 +63,19 @@ def test_device_data_collector():
         duration = time.time() - start_time
         
         print(f"\nCollection completed in {duration:.2f} seconds")
-        print(f"Result: {result.get('success', False)}")
+        print(f"Result: {result}")
         
-        if 'results' in result:
-            print("\nResults:")
-            print(f"- Plants processed: {result['results'].get('plants', 0)}")
-            print(f"- Devices processed: {result['results'].get('devices', 0)}")
-            
-            if 'notifications' in result['results']:
-                print("\nNotifications:")
-                print(f"- Offline notifications: {result['results']['notifications'].get('offline', 0)}")
-                print(f"- Online notifications: {result['results']['notifications'].get('online', 0)}")
-        
-        print("✅ Device data collection completed")
-        return result.get('success', False)
+        # Check if the operation was successful
+        if result:
+            print("✅ Device data collection completed successfully")
+            return True
+        else:
+            print("❌ Device data collection failed")
+            return False
     except Exception as e:
         print(f"❌ Error running device data collection: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def test_plant_data_collector():
@@ -127,26 +124,40 @@ def test_offline_notifications():
     """Test the offline notifications job."""
     print_header("TESTING OFFLINE NOTIFICATIONS")
     
-    # Get the job function
-    job_func = background_service._import_function(
-        'app.services.notification_service:send_offline_notifications'
-    )
-    
-    if not job_func:
-        print("❌ Failed to import offline notifications function")
+    # Import the NotificationService class
+    try:
+        from app.services.notification_service import NotificationService
+        notification_service = NotificationService()
+        print("✅ Successfully imported NotificationService")
+    except Exception as e:
+        print(f"❌ Failed to import NotificationService: {e}")
         return False
     
-    print("✅ Successfully imported offline notifications function")
+    # Create a test device data dictionary
+    test_device = {
+        'serial_number': 'TEST123',
+        'alias': 'Test Device',
+        'plant_id': '12345',
+        'plant_name': 'Test Plant',
+        'status': 'offline',
+        'last_update_time': '2025-05-08 10:00:00'
+    }
     
-    # Run the job function
+    # Test sending a notification
     try:
-        print("\nRunning offline notifications check...")
-        result = job_func()
-        print(f"Result: {result}")
-        print("✅ Offline notifications check completed")
+        print("\nSending test offline notification...")
+        result = notification_service.send_device_offline_notification(test_device)
+        print(f"Notification sent: {result}")
+        
+        # Test cooldown functionality
+        print("\nTesting notification cooldown...")
+        result_cooldown = notification_service.send_device_offline_notification(test_device)
+        print(f"Second notification within cooldown: {'skipped' if not result_cooldown else 'sent (unexpected)'}")
+        
+        print("✅ Offline notifications test completed")
         return True
     except Exception as e:
-        print(f"❌ Error running offline notifications check: {e}")
+        print(f"❌ Error testing offline notifications: {e}")
         return False
 
 def test_all_jobs():

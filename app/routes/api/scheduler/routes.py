@@ -271,7 +271,7 @@ def setup_default_jobs():
                 "description": "Check device status and update tracking data every 30 minutes"
             },
             {
-                "func": "app.services.notification_service:send_offline_device_notifications",
+                "func": "app.services.notification_service:NotificationService.send_device_offline_notification",
                 "job_id": "send_offline_notifications",
                 "trigger": "cron",
                 "cron": "0 9 * * *",  # Every day at 9 AM

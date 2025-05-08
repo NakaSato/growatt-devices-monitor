@@ -1,6 +1,14 @@
-import requests as re
+import requests
+import re
 import hashlib
-from datetime import datetime
+import logging
+import json
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Union, Tuple
+from urllib.parse import quote
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class Growatt:
 
@@ -8,7 +16,8 @@ class Growatt:
         self.BASE_URL = "https://server.growatt.com"  # Default URL
         # Uncomment the following line to use the alternate URL
         # self.BASE_URL = "https://openapi.growatt.com"
-        self.session = re.Session()
+        self.session = requests.Session()
+        self.is_logged_in = False
 
     def _hash_password(self, password: str) -> str:
         """
@@ -70,11 +79,11 @@ class Growatt:
                     error_msg = json_res.get("msg", "Unknown error")
                     print(f"Login failed with error: {error_msg}")
                     return False
-            except re.exceptions.JSONDecodeError as e:
+            except json.JSONDecodeError as e:
                 self.is_logged_in = False
                 print(f"JSON decode error during login: {str(e)}, Response: {res.text[:200]}")
                 raise ValueError(f"Invalid response received during login: {res.text[:200]}")
-        except re.exceptions.RequestException as e:
+        except requests.exceptions.RequestException as e:
             self.is_logged_in = False
             print(f"Request error during login: {str(e)}")
             raise ValueError(f"Request failed during login: {str(e)}")
@@ -878,13 +887,14 @@ class Growatt:
         except re.exceptions.JSONDecodeError:
             raise ValueError("Invalid response received. Please ensure you are logged in.")
         
-    def get_devices_by_plant_list(self, plantId: str, currPage: int = None):
+    def get_devices_by_plant_list(self, plantId: str, currPage: int = 1):
         """
         Retrieves a list of all devices associated with a plant.
 
         Args:
             plantId (str): The ID of the plant to retrieve devices for.
             currPage (int, optional): The page number for pagination. Defaults to 1.
+
 
         Returns:
             dict: A dictionary containing detailed information about all devices in the plant.
@@ -902,27 +912,106 @@ class Growatt:
                     }
                 }
         """
+        if not hasattr(self, 'is_logged_in') or not self.is_logged_in:
+            raise ValueError("Not logged in. Please login before fetching device data.")
+            
         data = {
             "plantId": str(plantId),
             "currPage": currPage
         }
-
-        res = self.session.post(f"{self.BASE_URL}/panel/getDevicesByPlantList", data=data)
-        res.raise_for_status()
-
-        try:
-            json_res = res.json()
-            # Ensure all text values in JSON response properly handle Unicode characters
-            if isinstance(json_res, dict):
-                # The response is already parsed as a Python dictionary with Unicode support
-                pass
-
-            if not json_res:
-                raise ValueError("Empty response. Please ensure you are logged in.")
-            return json_res
-        except re.exceptions.JSONDecodeError:
-            raise ValueError("Invalid response received. Please ensure you are logged in.")
         
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Referer": f"{self.BASE_URL}/panel/plant/plantDetail?plantId={plantId}"
+        }
+        
+        try:
+            logger.debug(f"Fetching devices for plant {plantId}, page {currPage}")
+            res = self.session.post(
+                f"{self.BASE_URL}/panel/getDevicesByPlantList", 
+                data=data,
+                headers=headers,
+                timeout=30
+            )
+            
+            # Log response details for debugging
+            logger.debug(f"Response status code: {res.status_code}")
+            logger.debug(f"Response headers: {res.headers}")
+            
+            # Check for 500 error
+            if res.status_code == 500:
+                error_msg = f"Server error (500) when fetching devices for plant {plantId}"
+                logger.error(error_msg)
+                return {
+                    "result": 0,
+                    "msg": error_msg,
+                    "obj": {
+                        "totalCount": 0,
+                        "mix": [],
+                        "max": [],
+                        "tlx": [],
+                        "inv": [],
+                        "storage": []
+                    }
+                }
+                
+            res.raise_for_status()
+            
+            try:
+                json_res = res.json()
+                logger.debug(f"Raw devices response for plant {plantId}: {json.dumps(json_res, indent=2)[:500]}...")  # Log first 500 chars
+                
+                # Handle different response formats
+                if not json_res:
+                    logger.warning(f"Empty response for plant {plantId}")
+                    return {
+                        "result": 0,
+                        "msg": "Empty response",
+                        "obj": {
+                            "totalCount": 0,
+                            "mix": [],
+                            "max": [],
+                            "tlx": [],
+                            "inv": [],
+                            "storage": []
+                        }
+                    }
+                    
+                # Ensure we have the expected structure
+                if not isinstance(json_res, dict):
+                    logger.warning(f"Unexpected response format for plant {plantId}: {type(json_res)}")
+                    return {
+                        "result": 0,
+                        "msg": "Unexpected response format",
+                        "obj": {
+                            "totalCount": 0,
+                            "mix": [],
+                            "max": [],
+                            "tlx": [],
+                            "inv": [],
+                            "storage": []
+                        }
+                    }
+                
+                # If we have an error in the response
+                if 'result' in json_res and json_res.get('result') == 0:
+                    error_msg = json_res.get('msg', 'Unknown error')
+                    logger.warning(f"API returned error for plant {plantId}: {error_msg}")
+                    
+                return json_res
+                
+            except json.JSONDecodeError as e:
+                error_msg = f"Failed to decode JSON response for plant {plantId}: {str(e)}"
+                logger.error(f"{error_msg}. Response text: {res.text[:500]}...")
+                raise ValueError(error_msg)
+                
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Request failed for plant {plantId}: {str(e)}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
     def get_fault_logs(self, plantId: str, date: str = None, device_sn: str = "", page_num: int = 1, device_flag: int = 0, fault_type: int = 1):
         """
         Retrieves fault logs for a specific plant.
