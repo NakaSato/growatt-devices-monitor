@@ -156,22 +156,48 @@ class NotificationService:
             message: Message content for the Telegram notification
             
         Returns:
-            bool: True if Telegram message was sent successfully, False otherwise
+            bool: True if at least one Telegram message was sent successfully, False otherwise
         """
         try:
             url = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
-            payload = {
-                'chat_id': self.telegram_chat_id,
-                'text': message
-            }
-            response = requests.post(url, json=payload)
             
-            if response.status_code == 200:
-                logger.info("Telegram message sent successfully")
-                return True
+            # Handle chat_id as either a single value or a list
+            chat_ids = self.telegram_chat_id
+            
+            # If chat_id is a list or comma-separated string, send to all recipients
+            if isinstance(chat_ids, list):
+                success = False
+                for chat_id in chat_ids:
+                    if not chat_id:  # Skip empty chat IDs
+                        continue
+                        
+                    payload = {
+                        'chat_id': chat_id.strip(),
+                        'text': message
+                    }
+                    response = requests.post(url, json=payload)
+                    
+                    if response.status_code == 200:
+                        logger.info(f"Telegram message sent successfully to chat ID: {chat_id}")
+                        success = True
+                    else:
+                        logger.error(f"Failed to send Telegram message to chat ID {chat_id}: {response.text}")
+                
+                return success
             else:
-                logger.error(f"Failed to send Telegram message: {response.text}")
-                return False
+                # Handle single chat ID
+                payload = {
+                    'chat_id': chat_ids,
+                    'text': message
+                }
+                response = requests.post(url, json=payload)
+                
+                if response.status_code == 200:
+                    logger.info("Telegram message sent successfully")
+                    return True
+                else:
+                    logger.error(f"Failed to send Telegram message: {response.text}")
+                    return False
         except Exception as e:
             logger.error(f"Error sending Telegram message: {e}")
             return False

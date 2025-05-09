@@ -285,6 +285,16 @@ def init_db():
 # Initialize database tables when module is loaded
 init_db()
 
+# Import and run database migrations to add missing columns
+try:
+    from app.db_migration import run_migrations
+    # Run migrations to ensure all required columns exist
+    run_migrations()
+except ImportError:
+    logger.warning("db_migration module not found, skipping migrations")
+except Exception as e:
+    logger.error(f"Error running database migrations: {e}")
+
 # Add the DatabaseConnector class that's being imported
 class DatabaseConnector:
     """Database connector class for Growatt API data storage"""
@@ -411,6 +421,18 @@ class DatabaseConnector:
                 # Prepare raw_data as JSON
                 raw_data = json.dumps(device.get('raw_data', {}))
                 
+                # Check if raw_data column exists in the table
+                try:
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'devices' AND column_name = 'raw_data'
+                    """)
+                    raw_data_column_exists = cursor.fetchone() is not None
+                except Exception:
+                    # If we can't check, assume it doesn't exist
+                    raw_data_column_exists = False
+                
                 # Check if the device already exists
                 cursor.execute(
                     """
@@ -422,47 +444,88 @@ class DatabaseConnector:
                 exists = cursor.fetchone()
                 
                 if exists:
-                    # Update existing device
-                    cursor.execute(
-                        """
-                        UPDATE devices 
-                        SET plant_id = %s,
-                            alias = %s,
-                            type = %s,
-                            status = %s,
-                            last_update_time = %s,
-                            last_updated = NOW(),
-                            raw_data = %s
-                        WHERE serial_number = %s
-                        """,
-                        (
-                            device['plant_id'],
-                            device['alias'],
-                            device['type'],
-                            device['status'],
-                            device['last_update_time'],
-                            raw_data,
-                            device['serial_number']
+                    if raw_data_column_exists:
+                        # Update existing device with raw_data
+                        cursor.execute(
+                            """
+                            UPDATE devices 
+                            SET plant_id = %s,
+                                alias = %s,
+                                type = %s,
+                                status = %s,
+                                last_update_time = %s,
+                                last_updated = NOW(),
+                                raw_data = %s
+                            WHERE serial_number = %s
+                            """,
+                            (
+                                device['plant_id'],
+                                device['alias'],
+                                device['type'],
+                                device['status'],
+                                device['last_update_time'],
+                                raw_data,
+                                device['serial_number']
+                            )
                         )
-                    )
+                    else:
+                        # Update existing device without raw_data
+                        cursor.execute(
+                            """
+                            UPDATE devices 
+                            SET plant_id = %s,
+                                alias = %s,
+                                type = %s,
+                                status = %s,
+                                last_update_time = %s,
+                                last_updated = NOW()
+                            WHERE serial_number = %s
+                            """,
+                            (
+                                device['plant_id'],
+                                device['alias'],
+                                device['type'],
+                                device['status'],
+                                device['last_update_time'],
+                                device['serial_number']
+                            )
+                        )
                 else:
-                    # Insert new device
-                    cursor.execute(
-                        """
-                        INSERT INTO devices 
-                        (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
-                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
-                        """,
-                        (
-                            device['serial_number'],
-                            device['plant_id'],
-                            device['alias'],
-                            device['type'],
-                            device['status'],
-                            device['last_update_time'],
-                            raw_data
+                    if raw_data_column_exists:
+                        # Insert new device with raw_data
+                        cursor.execute(
+                            """
+                            INSERT INTO devices 
+                            (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
+                            VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
+                            """,
+                            (
+                                device['serial_number'],
+                                device['plant_id'],
+                                device['alias'],
+                                device['type'],
+                                device['status'],
+                                device['last_update_time'],
+                                raw_data
+                            )
                         )
-                    )
+                    else:
+                        # Insert new device without raw_data
+                        cursor.execute(
+                            """
+                            INSERT INTO devices 
+                            (serial_number, plant_id, alias, type, status, last_update_time, last_updated)
+                            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                            """,
+                            (
+                                device['serial_number'],
+                                device['plant_id'],
+                                device['alias'],
+                                device['type'],
+                                device['status'],
+                                device['last_update_time']
+                            )
+                        )
             
             conn.commit()
             return True
@@ -518,6 +581,18 @@ class DatabaseConnector:
                     # Prepare raw_data as JSON if present
                     raw_data = Json(device.get('raw_data', {})) if device.get('raw_data') else Json({})
                     
+                    # Check if raw_data column exists in the table
+                    try:
+                        cursor.execute("""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'devices' AND column_name = 'raw_data'
+                        """)
+                        raw_data_column_exists = cursor.fetchone() is not None
+                    except Exception:
+                        # If we can't check, assume it doesn't exist
+                        raw_data_column_exists = False
+                    
                     # Check if the device already exists
                     cursor.execute(
                         """
@@ -529,47 +604,88 @@ class DatabaseConnector:
                     exists = cursor.fetchone()
                     
                     if exists:
-                        # Update existing device
-                        cursor.execute(
-                            """
-                            UPDATE devices 
-                            SET plant_id = %s,
-                                alias = %s,
-                                type = %s,
-                                status = %s,
-                                last_update_time = %s,
-                                last_updated = NOW(),
-                                raw_data = %s
-                            WHERE serial_number = %s
-                            """,
-                            (
-                                device['plant_id'],
-                                device.get('alias', ''),
-                                device.get('type', ''),
-                                device.get('status', 'unknown'),
-                                device['last_update_time'],
-                                raw_data,
-                                device['serial_number']
+                        if raw_data_column_exists:
+                            # Update existing device with raw_data
+                            cursor.execute(
+                                """
+                                UPDATE devices 
+                                SET plant_id = %s,
+                                    alias = %s,
+                                    type = %s,
+                                    status = %s,
+                                    last_update_time = %s,
+                                    last_updated = NOW(),
+                                    raw_data = %s
+                                WHERE serial_number = %s
+                                """,
+                                (
+                                    device['plant_id'],
+                                    device.get('alias', ''),
+                                    device.get('type', ''),
+                                    device.get('status', 'unknown'),
+                                    device['last_update_time'],
+                                    raw_data,
+                                    device['serial_number']
+                                )
                             )
-                        )
+                        else:
+                            # Update existing device without raw_data
+                            cursor.execute(
+                                """
+                                UPDATE devices 
+                                SET plant_id = %s,
+                                    alias = %s,
+                                    type = %s,
+                                    status = %s,
+                                    last_update_time = %s,
+                                    last_updated = NOW()
+                                WHERE serial_number = %s
+                                """,
+                                (
+                                    device['plant_id'],
+                                    device.get('alias', ''),
+                                    device.get('type', ''),
+                                    device.get('status', 'unknown'),
+                                    device['last_update_time'],
+                                    device['serial_number']
+                                )
+                            )
                     else:
-                        # Insert new device
-                        cursor.execute(
-                            """
-                            INSERT INTO devices 
-                            (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
-                            VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
-                            """,
-                            (
-                                device['serial_number'],
-                                device['plant_id'],
-                                device.get('alias', ''),
-                                device.get('type', ''),
-                                device.get('status', 'unknown'),
-                                device['last_update_time'],
-                                raw_data
+                        if raw_data_column_exists:
+                            # Insert new device with raw_data
+                            cursor.execute(
+                                """
+                                INSERT INTO devices 
+                                (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
+                                VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
+                                """,
+                                (
+                                    device['serial_number'],
+                                    device['plant_id'],
+                                    device.get('alias', ''),
+                                    device.get('type', ''),
+                                    device.get('status', 'unknown'),
+                                    device['last_update_time'],
+                                    raw_data
+                                )
                             )
-                        )
+                        else:
+                            # Insert new device without raw_data
+                            cursor.execute(
+                                """
+                                INSERT INTO devices 
+                                (serial_number, plant_id, alias, type, status, last_update_time, last_updated)
+                                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                                """,
+                                (
+                                    device['serial_number'],
+                                    device['plant_id'],
+                                    device.get('alias', ''),
+                                    device.get('type', ''),
+                                    device.get('status', 'unknown'),
+                                    device['last_update_time']
+                                )
+                            )
                 
                 conn.commit()
                 return True
