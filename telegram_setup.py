@@ -108,7 +108,7 @@ def send_test_message(token, chat_id, message="Test message from Growatt Devices
         payload = {
             'chat_id': chat_id,
             'text': message,
-            'parse_mode': 'MarkdownV2'
+            'parse_mode': 'HTML'  # Use HTML instead of Markdown to avoid escaping issues
         }
         response = requests.post(url, json=payload)
         

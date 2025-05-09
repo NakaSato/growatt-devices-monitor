@@ -173,7 +173,8 @@ class NotificationService:
                         
                     payload = {
                         'chat_id': chat_id.strip(),
-                        'text': message
+                        'text': message,
+                        'parse_mode': 'HTML'  # Using HTML mode which has fewer escaping requirements
                     }
                     response = requests.post(url, json=payload)
                     
@@ -188,7 +189,8 @@ class NotificationService:
                 # Handle single chat ID
                 payload = {
                     'chat_id': chat_ids,
-                    'text': message
+                    'text': message,
+                    'parse_mode': 'HTML'  # Using HTML mode which has fewer escaping requirements
                 }
                 response = requests.post(url, json=payload)
                 

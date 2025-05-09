@@ -440,7 +440,15 @@ class DeviceStatusTracker:
                         pass
             
             # Prepare the notification message
-            message = device_status.prepare_device_notification(device)
+            message = (
+                "<b>⚠️ Device Offline ⚠️</b>\n\n"
+                f"<b>Device:</b> {device.get('alias', 'Unknown Device')}\n"
+                f"<b>Serial Number:</b> {serial}\n"
+                f"<b>Plant:</b> {device.get('plant_name', 'Unknown Plant')}\n"
+                f"<b>Status:</b> Offline\n"
+                f"<b>Last Seen:</b> {device.get('last_update_time', 'Unknown')}\n\n"
+                "The device has not reported its status for some time and may require attention."
+            )
             
             # Send notification
             success = self.notification_service.send_notification(
@@ -474,13 +482,13 @@ class DeviceStatusTracker:
             
             # Prepare the notification message
             message = (
-                f"🟢 Device Back Online 🟢\n\n"
-                f"Device: {device.get('alias', 'Unknown Device')}\n"
-                f"Serial Number: {serial}\n"
-                f"Plant: {device.get('plant_name', 'Unknown Plant')}\n"
-                f"Status: Online\n"
-                f"Last Seen: {device.get('last_update_time', 'Unknown')}\n\n"
-                f"The device has successfully reconnected."
+                "<b>🟢 Device Back Online 🟢</b>\n\n"
+                f"<b>Device:</b> {device.get('alias', 'Unknown Device')}\n"
+                f"<b>Serial Number:</b> {serial}\n"
+                f"<b>Plant:</b> {device.get('plant_name', 'Unknown Plant')}\n"
+                f"<b>Status:</b> Online\n"
+                f"<b>Last Seen:</b> {device.get('last_update_time', 'Unknown')}\n\n"
+                "The device has successfully reconnected."
             )
             
             # Send notification
@@ -511,7 +519,7 @@ class DeviceStatusTracker:
         
         # Test message
         message = (
-            "🔔 This is a test notification from the Growatt Devices Monitor 🔔\n\n"
+            "<b>🔔 This is a test notification from the Growatt Devices Monitor 🔔</b>\n\n"
             "If you received this message, notifications are working correctly.\n"
             f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
