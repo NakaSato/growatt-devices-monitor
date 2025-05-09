@@ -10,7 +10,7 @@ This script helps to:
 5. Troubleshoot common issues
 
 Usage:
-    python telegram_setup.py
+    python telegram_setup.py [--debug]
 """
 
 import os
@@ -18,16 +18,20 @@ import sys
 import logging
 import requests
 import time
+import argparse
 from pathlib import Path
 from datetime import datetime
+from typing import Dict, Any, Optional, Tuple, List, Union
 from dotenv import load_dotenv
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, 
-                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-def check_bot_token(token):
+def check_bot_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Verify if a Telegram bot token is valid
     
@@ -42,7 +46,11 @@ def check_bot_token(token):
         return None
         
     try:
-        response = requests.get(f"https://api.telegram.org/bot{token}/getMe")
+        response = requests.get(
+            f"https://api.telegram.org/bot{token}/getMe",
+            timeout=10
+        )
+        
         if response.status_code == 200:
             data = response.json()
             if data.get('ok'):
@@ -51,13 +59,19 @@ def check_bot_token(token):
                 logger.error(f"Bot token invalid: {data.get('description')}")
                 return None
         else:
-            logger.error(f"HTTP error when checking bot token: {response.status_code}")
+            logger.error(f"HTTP error when checking bot token: {response.status_code} - {response.text}")
             return None
+    except requests.exceptions.Timeout:
+        logger.error("Request timed out when checking bot token")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request exception when checking bot token: {e}")
+        return None
     except Exception as e:
         logger.error(f"Exception when checking bot token: {e}")
         return None
 
-def get_bot_updates(token, offset=None, timeout=30):
+def get_bot_updates(token: str, offset: Optional[int] = None, timeout: int = 30) -> Dict[str, Any]:
     """
     Get updates (messages) sent to the bot
     
@@ -67,8 +81,12 @@ def get_bot_updates(token, offset=None, timeout=30):
         timeout: The timeout for long polling
         
     Returns:
-        list: List of updates
+        dict: JSON response containing updates
     """
+    if not token:
+        logger.error("Bot token is empty")
+        return {'ok': False, 'description': 'Bot token is empty'}
+    
     params = {
         'timeout': timeout,
     }
@@ -79,19 +97,26 @@ def get_bot_updates(token, offset=None, timeout=30):
     try:
         response = requests.get(
             f"https://api.telegram.org/bot{token}/getUpdates", 
-            params=params
+            params=params,
+            timeout=timeout + 5  # Add 5 seconds to the API timeout
         )
         
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f"HTTP error when getting updates: {response.status_code}")
-            return {'ok': False}
+            logger.error(f"HTTP error when getting updates: {response.status_code} - {response.text}")
+            return {'ok': False, 'description': f'HTTP error: {response.status_code}'}
+    except requests.exceptions.Timeout:
+        logger.error("Request timed out when getting updates")
+        return {'ok': False, 'description': 'Request timed out'}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request exception when getting updates: {e}")
+        return {'ok': False, 'description': f'Request exception: {e}'}
     except Exception as e:
         logger.error(f"Exception when getting updates: {e}")
-        return {'ok': False}
+        return {'ok': False, 'description': f'Exception: {e}'}
 
-def send_test_message(token, chat_id, message="Test message from Growatt Devices Monitor"):
+def send_test_message(token: str, chat_id: str, message: str = "Test message from Growatt Devices Monitor") -> bool:
     """
     Send a test message to a chat
     
@@ -103,6 +128,14 @@ def send_test_message(token, chat_id, message="Test message from Growatt Devices
     Returns:
         bool: True if message was sent successfully, False otherwise
     """
+    if not token:
+        logger.error("Bot token is empty")
+        return False
+        
+    if not chat_id:
+        logger.error("Chat ID is empty")
+        return False
+    
     try:
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
@@ -110,14 +143,27 @@ def send_test_message(token, chat_id, message="Test message from Growatt Devices
             'text': message,
             'parse_mode': 'HTML'  # Use HTML instead of Markdown to avoid escaping issues
         }
-        response = requests.post(url, json=payload)
+        
+        # Add timeout to prevent hanging requests
+        response = requests.post(url, json=payload, timeout=10)
         
         if response.status_code == 200:
-            logger.info("Test message sent successfully")
-            return True
+            response_data = response.json()
+            if response_data.get('ok'):
+                logger.info("Test message sent successfully")
+                return True
+            else:
+                logger.error(f"Telegram API error: {response_data.get('description')}")
+                return False
         else:
-            logger.error(f"Failed to send test message: {response.text}")
+            logger.error(f"Failed to send test message: HTTP {response.status_code} - {response.text}")
             return False
+    except requests.exceptions.Timeout:
+        logger.error("Request timed out when sending test message")
+        return False
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request exception when sending test message: {e}")
+        return False
     except Exception as e:
         logger.error(f"Error sending test message: {e}")
         return False
