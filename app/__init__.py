@@ -223,8 +223,13 @@ def _init_background_service(app: Flask) -> None:
         if 'SCHEDULER_API_ENABLED' not in app.config:
             app.config['SCHEDULER_API_ENABLED'] = True
         
+        # Set the scheduler timezone from config
+        timezone = app.config.get('TIMEZONE') or os.environ.get('TIMEZONE', 'Asia/Bangkok')
+        app.config['SCHEDULER_TIMEZONE'] = timezone
+        # Ensure we set this explicitly to properly override default UTC setting
         if 'SCHEDULER_TIMEZONE' not in app.config:
-            app.config['SCHEDULER_TIMEZONE'] = app.config.get('TIMEZONE', 'UTC')
+            app.config['SCHEDULER_TIMEZONE'] = timezone
+        logger.info(f"Setting scheduler timezone to: {timezone}")
             
         # Job store configuration
         if app.config.get('USE_SQLALCHEMY_JOBSTORE', False) and 'SCHEDULER_JOBSTORES' not in app.config:

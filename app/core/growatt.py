@@ -3,12 +3,24 @@ import re
 import hashlib
 import logging
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Union, Tuple
 from urllib.parse import quote
+import pytz
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Get application timezone
+def get_timezone():
+    """Get the application timezone from environment or default to Asia/Bangkok"""
+    tz_name = os.environ.get('TIMEZONE', 'Asia/Bangkok')
+    try:
+        return pytz.timezone(tz_name)
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning(f"Unknown timezone: {tz_name}, falling back to UTC")
+        return pytz.UTC
 
 class Growatt:
 
@@ -641,7 +653,7 @@ class Growatt:
                   "action":"mixSet",    # Parameter set Action
                   "serialNum":mixSn,    # Parameter Serial Number of the inverter
                   "type":"pf_sys_year",    # Parameter set Command Type
-                  "param1":datetime.now()    # Parameter 1
+                  "param1":datetime.now(get_timezone())    # Parameter 1 with timezone
                 }
 
         res = self.session.post(f"{self.BASE_URL}/tcpSet.do", data=data)
@@ -1050,7 +1062,7 @@ class Growatt:
         """
         # Use current date if none provided
         if date is None:
-            date = datetime.now().strftime("%Y-%m-%d")
+            date = datetime.now(get_timezone()).strftime("%Y-%m-%d")
             
         # Validate inputs
         if not plantId:

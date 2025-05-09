@@ -4,11 +4,22 @@ import json
 from typing import Dict, Any, List, Optional, Union, Tuple
 from datetime import datetime, timedelta, date
 import time
+import pytz
 
 # Fix the imports from app.core.growatt - use Growatt class instead of GrowattAPI
 from app.core.growatt import Growatt
 from app.config import Config  # Import the Config class
 from app.database import DatabaseConnector
+
+# Get application timezone
+def get_timezone():
+    """Get the application timezone from environment or default to Asia/Bangkok"""
+    tz_name = os.environ.get('TIMEZONE', 'Asia/Bangkok')
+    try:
+        return pytz.timezone(tz_name)
+    except pytz.exceptions.UnknownTimeZoneError:
+        logging.warning(f"Unknown timezone: {tz_name}, falling back to UTC")
+        return pytz.UTC
 from app.services.device_status_tracker import DeviceStatusTracker
 
 # Configure logging
@@ -82,7 +93,7 @@ class GrowattDataCollector:
                 'plant_id': plant_id,
                 'device_sn': device_sn,
                 'source': source,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(get_timezone()).isoformat()
             })
         except Exception as e:
             logger.error(f"Error adding JSON data: {str(e)}")
@@ -321,7 +332,7 @@ class GrowattDataCollector:
                         
                         device_type = device.get('deviceType')
                         device_status = device.get('status', 'unknown')
-                        last_update = device.get('lastUpdateTime') or datetime.now().isoformat()
+                        last_update = device.get('lastUpdateTime') or datetime.now(get_timezone()).isoformat()
                         
                         # Handle offline status
                         is_offline = device.get('lost') == 'true' or device_status == '0'
@@ -345,7 +356,7 @@ class GrowattDataCollector:
                                 raw_data[key] = value
                         
                         # Store current time as ISO format string
-                        current_time = datetime.now().isoformat()
+                        current_time = datetime.now(get_timezone()).isoformat()
                         
                         # Create the device entry with standardized field names
                         device_entry = {
@@ -473,7 +484,7 @@ class GrowattDataCollector:
         """
         try:
             # Get data for the specified number of days
-            end_date = datetime.now()
+            end_date = datetime.now(get_timezone())
             start_date = end_date - timedelta(days=days_back)
             
             # Format dates for API
@@ -540,7 +551,7 @@ class GrowattDataCollector:
                 logger.warning(f"No weather data available for plant {plant_id}")
                 return
                 
-            today = datetime.now().strftime('%Y-%m-%d')
+            today = datetime.now(get_timezone()).strftime('%Y-%m-%d')
             
             # Extract weather info, format varies based on API response structure
             temp = None
@@ -817,7 +828,7 @@ def collect_device_data():
                     
                     device_type = device.get('deviceType')
                     device_status = device.get('status', 'unknown')
-                    last_update = device.get('lastUpdateTime') or datetime.now().isoformat()
+                    last_update = device.get('lastUpdateTime') or datetime.now(get_timezone()).isoformat()
                     
                     # Handle offline status
                     is_offline = device.get('lost') == 'true' or device_status == '0'
@@ -842,7 +853,7 @@ def collect_device_data():
                             raw_data[key] = value
                     
                     # Store current time as ISO format string
-                    current_time = datetime.now().isoformat()
+                    current_time = datetime.now(get_timezone()).isoformat()
                     
                     # Create the device entry with standardized field names
                     device_entry = {
@@ -1042,7 +1053,7 @@ def transform_device_data(device_info, plant_info=None):
         device_data["last_update_time"] = last_update_time
         
         # Set the current processing time
-        device_data["last_updated"] = datetime.now().isoformat()
+        device_data["last_updated"] = datetime.now(get_timezone()).isoformat()
         
         # Store the raw data
         device_data["raw_data"] = device_info

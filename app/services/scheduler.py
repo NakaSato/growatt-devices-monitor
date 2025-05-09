@@ -13,6 +13,7 @@ from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from flask import Flask, current_app
 from pytz import utc
+import pytz
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -39,10 +40,19 @@ def init_scheduler(app: Flask) -> None:
         'default': SQLAlchemyJobStore(url=app.config.get('SCHEDULER_JOBSTORE_URL', 'sqlite:///app/data/jobs.sqlite'))
     }
     
+    # Get timezone from app config
+    timezone_str = app.config.get('SCHEDULER_TIMEZONE') or app.config.get('TIMEZONE', 'UTC')
+    try:
+        timezone = pytz.timezone(timezone_str)
+        logger.info(f"Using timezone: {timezone}")
+    except:
+        logger.warning(f"Unknown timezone: {timezone_str}, falling back to UTC")
+        timezone = utc
+    
     # Create scheduler
     scheduler = BackgroundScheduler(
         jobstores=job_stores,
-        timezone=utc,
+        timezone=timezone,
         job_defaults={
             'coalesce': app.config.get('SCHEDULER_COALESCE', True),
             'max_instances': app.config.get('SCHEDULER_MAX_INSTANCES', 1)
@@ -116,7 +126,7 @@ def add_interval_job(
         minutes=minutes,
         hours=hours,
         days=days,
-        timezone=utc
+        timezone=scheduler.timezone
     )
     
     # Add job
@@ -173,7 +183,7 @@ def add_cron_job(
         raise ValueError("Invalid cron expression, must have 5 parts")
     
     # Create trigger from cron expression
-    trigger = CronTrigger.from_crontab(cron_expression, timezone=utc)
+    trigger = CronTrigger.from_crontab(cron_expression, timezone=scheduler.timezone)
     
     # Add job
     job = scheduler.add_job(
@@ -228,7 +238,7 @@ def add_date_job(
         run_date = datetime.fromisoformat(run_date)
     
     # Create trigger
-    trigger = DateTrigger(run_date=run_date, timezone=utc)
+    trigger = DateTrigger(run_date=run_date, timezone=scheduler.timezone)
     
     # Add job
     job = scheduler.add_job(

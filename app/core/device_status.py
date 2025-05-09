@@ -6,11 +6,23 @@ determining if devices are offline, and preparing notification data.
 """
 
 import logging
+import os
 from typing import Dict, List, Any, Optional, Union
 from datetime import datetime, timedelta
+import pytz
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Get application timezone
+def get_timezone():
+    """Get the application timezone from environment or default to Asia/Bangkok"""
+    tz_name = os.environ.get('TIMEZONE', 'Asia/Bangkok')
+    try:
+        return pytz.timezone(tz_name)
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning(f"Unknown timezone: {tz_name}, falling back to UTC")
+        return pytz.UTC
 
 def is_device_offline(status: str, last_update_time: Optional[str], 
                      offline_threshold_minutes: int = 30) -> bool:
@@ -72,7 +84,15 @@ def is_device_offline(status: str, last_update_time: Optional[str],
                 return False
             
             # Use the parsed datetime to check if device is offline
-            threshold = datetime.now().replace(tzinfo=last_update.tzinfo) - timedelta(minutes=offline_threshold_minutes)
+            # Get timezone-aware current time
+            tz = last_update.tzinfo if last_update.tzinfo else get_timezone()
+            now = datetime.now(tz)
+            threshold = now - timedelta(minutes=offline_threshold_minutes)
+            
+            # Ensure both times have timezone info for comparison
+            if last_update.tzinfo is None:
+                last_update = last_update.replace(tzinfo=tz)
+                
             return last_update < threshold
             
         except Exception as e:

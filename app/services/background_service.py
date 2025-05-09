@@ -13,6 +13,7 @@ from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+import pytz
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -55,7 +56,8 @@ class BackgroundService:
         self.app = app
         
         # Get scheduler configuration from app config
-        timezone = app.config.get('TIMEZONE', 'UTC')
+        timezone = app.config.get('SCHEDULER_TIMEZONE') or app.config.get('TIMEZONE', 'UTC')
+        logger.info(f"Initializing background service with timezone: {timezone}")
         
         # Initialize scheduler with configuration from app.config
         jobstores = {}
@@ -92,12 +94,21 @@ class BackgroundService:
             })
         
         # Create the scheduler with our configuration
+        try:
+            tz = pytz.timezone(timezone) if timezone else pytz.UTC
+            logger.info(f"Using timezone: {tz}")
+        except pytz.exceptions.UnknownTimeZoneError:
+            logger.warning(f"Unknown timezone: {timezone}, falling back to UTC")
+            tz = pytz.UTC
+            
         self.scheduler = BackgroundScheduler(
             jobstores=jobstores,
             executors=executors,
             job_defaults=job_defaults,
-            timezone=timezone
+            timezone=tz
         )
+        # Store the timezone for future reference
+        self.timezone = tz
                 
         # Configure app context for jobs
         self.app_context = app.app_context
@@ -186,7 +197,11 @@ class BackgroundService:
         description = kwargs.pop('description', None)
         wrapped_func = self._wrap_with_app_context(func)
         
-        trigger = IntervalTrigger(**kwargs)
+        # Get the timezone configured for the scheduler
+        timezone = kwargs.pop('timezone', None)
+        tz = timezone or getattr(self, 'timezone', self.scheduler.timezone)
+        
+        trigger = IntervalTrigger(timezone=tz, **kwargs)
         job = self.scheduler.add_job(
             wrapped_func,
             trigger=trigger,
@@ -236,12 +251,19 @@ class BackgroundService:
         if isinstance(cron, str):
             # Parse the cron expression
             minute, hour, day, month, day_of_week = cron.split()[:5]
+            
+            # Get the timezone configured for the scheduler
+            timezone = kwargs.pop('timezone', None)
+            tz = timezone or getattr(self, 'timezone', self.scheduler.timezone)
+            logger.info(f"Creating CronTrigger with timezone: {tz}")
+            
             trigger = CronTrigger(
                 minute=minute, 
                 hour=hour, 
                 day=day, 
                 month=month, 
-                day_of_week=day_of_week
+                day_of_week=day_of_week,
+                timezone=tz
             )
         else:
             trigger = cron
