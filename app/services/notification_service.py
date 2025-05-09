@@ -1,11 +1,23 @@
+"""
+Notification Service for Growatt Devices Monitor
+
+This module provides functionality for sending notifications through various channels
+including email and Telegram. It handles formatting, delivery, and error handling for
+device status notifications.
+"""
+
+# Standard library imports
 import logging
 import smtplib
-import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import List, Dict, Any, Optional, Union, Tuple
 from datetime import datetime
+from typing import List, Dict, Any, Optional, Union, Tuple
 
+# Third-party imports
+import requests
+
+# Application imports
 from app.config import Config
 
 # Configure logging

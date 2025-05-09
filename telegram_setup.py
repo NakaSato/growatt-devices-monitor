@@ -10,18 +10,22 @@ This script helps to:
 5. Troubleshoot common issues
 
 Usage:
-    python telegram_setup.py [--debug]
+    python telegram_setup.py [--debug] [--token BOT_TOKEN] [--chat-id CHAT_ID] [--no-wait]
 """
 
+# Standard library imports
 import os
 import sys
 import logging
-import requests
 import time
 import argparse
+import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple, List, Union
+
+# Third-party imports
+import requests
 from dotenv import load_dotenv
 
 # Configure logging
@@ -168,7 +172,7 @@ def send_test_message(token: str, chat_id: str, message: str = "Test message fro
         logger.error(f"Error sending test message: {e}")
         return False
 
-def update_env_file(bot_token, chat_id):
+def update_env_file(bot_token: str, chat_id: str) -> bool:
     """
     Update the .env file with the new Telegram configuration
     
@@ -179,11 +183,21 @@ def update_env_file(bot_token, chat_id):
     Returns:
         bool: True if the file was updated successfully, False otherwise
     """
+    if not bot_token or not chat_id:
+        logger.error("Bot token or chat ID is empty, cannot update .env file")
+        return False
+        
     try:
         env_path = Path('.env')
+        env_backup_path = Path('.env.bak')
         
-        # Read existing .env file or create a new one
+        # Create backup of existing .env file
         if env_path.exists():
+            # Create backup
+            import shutil
+            shutil.copy2(env_path, env_backup_path)
+            logger.info(f"Created backup of .env file at {env_backup_path}")
+            
             with open(env_path, 'r') as f:
                 lines = f.readlines()
                 
@@ -193,6 +207,7 @@ def update_env_file(bot_token, chat_id):
             chat_id_found = False
             
             for i, line in enumerate(lines):
+                line = line.strip()
                 if line.startswith('TELEGRAM_NOTIFICATIONS_ENABLED='):
                     lines[i] = 'TELEGRAM_NOTIFICATIONS_ENABLED=true\n'
                     telegram_enabled_found = True
@@ -226,6 +241,14 @@ def update_env_file(bot_token, chat_id):
         return True
     except Exception as e:
         logger.error(f"Error updating .env file: {e}")
+        # Restore backup if it exists
+        if env_path.exists() and env_backup_path.exists():
+            try:
+                import shutil
+                shutil.copy2(env_backup_path, env_path)
+                logger.info("Restored .env file from backup after error")
+            except Exception as backup_error:
+                logger.error(f"Failed to restore .env from backup: {backup_error}")
         return False
 
 def show_instructions():
@@ -263,6 +286,19 @@ def show_instructions():
 
 def main():
     """Main function to set up and test Telegram bot"""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Set up Telegram bot for Growatt Devices Monitor")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--token", type=str, help="Bot token to use (skips prompt)")
+    parser.add_argument("--chat-id", type=str, help="Chat ID to use (skips prompt)")
+    parser.add_argument("--no-wait", action="store_true", help="Don't wait for messages if chat ID is not provided")
+    args = parser.parse_args()
+    
+    # Set debug level if requested
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+        
+    # Show setup instructions
     show_instructions()
     
     # Load environment variables
@@ -272,27 +308,51 @@ def main():
     current_token = os.getenv('TELEGRAM_BOT_TOKEN', '')
     current_chat_id = os.getenv('TELEGRAM_CHAT_ID', '')
     
-    # Prompt for bot token
-    print(f"Current bot token: {current_token if current_token else 'Not set'}")
-    bot_token = input("Enter your Telegram bot token (leave empty to keep current): ").strip()
+    # Use command line token if provided
+    if args.token:
+        bot_token = args.token
+        print(f"Using bot token from command line")
+    else:
+        # Prompt for bot token
+        print(f"Current bot token: {current_token if current_token else 'Not set'}")
+        bot_token = input("Enter your Telegram bot token (leave empty to keep current): ").strip()
+        
+    # Use current token if no new token provided
     if not bot_token and current_token:
         bot_token = current_token
+        print(f"Using current bot token")
     
     if not bot_token:
         print("Bot token is required. Please run the script again and provide a valid token.")
-        return
+        return 1
         
     # Verify the token
     print("\nVerifying bot token...")
     bot_info = check_bot_token(bot_token)
     if not bot_info:
         print("Invalid bot token. Please check the token and try again.")
-        return
+        return 1
         
     print(f"Bot verified: @{bot_info.get('username')} - {bot_info.get('first_name')}")
     
+    # Use command line chat ID if provided
+    if args.chat_id:
+        chat_id = args.chat_id
+        print(f"Using chat ID from command line: {chat_id}")
+        
+        # Test sending a message with the provided chat ID
+        print("\nSending test message with provided chat ID...")
+        if send_test_message(bot_token, chat_id, f"Test message from Growatt Devices Monitor setup script\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"):
+            print("Test message sent successfully. Your Telegram setup is working!")
+            update_env_file(bot_token, chat_id)
+            return 0
+        else:
+            print("Failed to send test message with provided chat ID.")
+            if args.no_wait:
+                print("Exiting without further attempts.")
+                return 1
     # Check if we already have a chat ID
-    if current_chat_id:
+    elif current_chat_id:
         print(f"\nCurrent chat ID: {current_chat_id}")
         use_current = input("Use this chat ID? (y/n): ").strip().lower()
         if use_current == 'y':
@@ -313,9 +373,11 @@ def main():
     print("(Press Ctrl+C to cancel)")
     
     last_update_id = None
+    max_wait_time = 300  # 5 minutes timeout
+    start_time = time.time()
     
     try:
-        while True:
+        while time.time() - start_time < max_wait_time:
             updates = get_bot_updates(bot_token, offset=last_update_id)
             
             if updates.get('ok', False) and updates.get('result'):
@@ -359,19 +421,26 @@ def main():
                                         print(f"Bot: @{bot_info.get('username')}")
                                         print(f"Chat ID: {chat_id}")
                                         print("\nYour notifications should now work correctly.")
-                                        return
+                                        return 0
                                 else:
                                     print("Failed to send test message. Please try again with a different chat.")
-                            else:
-                                print("Waiting for another message...")
+                            
+                            # Continue waiting for more messages if the user didn't choose this chat
+                            print("Continuing to wait for messages...")
             
             # Sleep to avoid hitting rate limits
             time.sleep(2)
             
+        # If we hit the timeout
+        print("\nTimed out waiting for messages. Please run the script again when you're ready to send a message to the bot.")
+        return 1
+            
     except KeyboardInterrupt:
-        print("\nSetup cancelled.")
+        print("\nSetup cancelled by user.")
+        return 1
     except Exception as e:
         print(f"\nError during setup: {e}")
+        return 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
