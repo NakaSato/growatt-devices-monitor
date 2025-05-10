@@ -29,6 +29,5 @@ jobs:
         run: python script/collect_all_data.py
         env:
           # Add any environment variables your script needs
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GROWATT_USERNAME: ${{ secrets.GROWATT_USERNAME }}
           GROWATT_PASSWORD: ${{ secrets.GROWATT_PASSWORD }}
