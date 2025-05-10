@@ -1,13 +1,13 @@
-name: Offline Devices Notification Cron Job
+name: Growatt Data Collection Cron Job
 
 on:
   schedule:
-    # Runs every hour at minute 30
-    - cron: "30 * * * *"
+    # Runs every hour at minute 0
+    - cron: "0 * * * *"
   workflow_dispatch: # Manual trigger option
 
 jobs:
-  send_offline_notifications:
+  collect_data:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,18 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install -e .  # Install the package in development mode
 
-      - name: Run offline notifications script
+      - name: Run data collection script
         run: |
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python script/offline_devices_notification.py
+          python script/collect_all_data.py
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-          # Telegram configuration
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_NOTIFICATIONS_ENABLED: "True"
-
-          # Notification settings
-          NOTIFICATION_COOLDOWN_SECONDS: "3600" # 1 hour cooldown between notifications
+          # Growatt API credentials
+          GROWATT_USERNAME: ${{ secrets.GROWATT_USERNAME }}
+          GROWATT_PASSWORD: ${{ secrets.GROWATT_PASSWORD }}
 
           # Optional: Timezone setting
           TZ: "Asia/Bangkok" # Set to your local timezone
