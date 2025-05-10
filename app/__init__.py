@@ -99,6 +99,10 @@ def create_app(config: Optional[Dict[str, Any]] = None) -> Flask:
             if not app.config.get('DEBUG', False):
                 raise
     
+    # Initialize Azure integrations if running in Azure
+    if app.config.get('AZURE_ENVIRONMENT', False):
+        _initialize_azure_services(app)
+    
     # Import and register routes
     _register_blueprints(app)
     
@@ -180,6 +184,41 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(prediction_routes)  # Prediction routes
     app.register_blueprint(diagnosis_routes)  # Diagnosis routes
     app.register_blueprint(data_routes)  # Data routes
+
+def _initialize_azure_services(app: Flask) -> None:
+    """Initialize Azure-specific services for the application"""
+    logger.info("Initializing Azure services")
+    
+    try:
+        # Import Azure components
+        from app.azure_monitoring import azure_monitoring
+        from app.azure_storage import azure_blob_storage
+        from app.azure_keyvault import azure_keyvault
+        
+        # Initialize Azure Application Insights
+        if hasattr(azure_monitoring, 'enabled') and azure_monitoring.enabled:
+            azure_monitoring.init_app(app)
+            logger.info("Azure Application Insights initialized")
+        
+        # Initialize Azure Key Vault and load secrets
+        if hasattr(azure_keyvault, 'enabled') and azure_keyvault.enabled:
+            # Load secrets to environment variables
+            secrets_loaded = azure_keyvault.load_all_secrets_to_environment()
+            logger.info(f"Azure Key Vault initialized and loaded {len(secrets_loaded)} secrets")
+        
+        # Initialize Azure Blob Storage
+        if hasattr(azure_blob_storage, 'enabled') and azure_blob_storage.enabled:
+            logger.info("Azure Blob Storage initialized")
+            
+        # Set Azure flag in app config
+        app.config['AZURE_ENABLED'] = True
+        logger.info("Azure services initialization completed")
+    except ImportError as e:
+        logger.warning(f"Azure services could not be imported: {e}")
+        app.config['AZURE_ENABLED'] = False
+    except Exception as e:
+        logger.error(f"Error initializing Azure services: {e}")
+        app.config['AZURE_ENABLED'] = False
 
 def register_error_handlers(app: Flask) -> None:
     """

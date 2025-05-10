@@ -1,0 +1,116 @@
+{#
+  Diagnosis Result Component
+  -------------------------
+  
+  Reusable component for displaying IV curve diagnosis results.
+  
+  Parameters:
+    * card_id - ID for the card element (default: "diagnosisResultCard")
+#}
+
+{% macro diagnosis_result(card_id="diagnosisResultCard") %}
+<div class="bg-white rounded-lg shadow-md mb-4 hidden" id="{{ card_id }}">
+  <div class="px-4 py-3 bg-gradient-to-r from-green-600 to-green-500">
+    <h6 class="m-0 font-bold text-white">
+      <i class="fas fa-chart-line mr-2"></i>Diagnosis Results
+    </h6>
+  </div>
+  <div class="p-4">
+    <!-- IV Curve Chart -->
+    <div class="mb-6">
+      <canvas id="ivCurveChart" class="w-full h-80"></canvas>
+    </div>
+    
+    <!-- Module Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div>
+        <h4 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">Module Information</h4>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Module ID:</span>
+            <span class="text-sm font-medium" id="resultModuleId">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Plant Name:</span>
+            <span class="text-sm font-medium" id="resultPlantName">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Temperature:</span>
+            <span class="text-sm font-medium" id="resultTemperature">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Date:</span>
+            <span class="text-sm font-medium" id="resultDate">-</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- IV Curve Parameters -->
+      <div>
+        <h4 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">IV Curve Parameters</h4>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Open Circuit Voltage (Voc):</span>
+            <span class="text-sm font-medium" id="resultVoc">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Short Circuit Current (Isc):</span>
+            <span class="text-sm font-medium" id="resultIsc">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Max Power Point (Pmax):</span>
+            <span class="text-sm font-medium" id="resultPmax">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600">Fill Factor (FF):</span>
+            <span class="text-sm font-medium" id="resultFF">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Diagnosis Summary -->
+    <div class="mb-4">
+      <h4 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">Diagnosis Summary</h4>
+      <div class="p-3 rounded border" id="diagnosisSummary">
+        <div class="flex items-center mb-3" id="healthStatusContainer">
+          <div class="w-3 h-3 rounded-full mr-2" id="healthStatusIndicator"></div>
+          <span class="font-medium" id="healthStatus">Analyzing...</span>
+        </div>
+        <p class="text-sm text-gray-700" id="diagnosisDescription">
+          Processing IV curve data...
+        </p>
+      </div>
+    </div>
+    
+    <!-- Detected Issues -->
+    <div id="detectedIssuesContainer" class="mb-4 hidden">
+      <h4 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">Detected Issues</h4>
+      <ul class="space-y-2" id="detectedIssuesList">
+        <!-- Dynamic list of issues -->
+      </ul>
+    </div>
+    
+    <!-- Recommendations -->
+    <div id="recommendationsContainer" class="mb-4 hidden">
+      <h4 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">Recommendations</h4>
+      <ul class="space-y-2" id="recommendationsList">
+        <!-- Dynamic list of recommendations -->
+      </ul>
+    </div>
+    
+    <div class="flex space-x-2">
+      <button 
+        class="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition"
+        id="exportDataBtn">
+        <i class="fas fa-file-export mr-1"></i> Export Data
+      </button>
+      <button 
+        class="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition"
+        id="resetDiagnosisBtn">
+        <i class="fas fa-redo mr-1"></i> Reset
+      </button>
+    </div>
+  </div>
+</div>
+{% endmacro %} 

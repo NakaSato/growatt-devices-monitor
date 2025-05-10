@@ -1,0 +1,390 @@
+<!-- API Cache Manager -->
+<script src="{{ url_for('static', filename='js/utils/api-cache-manager.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
+<script>
+  // Initialize the API Cache Manager with application settings
+  ApiCacheManager.init({
+    defaultCacheDuration: 300000, // 5 minutes (300 seconds * 1000)
+    enabled: true
+  });
+</script>
+
+<!-- API Request Cache System -->
+<script>
+  // API Request Cache System
+  window.apiCache = {
+    // Default cache duration (5 minutes)
+    defaultCacheDuration: 5 * 60 * 1000,
+
+    // Get cached response if valid
+    get: function (url, timestamp, maxAge) {
+      const cacheKey = `api_cache_${url}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (!cachedData) return null;
+
+      try {
+        const parsed = JSON.parse(cachedData);
+        const cacheAge = (timestamp || Date.now()) - parsed.timestamp;
+        const maxCacheAge = maxAge || this.defaultCacheDuration;
+
+        // Check if cache is still valid
+        if (cacheAge < maxCacheAge) {
+          console.log(
+            `Using cached data for ${url} (age: ${Math.round(
+              cacheAge / 1000
+            )}s)`
+          );
+          return parsed.data;
+        } else {
+          console.log(
+            `Cache expired for ${url} (age: ${Math.round(
+              cacheAge / 1000
+            )}s)`
+          );
+          return null;
+        }
+      } catch (err) {
+        console.warn("Invalid cache data for", url, err);
+        return null;
+      }
+    },
+
+    // Store response in cache with timestamp
+    set: function (url, data, timestamp) {
+      const cacheKey = `api_cache_${url}`;
+      try {
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            timestamp: timestamp || Date.now(),
+            data: data,
+          })
+        );
+        console.log(`Cached data for ${url}`);
+      } catch (err) {
+        console.warn("Failed to cache data:", err);
+      }
+    },
+
+    // Clear specific or all cached responses
+    clear: function (url) {
+      if (url) {
+        localStorage.removeItem(`api_cache_${url}`);
+        console.log(`Cleared cache for ${url}`);
+      } else {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("api_cache_")) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log("Cleared all API cache");
+      }
+    },
+
+    // Fetch with caching
+    fetch: async function (url, options = {}) {
+      const timestamp = Date.now();
+      const {
+        forceFresh = false,
+        cacheDuration = this.defaultCacheDuration,
+        requestOptions = {},
+      } = options;
+
+      // Try to get from cache unless force refresh is requested
+      if (!forceFresh) {
+        const cachedData = this.get(url, timestamp, cacheDuration);
+        if (cachedData) return cachedData;
+      }
+
+      // Add timestamp to URL to bypass browser cache if needed
+      const urlWithTimestamp = options.bypassBrowserCache
+        ? `${url}${url.includes("?") ? "&" : "?"}_t=${timestamp}`
+        : url;
+
+      try {
+        // Fetch fresh data
+        const response = await fetch(urlWithTimestamp, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...requestOptions.headers,
+          },
+          ...requestOptions,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        // Check content type to ensure it's JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+
+          // Cache the successful response
+          this.set(url, data, timestamp);
+
+          return data;
+        } else {
+          // Non-JSON responses are not cached
+          return await response.text();
+        }
+      } catch (error) {
+        console.error(`API fetch error for ${url}:`, error);
+        throw error;
+      }
+    },
+  };
+</script>
+
+<!-- App Initialization -->
+<script>
+  // Function to handle API access with improved error handling and user feedback
+  document.addEventListener("DOMContentLoaded", () => {
+    // Set CSS variable for viewport height to handle mobile browsers better
+    function setViewportHeight() {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    }
+
+    // Set initial viewport height and update on resize
+    setViewportHeight();
+    window.addEventListener("resize", setViewportHeight);
+
+    const apiAccessLink = document.getElementById("api-access-link");
+    if (apiAccessLink) {
+      apiAccessLink.addEventListener("click", requestApiAccess);
+    }
+
+    // Initialize component loader
+    if (window.ComponentLoader) {
+      window.componentLoader = new ComponentLoader({
+        templatePath: "/templates/components/",
+        cacheDuration: 3600, // 1 hour cache
+        onError: (err) => console.error("Component loading error:", err),
+      });
+    }
+  });
+
+  function requestApiAccess(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    // Show loading state to user
+    const originalLinkText = event.target.textContent;
+    event.target.textContent = "Loading...";
+    event.target.classList.add("opacity-50");
+
+    fetch("/api/access", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+    })
+      .then((response) => {
+        // Check if the content-type is JSON
+        const contentType = response.headers.get("content-type");
+
+        if (!response.ok) {
+          if (contentType && contentType.includes("text/html")) {
+            window.location.href = response.url;
+            throw new Error("Session expired. Redirecting to login...");
+          }
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        // Check if response is JSON before trying to parse it
+        if (contentType && contentType.includes("application/json")) {
+          return response.json();
+        } else {
+          // Handle redirect instruction from JSON response
+          return { status: "redirect", url: "/plants" };
+        }
+      })
+      .then((data) => {
+        if (data.status === "success") {
+          // Show success message before redirect
+          console.log("Authentication successful");
+          setTimeout(() => (window.location.href = "/plants"), 800);
+        } else if (data.status === "redirect") {
+          window.location.href = data.url || "/plants";
+        } else {
+          throw new Error(data.message || "Failed to authenticate");
+        }
+      })
+      .catch((error) => {
+        console.error("API access error:", error);
+        // Only show alert for errors that aren't redirects
+        if (!error.message.includes("Redirecting to login")) {
+          alert("Failed to access API: " + error.message);
+        }
+      })
+      .finally(() => {
+        // Reset button state
+        event.target.textContent = originalLinkText;
+        event.target.classList.remove("opacity-50");
+      });
+  }
+
+  // Function to clear cache and session before logout
+  function clearCacheAndLogout() {
+    // Clear browser cache and storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Clear cookies by setting expiration to past date
+    document.cookie.split(";").forEach(function (c) {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(
+          /=.*/,
+          "=;expires=" + new Date().toUTCString() + ";path=/"
+        );
+    });
+
+    // Attempt to clear application cache if supported
+    if (window.caches) {
+      caches.keys().then(function (names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+
+    // Finally redirect to logout URL
+    window.location.href = "/api/logout";
+  }
+</script>
+
+<!-- Responsive Utils -->
+<script>
+  // Add responsive screen detection with enhanced breakpoints
+  const breakpoints = {
+    xs: 320,
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+    "2xl": 1536,
+  };
+
+  // Create responsive state object
+  window.responsive = {
+    breakpoints,
+    current: "",
+    width: window.innerWidth,
+    isXs: false,
+    isSm: false,
+    isMd: false,
+    isLg: false,
+    isXl: false,
+    is2xl: false,
+    isMobile: false,
+    isTablet: false,
+    isDesktop: false,
+    isPortrait: window.matchMedia("(orientation: portrait)").matches,
+    isLandscape: window.matchMedia("(orientation: landscape)").matches,
+    isDarkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
+    isReducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches,
+    isTouch: "ontouchstart" in window || navigator.maxTouchPoints > 0,
+    supportsHover: window.matchMedia("(hover: hover)").matches,
+  };
+
+  // Update responsive state based on current viewport
+  function updateResponsiveState() {
+    const width = window.innerWidth;
+    window.responsive.width = width;
+
+    // Update breakpoint flags
+    window.responsive.isXs =
+      width >= breakpoints.xs && width < breakpoints.sm;
+    window.responsive.isSm =
+      width >= breakpoints.sm && width < breakpoints.md;
+    window.responsive.isMd =
+      width >= breakpoints.md && width < breakpoints.lg;
+    window.responsive.isLg =
+      width >= breakpoints.lg && width < breakpoints.xl;
+    window.responsive.isXl =
+      width >= breakpoints.xl && width < breakpoints["2xl"];
+    window.responsive.is2xl = width >= breakpoints["2xl"];
+
+    // Update device type flags
+    window.responsive.isMobile = width < breakpoints.md;
+    window.responsive.isTablet =
+      width >= breakpoints.md && width < breakpoints.lg;
+    window.responsive.isDesktop = width >= breakpoints.lg;
+
+    // Set current breakpoint name
+    if (width < breakpoints.sm) window.responsive.current = "xs";
+    else if (width < breakpoints.md) window.responsive.current = "sm";
+    else if (width < breakpoints.lg) window.responsive.current = "md";
+    else if (width < breakpoints.xl) window.responsive.current = "lg";
+    else if (width < breakpoints["2xl"]) window.responsive.current = "xl";
+    else window.responsive.current = "2xl";
+
+    // Update orientation
+    window.responsive.isPortrait = window.matchMedia(
+      "(orientation: portrait)"
+    ).matches;
+    window.responsive.isLandscape = window.matchMedia(
+      "(orientation: landscape)"
+    ).matches;
+
+    // Dispatch custom event when responsive state changes
+    window.dispatchEvent(
+      new CustomEvent("responsive-changed", {
+        detail: window.responsive,
+      })
+    );
+
+    // Add responsive classes to body for CSS targeting
+    document.body.classList.remove(
+      "screen-xs",
+      "screen-sm",
+      "screen-md",
+      "screen-lg",
+      "screen-xl",
+      "screen-2xl"
+    );
+    document.body.classList.add(`screen-${window.responsive.current}`);
+
+    // Add device type classes
+    document.body.classList.remove(
+      "device-mobile",
+      "device-tablet",
+      "device-desktop"
+    );
+    if (window.responsive.isMobile)
+      document.body.classList.add("device-mobile");
+    else if (window.responsive.isTablet)
+      document.body.classList.add("device-tablet");
+    else document.body.classList.add("device-desktop");
+  }
+
+  // Initialize responsive state
+  updateResponsiveState();
+
+  // Update on resize with debounce
+  let resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(updateResponsiveState, 100);
+  });
+
+  // Update on orientation change
+  window.addEventListener("orientationchange", updateResponsiveState);
+
+  // Listen for dark mode changes
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", (e) => {
+      window.responsive.isDarkMode = e.matches;
+    });
+
+  // For backwards compatibility
+  window.isSmallScreen = window.responsive.isMobile;
+  window.isMediumScreen = window.responsive.isTablet;
+  window.isLargeScreen = window.responsive.isDesktop;
+</script> 

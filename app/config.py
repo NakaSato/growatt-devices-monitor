@@ -104,6 +104,15 @@ class Config:
     
     # Background service settings
     ENABLE_BACKGROUND_MONITORING = os.getenv('ENABLE_BACKGROUND_MONITORING', 'True').lower() in ('true', '1', 't')
+    
+    # Azure-specific settings
+    AZURE_ENVIRONMENT = os.getenv('AZURE_ENVIRONMENT', 'False').lower() in ('true', '1', 't')
+    APPINSIGHTS_INSTRUMENTATIONKEY = os.getenv('APPINSIGHTS_INSTRUMENTATIONKEY', '')
+    AZURE_MONITORING_ENABLED = os.getenv('AZURE_MONITORING_ENABLED', 'False').lower() in ('true', '1', 't')
+    AZURE_STORAGE_CONNECTION_STRING = os.getenv('AZURE_STORAGE_CONNECTION_STRING', '')
+    AZURE_STORAGE_CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_NAME', 'growatt-data')
+    AZURE_KEYVAULT_URL = os.getenv('AZURE_KEYVAULT_URL', '')
+    AZURE_MANAGED_IDENTITY_ENABLED = os.getenv('AZURE_MANAGED_IDENTITY_ENABLED', 'False').lower() in ('true', '1', 't')
     MONITOR_DEVICE_STATUS = os.getenv('MONITOR_DEVICE_STATUS', 'True').lower() in ('true', '1', 't')
     COLLECT_DEVICE_DATA = os.getenv('COLLECT_DEVICE_DATA', 'True').lower() in ('true', '1', 't')
     COLLECT_PLANT_DATA = os.getenv('COLLECT_PLANT_DATA', 'True').lower() in ('true', '1', 't')
@@ -129,6 +138,10 @@ class Config:
     
     # 24-hour monitoring setting
     ENABLE_24H_COLLECTION = os.getenv('ENABLE_24H_COLLECTION', 'False').lower() in ('true', '1', 't')
+    
+    # Weather API settings
+    WEATHER_API_KEY = os.getenv('WEATHER_API_KEY', '')
+    WEATHER_API_ENDPOINT = os.getenv('WEATHER_API_ENDPOINT', 'https://api.openweathermap.org/data/2.5/onecall')
     
     @classmethod
     def get_db_uri(cls) -> str:

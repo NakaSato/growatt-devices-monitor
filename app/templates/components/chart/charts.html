@@ -1,0 +1,250 @@
+{#
+  Chart Components
+  --------------
+  
+  Reusable chart components for data visualization in the Growatt Monitoring System.
+  
+  Components:
+    * line_chart - Line chart for showing trends over time
+    * bar_chart - Bar chart for comparing values
+    * pie_chart - Pie chart for showing distribution
+  
+  Dependencies:
+    * Chart.js library must be included in the page
+#}
+
+{% macro line_chart(id, title="", height=300, data=None, options=None, classes="") %}
+<div class="bg-white rounded-lg shadow p-4 {{ classes }}">
+  {% if title %}
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
+    {% if caller %}
+      <div class="flex items-center">
+        {{ caller() }}
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+  <div id="{{ id }}_container" style="height: {{ height }}px;">
+    <canvas id="{{ id }}"></canvas>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('{{ id }}').getContext('2d');
+      
+      {% if data %}
+      const chartData = {{ data|tojson }};
+      {% else %}
+      // Default data if none provided
+      const chartData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+        datasets: [{
+          label: 'Energy Production',
+          data: [65, 59, 80, 81, 56, 55, 40],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      };
+      {% endif %}
+      
+      {% if options %}
+      const chartOptions = {{ options|tojson }};
+      {% else %}
+      // Default options if none provided
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              drawBorder: false
+            }
+          }
+        }
+      };
+      {% endif %}
+      
+      new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: chartOptions
+      });
+    });
+  </script>
+</div>
+{% endmacro %}
+
+{% macro bar_chart(id, title="", height=300, data=None, options=None, classes="") %}
+<div class="bg-white rounded-lg shadow p-4 {{ classes }}">
+  {% if title %}
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
+    {% if caller %}
+      <div class="flex items-center">
+        {{ caller() }}
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+  <div id="{{ id }}_container" style="height: {{ height }}px;">
+    <canvas id="{{ id }}"></canvas>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('{{ id }}').getContext('2d');
+      
+      {% if data %}
+      const chartData = {{ data|tojson }};
+      {% else %}
+      // Default data if none provided
+      const chartData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+        datasets: [{
+          label: 'Energy Production',
+          data: [65, 59, 80, 81, 56, 55, 40],
+          backgroundColor: 'rgba(16, 185, 129, 0.7)',
+          borderRadius: 4
+        }]
+      };
+      {% endif %}
+      
+      {% if options %}
+      const chartOptions = {{ options|tojson }};
+      {% else %}
+      // Default options if none provided
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              drawBorder: false
+            }
+          }
+        }
+      };
+      {% endif %}
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: chartOptions
+      });
+    });
+  </script>
+</div>
+{% endmacro %}
+
+{% macro pie_chart(id, title="", height=300, data=None, options=None, classes="") %}
+<div class="bg-white rounded-lg shadow p-4 {{ classes }}">
+  {% if title %}
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
+    {% if caller %}
+      <div class="flex items-center">
+        {{ caller() }}
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+  <div id="{{ id }}_container" style="height: {{ height }}px;">
+    <canvas id="{{ id }}"></canvas>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('{{ id }}').getContext('2d');
+      
+      {% if data %}
+      const chartData = {{ data|tojson }};
+      {% else %}
+      // Default data if none provided
+      const chartData = {
+        labels: ['Solar', 'Grid', 'Battery'],
+        datasets: [{
+          data: [65, 25, 10],
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(245, 158, 11, 0.7)'
+          ],
+          borderWidth: 1
+        }]
+      };
+      {% endif %}
+      
+      {% if options %}
+      const chartOptions = {{ options|tojson }};
+      {% else %}
+      // Default options if none provided
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((value / total) * 100);
+                return `${label}: ${percentage}% (${value})`;
+              }
+            }
+          }
+        }
+      };
+      {% endif %}
+      
+      new Chart(ctx, {
+        type: 'pie',
+        data: chartData,
+        options: chartOptions
+      });
+    });
+  </script>
+</div>
+{% endmacro %} 

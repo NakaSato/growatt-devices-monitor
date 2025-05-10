@@ -1,0 +1,37 @@
+# Growatt Devices Monitor - Data Collector Cron Jobs
+# Copy this file to your crontab with: crontab /path/to/this/file
+# Or add these entries to your existing crontab with: crontab -e
+
+# Environment variables (adjust as needed)
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PYTHONPATH=/path/to/growatt-devices-monitor
+
+# Define the project root (adjust to your installation path)
+PROJECT_ROOT=/path/to/growatt-devices-monitor
+
+# Log directory
+LOG_DIR=$PROJECT_ROOT/logs
+
+# Option 1: Run all collectors together in one job (recommended)
+*/15 6-20 * * * $PROJECT_ROOT/scripts/run_all_collectors.sh
+
+# Option 2: Run collectors individually (use either Option 1 or Option 2, not both)
+# Run data collector every 15 minutes during daylight hours (6am-8pm)
+# This is optimal for solar monitoring during the day
+#*/15 6-20 * * * $PROJECT_ROOT/scripts/data_collection/run_data_collector.sh
+
+# Run data collector once per hour during night hours (with fewer days of history)
+0 21-5 * * * DAYS_BACK=1 $PROJECT_ROOT/scripts/data_collection/run_data_collector.sh
+
+# Run complete weather data collector every 30 minutes (weather changes more frequently)
+*/30 * * * * $PROJECT_ROOT/scripts/weather/run_weather_collector.sh
+
+# Run full data collector with weather data once per day (at 6am)
+0 6 * * * INCLUDE_WEATHER=true DAYS_BACK=7 $PROJECT_ROOT/scripts/data_collection/run_data_collector.sh
+
+# Run a full historical data collection once per day (midnight)
+0 0 * * * DAYS_BACK=14 VERBOSE=true $PROJECT_ROOT/scripts/data_collection/run_data_collector.sh
+
+# Weekly cleanup of old log files (keep the last 30 days)
+0 1 * * 0 find $LOG_DIR -name "*.log" -type f -mtime +30 -delete 

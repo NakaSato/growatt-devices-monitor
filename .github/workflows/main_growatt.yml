@@ -39,6 +39,14 @@ jobs:
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
+      - name: Create necessary configuration files
+        run: |
+          echo "Creating Azure-specific configuration"
+          echo "AZURE_ENVIRONMENT=True" >> .env.prod
+          echo "AZURE_MONITORING_ENABLED=True" >> .env.prod
+          echo "FLASK_ENV=production" >> .env.prod
+          echo "LOG_LEVEL=INFO" >> .env.prod
+
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
@@ -75,6 +83,30 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8FDC7E819D594254BCCC0F90A25E9BD2 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C378D4FE396C4E7CAF2536D505FEFB79 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_35604CF6947C43A5A7818DEBEB35DC64 }}
+
+      - name: Set Azure App Service Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: "growatt"
+          slot-name: "Production"
+          app-settings-json: |
+            [
+              {
+                "name": "AZURE_ENVIRONMENT",
+                "value": "True",
+                "slotSetting": false
+              },
+              {
+                "name": "AZURE_MONITORING_ENABLED",
+                "value": "True",
+                "slotSetting": false
+              },
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "True",
+                "slotSetting": false
+              }
+            ]
 
       - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v3

@@ -1,0 +1,184 @@
+{#
+  Alert and Notification Components
+  ------------------------------
+  
+  Reusable alert and notification components for the Growatt Monitoring System.
+  
+  Components:
+    * alert - Contextual alert messages with various types (info, success, warning, error)
+    * toast - Popup notifications that auto-dismiss
+    * notification_badge - Badge for showing notification counts
+#}
+
+{% macro alert(type="info", title="", message="", dismissible=true, icon=None, classes="") %}
+{% set types = {
+  'info': {
+    'bg': 'bg-blue-50',
+    'border': 'border-blue-400',
+    'text': 'text-blue-800',
+    'icon': icon or 'fas fa-info-circle',
+    'icon_bg': 'bg-blue-100',
+    'icon_text': 'text-blue-500'
+  },
+  'success': {
+    'bg': 'bg-emerald-50',
+    'border': 'border-emerald-400',
+    'text': 'text-emerald-800',
+    'icon': icon or 'fas fa-check-circle',
+    'icon_bg': 'bg-emerald-100',
+    'icon_text': 'text-emerald-500'
+  },
+  'warning': {
+    'bg': 'bg-amber-50',
+    'border': 'border-amber-400',
+    'text': 'text-amber-800',
+    'icon': icon or 'fas fa-exclamation-triangle',
+    'icon_bg': 'bg-amber-100',
+    'icon_text': 'text-amber-500'
+  },
+  'error': {
+    'bg': 'bg-red-50',
+    'border': 'border-red-400',
+    'text': 'text-red-800',
+    'icon': icon or 'fas fa-exclamation-circle',
+    'icon_bg': 'bg-red-100',
+    'icon_text': 'text-red-500'
+  },
+  'neutral': {
+    'bg': 'bg-gray-50',
+    'border': 'border-gray-400',
+    'text': 'text-gray-800',
+    'icon': icon or 'fas fa-bell',
+    'icon_bg': 'bg-gray-100',
+    'icon_text': 'text-gray-500'
+  }
+} %}
+
+{% set style = types[type] %}
+
+<div class="rounded-md border {{ style.border }} {{ style.bg }} p-4 mb-4 {{ classes }}" role="alert">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <div class="w-8 h-8 rounded-full {{ style.icon_bg }} flex items-center justify-center">
+        <i class="{{ style.icon }} {{ style.icon_text }}"></i>
+      </div>
+    </div>
+    <div class="ml-3 flex-1">
+      {% if title %}
+      <h3 class="text-sm font-medium {{ style.text }}">{{ title }}</h3>
+      {% endif %}
+      {% if message %}
+      <div class="text-sm {{ style.text }} mt-1">
+        {{ message }}
+      </div>
+      {% endif %}
+      {{ caller() if caller else "" }}
+    </div>
+    {% if dismissible %}
+    <div class="ml-auto pl-3">
+      <div class="-mx-1.5 -my-1.5">
+        <button type="button" class="inline-flex rounded-md p-1.5 {{ style.bg }} {{ style.text }} hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="this.parentElement.parentElement.parentElement.remove()">
+          <span class="sr-only">Dismiss</span>
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro toast(type="info", message="", timeout=5000, position="top-right", dismissible=true, classes="") %}
+{% set types = {
+  'info': {
+    'bg': 'bg-blue-100',
+    'text': 'text-blue-800',
+    'icon': 'fas fa-info-circle text-blue-500'
+  },
+  'success': {
+    'bg': 'bg-emerald-100',
+    'text': 'text-emerald-800',
+    'icon': 'fas fa-check-circle text-emerald-500'
+  },
+  'warning': {
+    'bg': 'bg-amber-100',
+    'text': 'text-amber-800',
+    'icon': 'fas fa-exclamation-triangle text-amber-500'
+  },
+  'error': {
+    'bg': 'bg-red-100',
+    'text': 'text-red-800',
+    'icon': 'fas fa-exclamation-circle text-red-500'
+  }
+} %}
+
+{% set positions = {
+  'top-right': 'top-4 right-4',
+  'top-left': 'top-4 left-4',
+  'bottom-right': 'bottom-4 right-4',
+  'bottom-left': 'bottom-4 left-4',
+  'top-center': 'top-4 left-1/2 transform -translate-x-1/2',
+  'bottom-center': 'bottom-4 left-1/2 transform -translate-x-1/2'
+} %}
+
+{% set style = types[type] %}
+{% set pos = positions[position] %}
+
+<div 
+  class="fixed {{ pos }} max-w-xs w-full shadow-lg rounded-lg pointer-events-auto {{ style.bg }} {{ classes }}" 
+  role="alert"
+  x-data="{ show: true }"
+  x-init="setTimeout(() => show = false, {{ timeout }})"
+  x-show="show"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="opacity-0 transform scale-95"
+  x-transition:enter-end="opacity-100 transform scale-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-start="opacity-100 transform scale-100"
+  x-transition:leave-end="opacity-0 transform scale-95"
+  @click.away="show = false"
+>
+  <div class="p-4">
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <i class="{{ style.icon }}"></i>
+      </div>
+      <div class="ml-3 w-0 flex-1 pt-0.5">
+        <p class="text-sm font-medium {{ style.text }}">{{ message }}</p>
+      </div>
+      {% if dismissible %}
+      <div class="ml-4 flex-shrink-0 flex">
+        <button 
+          class="inline-flex text-gray-400 focus:outline-none focus:text-gray-500 transition ease-in-out duration-150"
+          @click="show = false"
+        >
+          <span class="sr-only">Close</span>
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro notification_badge(count=0, color="red", size="md", classes="") %}
+{% set sizes = {
+  'sm': 'h-4 w-4 text-xs',
+  'md': 'h-5 w-5 text-xs',
+  'lg': 'h-6 w-6 text-sm'
+} %}
+{% set colors = {
+  'red': 'bg-red-600 text-white',
+  'blue': 'bg-blue-600 text-white',
+  'green': 'bg-emerald-600 text-white',
+  'yellow': 'bg-amber-500 text-white',
+  'gray': 'bg-gray-500 text-white'
+} %}
+
+{% if count > 0 %}
+<span class="inline-flex items-center justify-center {{ sizes[size] }} rounded-full {{ colors[color] }} {{ classes }}">
+  {{ count if count < 100 else '99+' }}
+</span>
+{% endif %}
+{% endmacro %} 

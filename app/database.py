@@ -1145,3 +1145,83 @@ class DatabaseConnector:
         except Exception as e:
             logger.error(f"Unexpected error deleting file: {e}")
             return False
+
+    def save_fault_logs(self, fault_logs_data: List[Dict[str, Any]]) -> int:
+        """
+        Save fault logs data to the database.
+        
+        Args:
+            fault_logs_data (List[Dict[str, Any]]): List of fault logs data to save
+                Each log should contain:
+                - plant_id: The ID of the plant
+                - device_sn: The serial number of the device
+                - device_name: The name of the device
+                - error_code: Error code (if available)
+                - error_msg: Error message
+                - happen_time: Timestamp when the fault occurred
+                - fault_type: Type of fault (1=fault, 2=alarm, etc.)
+                - raw_data: Raw JSON data from the API (optional)
+        
+        Returns:
+            int: Number of fault logs saved
+        """
+        if not fault_logs_data:
+            logger.warning("No fault logs data to save")
+            return 0
+        
+        count = 0
+        
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Check if the fault_logs table exists
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'fault_logs'
+                    );
+                """)
+                table_exists = cursor.fetchone()['exists']
+                
+                if not table_exists:
+                    logger.warning("Fault logs table does not exist, run create_fault_logs_table.py to create it")
+                    return 0
+                
+                # Insert the fault logs
+                for log in fault_logs_data:
+                    try:
+                        # Convert raw data to JSON if present
+                        raw_data = Json(log.get('raw_data')) if log.get('raw_data') else None
+                        
+                        cursor.execute("""
+                            INSERT INTO fault_logs
+                            (plant_id, device_sn, device_name, error_code, error_msg, happen_time, fault_type, raw_data)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (device_sn, happen_time, error_code) 
+                            DO UPDATE SET
+                                device_name = EXCLUDED.device_name,
+                                error_msg = EXCLUDED.error_msg,
+                                fault_type = EXCLUDED.fault_type,
+                                raw_data = EXCLUDED.raw_data
+                        """, (
+                            log.get('plant_id'),
+                            log.get('device_sn'),
+                            log.get('device_name'),
+                            log.get('error_code'),
+                            log.get('error_msg'),
+                            log.get('happen_time'),
+                            log.get('fault_type'),
+                            raw_data
+                        ))
+                        count += 1
+                    except Exception as e:
+                        logger.error(f"Error inserting fault log: {str(e)}")
+                        # Continue with the next log
+                
+                conn.commit()
+                logger.info(f"Saved {count} fault logs to database")
+                return count
+        except Exception as e:
+            logger.error(f"Error saving fault logs: {str(e)}")
+            return 0

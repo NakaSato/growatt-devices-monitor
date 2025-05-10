@@ -1,0 +1,80 @@
+{#
+  IV Curve Form Component
+  ----------------------
+  
+  Reusable form for inputting IV curve data for diagnosis.
+  
+  Parameters:
+    * form_id - ID for the form element
+    * on_submit - JavaScript function to handle form submission
+#}
+
+{% macro iv_curve_form(form_id="ivCurveForm", on_submit="diagnoseIVCurve") %}
+<div class="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
+  <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+    <h6 class="m-0 font-bold text-white">
+      <i class="fas fa-input mr-2"></i>IV Curve Input
+    </h6>
+    <div class="relative">
+      <button class="text-white opacity-80 hover:opacity-100 focus:outline-none" id="dropdownMenuButton">
+        <i class="fas fa-ellipsis-v"></i>
+      </button>
+      <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10" id="dropdownMenu">
+        <div class="px-4 py-2 text-sm text-gray-700 font-semibold border-b">Input Options:</div>
+        <button class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100" id="clearDataBtn">
+          <i class="fas fa-eraser fa-sm mr-2 text-gray-400"></i>Clear Data
+        </button>
+        <button class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100" id="uploadCsvBtn">
+          <i class="fas fa-file-csv fa-sm mr-2 text-gray-400"></i>Upload CSV
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
+      </div>
+    </div>
+  </div>
+  <div class="p-4">
+    <form id="{{ form_id }}">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="moduleId" class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">Module ID</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="moduleId" placeholder="Enter module ID" />
+        </div>
+        <div>
+          <label for="plantName" class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">Plant Name</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="plantName" placeholder="Enter plant name" />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label for="temperature" class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">Temperature (°C)</label>
+        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="temperature" value="25" step="0.1" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">IV Curve Data</label>
+        <div class="mb-3">
+          <div class="flex">
+            <span class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+              <i class="fas fa-bolt mr-1"></i>Voltage (V)
+            </span>
+            <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="voltageInput" placeholder="Comma-separated values, e.g., 0,1,2,3,..." />
+          </div>
+        </div>
+        <div>
+          <div class="flex">
+            <span class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+              <i class="fas fa-tachometer-alt mr-1"></i>Current (A)
+            </span>
+            <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="currentInput" placeholder="Comma-separated values, e.g., 10,9.5,9,8.5,..." />
+          </div>
+        </div>
+      </div>
+      <button 
+        type="button" 
+        class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out" 
+        id="diagnoseBtn" 
+        onclick="{{ on_submit }}"
+      >
+        <i class="fas fa-stethoscope mr-1"></i> Diagnose
+      </button>
+    </form>
+  </div>
+</div>
+{% endmacro %} 

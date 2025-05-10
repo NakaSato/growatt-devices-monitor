@@ -11,9 +11,59 @@ class PlantService:
     
     def __init__(self):
         """Initialize the PlantService"""
-        self.plants = sample_plants
-        self.growatt_api = Growatt()
+        self.plants = []
         self.logger = logging.getLogger(__name__)
+        
+        # Initialize Growatt API
+        from app.core.growatt import GrowattApi
+        self.growatt_api = GrowattApi()
+        
+        # Try to load sample plants
+        try:
+            # First try to get it from global scope if it's been defined by the frontend scripts
+            import builtins
+            if hasattr(builtins, 'sample_plants'):
+                self.plants = builtins.sample_plants
+            else:
+                # Fallback to hardcoded sample plants
+                self.plants = self._get_sample_plants()
+        except Exception as e:
+            self.logger.error(f"Error loading sample plants: {str(e)}")
+            # Ensure we have at least an empty list
+            self.plants = self._get_sample_plants()
+    
+    def _get_sample_plants(self):
+        """Get hardcoded sample plants as fallback"""
+        return [
+            {
+                "id": 10125058,
+                "name": "Sample Plant 1",
+                "status": "active",
+                "currentPower": 15.5,
+                "eToday": 75.2,
+                "eMonth": 1250.5,
+                "eTotal": 42500.8,
+                "capacity": 20.0,
+                "latitude": 37.7749,
+                "longitude": -122.4194,
+                "city": "San Francisco",
+                "country": "USA"
+            },
+            {
+                "id": 10125059,
+                "name": "Sample Plant 2",
+                "status": "warning",
+                "currentPower": 8.2,
+                "eToday": 45.6,
+                "eMonth": 950.3,
+                "eTotal": 25800.5,
+                "capacity": 12.5,
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "city": "Los Angeles",
+                "country": "USA"
+            }
+        ]
     
     def get_all_plants(self):
         """Get all plants"""
@@ -100,6 +150,16 @@ class PlantService:
                         plant_data = plant.copy()
                         self._add_power_distribution(plant_data)
                         return plant_data
+                
+                # If the specific plant ID wasn't found in sample data but we need a fallback,
+                # use the first sample plant but update its ID
+                if self.plants and len(self.plants) > 0:
+                    self.logger.warning(f"Using first sample plant as fallback for ID {plant_id}")
+                    plant_data = self.plants[0].copy()
+                    plant_data['id'] = plant_id_int  # Use the requested ID
+                    plant_data['name'] = f"Plant {plant_id}"  # Update name
+                    self._add_power_distribution(plant_data)
+                    return plant_data
             
             return None
         except Exception as e:

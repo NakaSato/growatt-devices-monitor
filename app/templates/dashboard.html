@@ -1,16 +1,15 @@
-{% extends "base.html" %} {% block title %}Dashboard - Growatt Monitoring
-System{% endblock %} {% block styles %}
-<style>
-  /* Card styling */
-  .metric-card {
-    transition: all 0.3s ease;
-  }
-  .metric-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
+{% extends "base.html" %}
 
+{% block title %}Dashboard - Growatt Monitoring System{% endblock %}
+
+{% from "components/layouts/card.html" import metric_card, status_card %}
+{% from "components/layouts/grid.html" import standard_grid, section %}
+{% from "components/alerts/notifications.html" import alert %}
+{% from "components/chart/charts.html" import line_chart, pie_chart %}
+{% from "components/devices/device_card.html" import device_card %}
+
+{% block styles %}
+<style>
   /* Status indicators */
   .status-indicator {
     width: 10px;
@@ -34,1006 +33,141 @@ System{% endblock %} {% block styles %}
   .status-maintenance {
     background-color: #3b82f6;
   }
-
-  /* Chart containers */
-  .chart-container {
-    position: relative;
-    height: 220px;
-    width: 100%;
-  }
-
-  /* Animated value counters */
-  .counter-value {
-    transition: all 0.5s ease;
-  }
-
-  /* Energy flow diagram */
-  .energy-flow-diagram {
-    position: relative;
-    height: 180px;
-  }
-  .energy-flow-node {
-    position: absolute;
-    padding: 8px 12px;
-    border-radius: 8px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-weight: 500;
-  }
-  .energy-flow-path {
-    position: absolute;
-    background: linear-gradient(
-      90deg,
-      rgba(16, 185, 129, 0.5) 0%,
-      rgba(59, 130, 246, 0.5) 100%
-    );
-    height: 6px;
-    border-radius: 3px;
-  }
-  .solar-node {
-    top: 0;
-    left: 10%;
-    width: 80px;
-    background-color: rgba(245, 158, 11, 0.2);
-    color: #92400e;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-  }
-  .inverter-node {
-    top: 60px;
-    left: 45%;
-    width: 90px;
-    background-color: rgba(16, 185, 129, 0.2);
-    color: #065f46;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-  }
-  .home-node {
-    top: 0;
-    right: 10%;
-    width: 80px;
-    background-color: rgba(59, 130, 246, 0.2);
-    color: #1e40af;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-  }
-  .grid-node {
-    top: 120px;
-    right: 10%;
-    width: 80px;
-    background-color: rgba(124, 58, 237, 0.2);
-    color: #5b21b6;
-    border: 1px solid rgba(124, 58, 237, 0.3);
-  }
-
-  /* Pulse animation for solar activity */
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  .pulse-animation {
-    animation: pulse 2s infinite ease-in-out;
-  }
 </style>
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block head_scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
 <div class="p-4">
   <!-- Welcome and date section -->
-  <div
-    class="flex flex-col md:flex-row md:items-center md:justify-between mb-6"
-  >
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <p class="text-sm text-gray-600">
-        Welcome to your Growatt monitoring system
-      </p>
+      <p class="text-sm text-gray-600">Welcome to your Growatt monitoring system</p>
     </div>
     <div class="mt-2 md:mt-0 bg-white rounded-lg shadow p-2 flex items-center">
       <i class="fas fa-calendar-alt text-emerald-600 mr-2"></i>
-      <span class="text-sm font-medium" id="dashboard-date"
-        >Loading date...</span
-      >
+      <span class="text-sm font-medium" id="dashboard-date">Loading date...</span>
     </div>
   </div>
+
+  {% if alerts %}
+    {% for alert_item in alerts %}
+      {{ alert(
+        type=alert_item.type,
+        title=alert_item.title,
+        message=alert_item.message,
+        dismissible=true
+      ) }}
+    {% endfor %}
+  {% endif %}
 
   <!-- System status overview -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-lg shadow p-4 metric-card col-span-1">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">System Status</p>
-          <div class="flex items-center mt-1">
-            <span
-              class="status-indicator status-active"
-              id="system-status-indicator"
-            ></span>
-            <h2 class="text-xl font-bold text-gray-900" id="system-status">
-              Active
-            </h2>
-          </div>
-        </div>
-        <div class="bg-emerald-100 rounded-full p-2">
-          <i class="fas fa-check text-emerald-600"></i>
-        </div>
-      </div>
-      <p class="text-xs text-gray-600 mt-2">
-        Last updated: <span id="last-updated-time">Now</span>
-      </p>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-4 metric-card col-span-1">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Total Plants</p>
-          <h2
-            class="text-xl font-bold text-gray-900 counter-value"
-            id="total-plants"
-          >
-            {{ plants|length if plants else 0 }}
-          </h2>
-        </div>
-        <div class="bg-blue-100 rounded-full p-2">
-          <i class="fas fa-solar-panel text-blue-600"></i>
-        </div>
-      </div>
-      <div class="mt-2 text-xs font-medium">
-        <span class="text-emerald-500"
-          ><i class="fas fa-arrow-up"></i> Active:
-          <span id="active-plants"
-            >{{ plants|selectattr('status', 'equalto', 'active')|list|length if
-            plants else 0 }}</span
-          ></span
-        >
-        <span class="text-gray-500 ml-2"
-          ><i class="fas fa-arrow-down"></i> Offline:
-          <span id="offline-plants"
-            >{{ plants|selectattr('status', 'equalto', 'offline')|list|length if
-            plants else 0 }}</span
-          ></span
-        >
-      </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-4 metric-card col-span-1">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Total Capacity</p>
-          <h2
-            class="text-xl font-bold text-gray-900 counter-value"
-            id="total-capacity"
-          >
-            0
-          </h2>
-        </div>
-        <div class="bg-amber-100 rounded-full p-2">
-          <i class="fas fa-bolt text-amber-600"></i>
-        </div>
-      </div>
-      <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
-        <div
-          class="bg-amber-500 h-2 rounded-full"
-          id="capacity-usage-bar"
-          style="width: 0%"
-        ></div>
-      </div>
-      <p class="text-xs text-gray-600 mt-1">
-        Current usage: <span id="capacity-usage-percentage">0%</span>
-      </p>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-4 metric-card col-span-1">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Energy Today</p>
-          <h2
-            class="text-xl font-bold text-gray-900 counter-value"
-            id="energy-today"
-          >
-            0 kWh
-          </h2>
-        </div>
-        <div class="bg-green-100 rounded-full p-2">
-          <i class="fas fa-leaf text-green-600"></i>
-        </div>
-      </div>
-      <div class="mt-2 text-xs font-medium">
-        <span class="text-emerald-500" id="energy-comparison">
-          <i class="fas fa-arrow-up"></i>
-          <span id="energy-increase">0%</span> compared to yesterday
-        </span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Power and energy charts -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-medium text-gray-900">Power Output (kW)</h3>
+  {% call section(title="System Overview", subtitle="Current status of your solar power system") %}
+    {% call standard_grid(cols_mobile=1, cols_tablet=2, cols_desktop=4, gap=4) %}
+      {{ status_card(
+        title="System Status",
+        status="active",
+        status_text="Active",
+        timestamp="Now",
+        icon="fas fa-check"
+      ) }}
+      
+      {{ metric_card(
+        title="Total Plants",
+        value=plants|length if plants else 0,
+        icon="fas fa-solar-panel",
+        color="blue"
+      ) }}
+      
+      {{ metric_card(
+        title="Total Energy Today",
+        value="36.8 kWh",
+        subtitle="5.2% above average",
+        icon="fas fa-bolt",
+        color="amber"
+      ) }}
+      
+      {{ metric_card(
+        title="Devices",
+        value=devices|length if devices else 0,
+        subtitle=devices|selectattr('status', 'equalto', 'online')|list|length ~ " online" if devices else "0 online",
+        icon="fas fa-microchip",
+        color="emerald"
+      ) }}
+    {% endcall %}
+  {% endcall %}
+  
+  <!-- Energy production overview -->
+  {% call section(title="Energy Production", subtitle="Daily and monthly energy generation") %}
+    {% call line_chart(id="energy_chart", title="Energy Generation", height=300) %}
+      <select id="energy_time_range" class="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+        <option value="day">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="year">This Year</option>
+      </select>
+    {% endcall %}
+  {% endcall %}
+  
+  <!-- Energy distribution -->
+  {% call section(title="Energy Distribution", subtitle="How your energy is used") %}
+    {% call standard_grid(cols_mobile=1, cols_tablet=1, cols_desktop=2, gap=6) %}
+      {{ pie_chart(id="energy_distribution_chart", title="Energy Sources", height=280) }}
+      
+      {% call line_chart(id="consumption_chart", title="Daily Consumption", height=280) %}
         <div class="flex space-x-2">
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded power-time-filter"
-            data-period="today"
-          >
-            Today
-          </button>
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded power-time-filter"
-            data-period="week"
-          >
-            Week
-          </button>
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded power-time-filter"
-            data-period="month"
-          >
-            Month
-          </button>
+          <button class="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">Day</button>
+          <button class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">Week</button>
+          <button class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">Month</button>
         </div>
-      </div>
-      <div class="chart-container">
-        <canvas id="power-chart"></canvas>
-      </div>
-    </div>
+      {% endcall %}
+    {% endcall %}
+  {% endcall %}
 
-    <div class="bg-white rounded-lg shadow p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-medium text-gray-900">Energy Production (kWh)</h3>
-        <div class="flex space-x-2">
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded energy-time-filter"
-            data-period="week"
-          >
-            Week
-          </button>
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded energy-time-filter"
-            data-period="month"
-          >
-            Month
-          </button>
-          <button
-            class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-2 rounded energy-time-filter"
-            data-period="year"
-          >
-            Year
-          </button>
-        </div>
-      </div>
-      <div class="chart-container">
-        <canvas id="energy-chart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Plants overview and energy flow -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow col-span-1 lg:col-span-2">
-      <div class="px-4 py-3 border-b border-gray-200">
-        <h3 class="font-medium text-gray-900">Plants Overview</h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th
-                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Name
-              </th>
-              <th
-                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Current Output
-              </th>
-              <th
-                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Today's Energy
-              </th>
-              <th
-                class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody
-            class="bg-white divide-y divide-gray-200"
-            id="plants-table-body"
-          >
-            {% if plants %} {% for plant in plants %}
-            <tr>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ plant.name }}
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <span
-                    class="status-indicator status-{{ plant.status }}"
-                  ></span>
-                  <span class="text-sm text-gray-900"
-                    >{{ plant.status|capitalize }}</span
-                  >
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="text-sm text-gray-900">
-                  {{ plant.current_output }} kW
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="text-sm text-gray-900">
-                  {{ plant.today_energy }} kWh
-                </div>
-              </td>
-              <td
-                class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
-              >
-                <a
-                  href="/plant/{{ plant.id }}"
-                  class="text-emerald-600 hover:text-emerald-900"
-                  >Details</a
-                >
-              </td>
-            </tr>
-            {% endfor %} {% else %}
-            <tr>
-              <td
-                colspan="5"
-                class="px-4 py-3 text-sm text-gray-500 text-center"
-              >
-                No plants available
-              </td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-      {% if plants|length > 5 %}
-      <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 text-right">
-        <a
-          href="/plants"
-          class="text-sm text-emerald-600 hover:text-emerald-900"
-          >View all plants</a
-        >
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-4">
-      <h3 class="font-medium text-gray-900 mb-4">Energy Flow</h3>
-      <div class="energy-flow-diagram">
-        <!-- Solar panels node -->
-        <div class="energy-flow-node solar-node pulse-animation">
-          <i class="fas fa-solar-panel text-amber-700 mb-1"></i>
-          <span class="text-xs">Solar</span>
-        </div>
-
-        <!-- Inverter node -->
-        <div class="energy-flow-node inverter-node">
-          <i class="fas fa-exchange-alt text-emerald-700 mb-1"></i>
-          <span class="text-xs">Inverter</span>
-        </div>
-
-        <!-- Home consumption node -->
-        <div class="energy-flow-node home-node">
-          <i class="fas fa-home text-blue-700 mb-1"></i>
-          <span class="text-xs">Home</span>
-        </div>
-
-        <!-- Grid connection node -->
-        <div class="energy-flow-node grid-node">
-          <i class="fas fa-plug text-purple-700 mb-1"></i>
-          <span class="text-xs">Grid</span>
-        </div>
-
-        <!-- Connection paths -->
-        <div
-          class="energy-flow-path"
-          style="top: 30px; left: 25%; width: 100px; transform: rotate(30deg)"
-        ></div>
-        <div
-          class="energy-flow-path"
-          style="top: 30px; right: 25%; width: 100px; transform: rotate(-30deg)"
-        ></div>
-        <div
-          class="energy-flow-path"
-          style="top: 95px; right: 25%; width: 80px; transform: rotate(90deg)"
-        ></div>
-      </div>
-
-      <!-- Current values for energy flow -->
-      <div class="grid grid-cols-2 gap-2 mt-6">
-        <div class="bg-emerald-50 p-2 rounded">
-          <p class="text-xs text-gray-600">Generation</p>
-          <p class="text-sm font-medium text-emerald-700" id="flow-generation">
-            0.0 kW
-          </p>
-        </div>
-        <div class="bg-blue-50 p-2 rounded">
-          <p class="text-xs text-gray-600">Consumption</p>
-          <p class="text-sm font-medium text-blue-700" id="flow-consumption">
-            0.0 kW
-          </p>
-        </div>
-        <div class="bg-purple-50 p-2 rounded">
-          <p class="text-xs text-gray-600">To Grid</p>
-          <p class="text-sm font-medium text-purple-700" id="flow-to-grid">
-            0.0 kW
-          </p>
-        </div>
-        <div class="bg-amber-50 p-2 rounded">
-          <p class="text-xs text-gray-600">From Grid</p>
-          <p class="text-sm font-medium text-amber-700" id="flow-from-grid">
-            0.0 kW
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Weather and alerts -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="bg-white rounded-lg shadow p-4 col-span-1">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-medium text-gray-900">Weather Conditions</h3>
-        <a
-          href="/weather"
-          class="text-sm text-emerald-600 hover:text-emerald-800"
-          >Details</a
-        >
-      </div>
-      <div class="flex items-center justify-center py-4" id="weather-container">
-        <div class="text-center">
-          <i class="fas fa-sun text-5xl text-amber-500 mb-2"></i>
-          <div class="text-2xl font-bold" id="weather-temp">25°C</div>
-          <div class="text-gray-600" id="weather-desc">Sunny</div>
-          <div class="mt-2 text-sm">
-            <span class="inline-flex items-center">
-              <i class="fas fa-wind mr-1 text-gray-500"></i>
-              <span id="weather-wind">3 m/s</span>
-            </span>
-            <span class="inline-flex items-center ml-3">
-              <i class="fas fa-tint mr-1 text-gray-500"></i>
-              <span id="weather-humidity">45%</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow col-span-1 lg:col-span-2">
-      <div
-        class="px-4 py-3 border-b border-gray-200 flex justify-between items-center"
-      >
-        <h3 class="font-medium text-gray-900">Recent Alerts</h3>
-        <span
-          class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
-          id="alerts-count"
-          >3 New</span
-        >
-      </div>
-      <div class="overflow-hidden">
-        <ul class="divide-y divide-gray-200" id="alerts-list">
-          <li class="p-4 hover:bg-gray-50">
-            <div class="flex items-start">
-              <div class="flex-shrink-0 pt-0.5">
-                <span
-                  class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center"
-                >
-                  <i class="fas fa-exclamation-triangle text-red-600"></i>
-                </span>
-              </div>
-              <div class="ml-3 flex-1">
-                <p class="text-sm font-medium text-gray-900">Inverter Error</p>
-                <p class="text-sm text-gray-500">
-                  Inverter #3 reported overheating error
-                </p>
-                <p class="mt-1 text-xs text-gray-400">Today, 10:23 AM</p>
-              </div>
-            </div>
-          </li>
-          <li class="p-4 hover:bg-gray-50">
-            <div class="flex items-start">
-              <div class="flex-shrink-0 pt-0.5">
-                <span
-                  class="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center"
-                >
-                  <i class="fas fa-bolt text-amber-600"></i>
-                </span>
-              </div>
-              <div class="ml-3 flex-1">
-                <p class="text-sm font-medium text-gray-900">Low Production</p>
-                <p class="text-sm text-gray-500">
-                  Plant "Home Solar" is producing below expected levels
-                </p>
-                <p class="mt-1 text-xs text-gray-400">Today, 09:15 AM</p>
-              </div>
-            </div>
-          </li>
-          <li class="p-4 hover:bg-gray-50">
-            <div class="flex items-start">
-              <div class="flex-shrink-0 pt-0.5">
-                <span
-                  class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center"
-                >
-                  <i class="fas fa-info-circle text-blue-600"></i>
-                </span>
-              </div>
-              <div class="ml-3 flex-1">
-                <p class="text-sm font-medium text-gray-900">System Update</p>
-                <p class="text-sm text-gray-500">
-                  System updated to version 2.3.1
-                </p>
-                <p class="mt-1 text-xs text-gray-400">Yesterday, 11:42 PM</p>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 text-right">
-        <a
-          href="/notifications"
-          class="text-sm text-emerald-600 hover:text-emerald-900"
-          >View all alerts</a
-        >
-      </div>
-    </div>
-  </div>
+  <!-- Device status cards -->
+  {% call section(title="Device Status", subtitle="Current status of all connected devices") %}
+    {% call standard_grid(cols_mobile=1, cols_tablet=2, cols_desktop=3, gap=4) %}
+      {% for i in range(3) %}
+        {{ device_card(
+          device_name="Inverter " ~ (i + 1),
+          device_type="inverter",
+          status="active",
+          status_text="Online",
+          metrics=[
+            {"label": "Power", "value": (i + 1) * 1.5, "unit": "kW"},
+            {"label": "Today", "value": (i + 1) * 8.2, "unit": "kWh"},
+            {"label": "Voltage", "value": 220 + i * 5, "unit": "V"},
+            {"label": "Current", "value": 6.8 + i * 0.5, "unit": "A"}
+          ],
+          icon="fas fa-solar-panel"
+        ) }}
+      {% endfor %}
+    {% endcall %}
+  {% endcall %}
 </div>
-{% endblock %} {% block scripts %}
-<!-- Chart.js for data visualization -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-<!-- Dashboard specific scripts -->
-<script src="{{ 'js/components/dashboard-app.js'|static_url }}"></script>
-<script src="{{ 'js/utils/chart-utils.js'|static_url }}"></script>
-<script src="{{ 'js/utils/data-formatter.js'|static_url }}"></script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Initialize dashboard components
-    initializeDashboard();
-  });
-
-  /**
-   * Main dashboard initialization
-   */
-  function initializeDashboard() {
-    // Set current date and update time
-    updateDateTime();
-
-    // Initialize charts
-    const powerChart = initializePowerChart();
-    const energyChart = initializeEnergyChart();
-
-    // Initialize dashboard data
-    updateCapacityDisplay();
-    updateEnergyToday();
-    updateWeather();
-
-    // Set up event handlers
-    setupTimeFilterButtons(powerChart, energyChart);
-
-    // Set interval for real-time updates
-    setupPeriodicUpdates();
-  }
-
-  /**
-   * Update the current date display
-   */
-  function updateDateTime() {
-    const now = new Date();
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-
-    document.getElementById("dashboard-date").textContent =
-      now.toLocaleDateString(undefined, options);
-
-    document.getElementById("last-updated-time").textContent =
-      now.toLocaleTimeString();
-  }
-
-  /**
-   * Initialize power output chart
-   * @returns {Chart} The Chart.js instance
-   */
-  function initializePowerChart() {
-    const powerCtx = document.getElementById("power-chart").getContext("2d");
-
-    return new Chart(powerCtx, {
-      type: "line",
-      data: {
-        labels: ["6AM", "8AM", "10AM", "12PM", "2PM", "4PM", "6PM", "8PM"],
-        datasets: [
-          {
-            label: "Power Output (kW)",
-            data: [0.1, 0.5, 2.1, 3.5, 4.2, 3.5, 1.9, 0.3],
-            borderColor: "#10B981",
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      },
-      options: getChartOptions(),
-    });
-  }
-
-  /**
-   * Initialize energy production chart
-   * @returns {Chart} The Chart.js instance
-   */
-  function initializeEnergyChart() {
-    const energyCtx = document.getElementById("energy-chart").getContext("2d");
-
-    return new Chart(energyCtx, {
-      type: "bar",
-      data: {
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        datasets: [
-          {
-            label: "Energy (kWh)",
-            data: [12.5, 19.7, 8.3, 15.2, 20.1, 17.8, 14.3],
-            backgroundColor: "#3B82F6",
-            borderRadius: 4,
-          },
-        ],
-      },
-      options: getChartOptions(),
-    });
-  }
-
-  /**
-   * Common chart configuration
-   * @returns {Object} Chart.js options
-   */
-  function getChartOptions() {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            color: "rgba(0, 0, 0, 0.05)",
-          },
-        },
-        x: {
-          grid: {
-            display: false,
-          },
-        },
-      },
-    };
-  }
-
-  /**
-   * Calculate and display capacity usage
-   */
-  function updateCapacityDisplay() {
-    let totalCapacity = 0;
-    let currentOutput = 0;
-
-    // Fetch data from plants table if available
-    const plantsTable = document.getElementById("plants-table-body");
-    const plantRows = plantsTable.querySelectorAll("tr");
-
-    if (plantRows.length > 0 && !plantRows[0].querySelector("td[colspan]")) {
-      plantRows.forEach((row) => {
-        const outputCell = row.querySelector("td:nth-child(3)");
-        if (outputCell) {
-          const outputText = outputCell.textContent.trim();
-          currentOutput += parseFloat(outputText) || 0;
-        }
-      });
-
-      // Sample capacity - in production, fetch from your API
-      totalCapacity = 10.0;
-    } else {
-      // Default values if no plants data
-      totalCapacity = 10.0;
-      currentOutput = 4.2;
-    }
-
-    // Update display elements
-    updateCapacityUI(totalCapacity, currentOutput);
-    updateEnergyFlowUI(currentOutput);
-  }
-
-  /**
-   * Update capacity UI elements
-   * @param {number} totalCapacity - Total system capacity in kW
-   * @param {number} currentOutput - Current power output in kW
-   */
-  function updateCapacityUI(totalCapacity, currentOutput) {
-    const usagePercentage = (currentOutput / totalCapacity) * 100;
-
-    document.getElementById("total-capacity").textContent =
-      totalCapacity.toFixed(1) + " kW";
-    document.getElementById("capacity-usage-bar").style.width =
-      usagePercentage + "%";
-    document.getElementById("capacity-usage-percentage").textContent =
-      usagePercentage.toFixed(1) + "%";
-  }
-
-  /**
-   * Update energy flow diagram values
-   * @param {number} currentOutput - Current power output in kW
-   */
-  function updateEnergyFlowUI(currentOutput) {
-    // Calculate energy flow values
-    const consumption = (currentOutput * 0.7).toFixed(1);
-    const toGrid = (currentOutput * 0.3).toFixed(1);
-    const fromGrid = "0.0";
-
-    // Update UI elements
-    document.getElementById("flow-generation").textContent =
-      currentOutput.toFixed(1) + " kW";
-    document.getElementById("flow-consumption").textContent =
-      consumption + " kW";
-    document.getElementById("flow-to-grid").textContent = toGrid + " kW";
-    document.getElementById("flow-from-grid").textContent = fromGrid + " kW";
-  }
-
-  /**
-   * Update energy today metrics
-   */
-  function updateEnergyToday() {
-    // Sample data - in production, fetch from your API
-    const energyToday = 12.7; // kWh
-    const yesterdayEnergy = 11.8; // kWh
-    const percentageIncrease =
-      ((energyToday - yesterdayEnergy) / yesterdayEnergy) * 100;
-
-    // Update UI
-    document.getElementById("energy-today").textContent =
-      energyToday.toFixed(1) + " kWh";
-
-    updateEnergyComparisonUI(percentageIncrease);
-  }
-
-  /**
-   * Update the energy comparison UI elements
-   * @param {number} percentageChange - Percentage change vs previous period
-   */
-  function updateEnergyComparisonUI(percentageChange) {
-    const energyComparisonEl = document.getElementById("energy-comparison");
-    const energyIncreaseEl = document.getElementById("energy-increase");
-
-    if (percentageChange >= 0) {
-      energyComparisonEl.classList.remove("text-red-500");
-      energyComparisonEl.classList.add("text-emerald-500");
-      energyComparisonEl.querySelector("i").className = "fas fa-arrow-up";
-    } else {
-      energyComparisonEl.classList.remove("text-emerald-500");
-      energyComparisonEl.classList.add("text-red-500");
-      energyComparisonEl.querySelector("i").className = "fas fa-arrow-down";
-    }
-
-    energyIncreaseEl.textContent = Math.abs(percentageChange).toFixed(1) + "%";
-  }
-
-  /**
-   * Update weather display
-   */
-  function updateWeather() {
-    // Sample data - in production, fetch from a weather API
-    const weather = {
-      temp: 25,
-      description: "Sunny",
-      windSpeed: 3,
-      humidity: 45,
-      icon: "sun", // Font Awesome icon name
-    };
-
-    // Update UI elements
-    document.getElementById("weather-temp").textContent = weather.temp + "°C";
-    document.getElementById("weather-desc").textContent = weather.description;
-    document.getElementById("weather-wind").textContent =
-      weather.windSpeed + " m/s";
-    document.getElementById("weather-humidity").textContent =
-      weather.humidity + "%";
-
-    // Update weather icon
-    const weatherContainer = document.getElementById("weather-container");
-    const iconEl = weatherContainer.querySelector("i");
-    iconEl.className = `fas fa-${weather.icon} text-5xl text-amber-500 mb-2`;
-  }
-
-  /**
-   * Set up time filter buttons for charts
-   * @param {Chart} powerChart - The power chart instance
-   * @param {Chart} energyChart - The energy chart instance
-   */
-  function setupTimeFilterButtons(powerChart, energyChart) {
-    // Power chart time filters
-    setupPowerTimeFilters(powerChart);
-
-    // Energy chart time filters
-    setupEnergyTimeFilters(energyChart);
-
-    // Set initial active buttons
-    setInitialActiveButtons();
-  }
-
-  /**
-   * Set up power chart time filter buttons
-   * @param {Chart} powerChart - The power chart instance
-   */
-  function setupPowerTimeFilters(powerChart) {
-    document.querySelectorAll(".power-time-filter").forEach((button) => {
-      button.addEventListener("click", function () {
-        // Toggle button states
-        toggleButtonStates(".power-time-filter", this);
-
-        // Get data period
-        const period = this.dataset.period;
-
-        // Update chart with new data
-        updatePowerChartData(powerChart, period);
-      });
-    });
-  }
-
-  /**
-   * Set up energy chart time filter buttons
-   * @param {Chart} energyChart - The energy chart instance
-   */
-  function setupEnergyTimeFilters(energyChart) {
-    document.querySelectorAll(".energy-time-filter").forEach((button) => {
-      button.addEventListener("click", function () {
-        // Toggle button states
-        toggleButtonStates(".energy-time-filter", this);
-
-        // Get data period
-        const period = this.dataset.period;
-
-        // Update chart with new data
-        updateEnergyChartData(energyChart, period);
-      });
-    });
-  }
-
-  /**
-   * Toggle the active state of buttons in a group
-   * @param {string} selector - CSS selector for the button group
-   * @param {Element} activeButton - The button to set as active
-   */
-  function toggleButtonStates(selector, activeButton) {
-    // Remove active class from all buttons
-    document.querySelectorAll(selector).forEach((btn) => {
-      btn.classList.remove("bg-emerald-100", "text-emerald-800");
-      btn.classList.add("bg-gray-100", "text-gray-800");
-    });
-
-    // Add active class to clicked button
-    activeButton.classList.remove("bg-gray-100", "text-gray-800");
-    activeButton.classList.add("bg-emerald-100", "text-emerald-800");
-  }
-
-  /**
-   * Update power chart data based on selected time period
-   * @param {Chart} chart - The power chart instance
-   * @param {string} period - The selected time period ('today', 'week', 'month')
-   */
-  function updatePowerChartData(chart, period) {
-    // In production, fetch this data from your API
-    console.log(`Fetching power data for period: ${period}`);
-
-    // Sample data for demonstration
-    const periodData = {
-      today: [0.1, 0.5, 2.1, 3.5, 4.2, 3.5, 1.9, 0.3],
-      week: [1.5, 2.2, 3.1, 2.8, 3.9, 2.5, 1.7, 1.2],
-      month: [2.5, 3.1, 2.7, 3.2, 3.5, 2.9, 2.4, 2.0],
-    };
-
-    // Update chart data
-    chart.data.datasets[0].data = periodData[period] || periodData.today;
-    chart.update();
-  }
-
-  /**
-   * Update energy chart data based on selected time period
-   * @param {Chart} chart - The energy chart instance
-   * @param {string} period - The selected time period ('week', 'month', 'year')
-   */
-  function updateEnergyChartData(chart, period) {
-    // In production, fetch this data from your API
-    console.log(`Fetching energy data for period: ${period}`);
-
-    // Sample data for demonstration
-    const periodData = {
-      week: {
-        data: [12.5, 19.7, 8.3, 15.2, 20.1, 17.8, 14.3],
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      },
-      month: {
-        data: [78, 92, 85, 110, 75, 98, 105, 88, 118],
-        labels: ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9"],
-      },
-      year: {
-        data: [250, 310, 390, 420, 480, 520, 490, 450, 400, 350, 290, 270],
-        labels: [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ],
-      },
-    };
-
-    // Update chart with new data and labels
-    const selectedData = periodData[period] || periodData.week;
-    chart.data.datasets[0].data = selectedData.data;
-    chart.data.labels = selectedData.labels;
-    chart.update();
-  }
-
-  /**
-   * Set initial active state for filter buttons
-   */
-  function setInitialActiveButtons() {
-    // Set initial active power filter button
-    const initialPowerBtn = document.querySelector(
-      '.power-time-filter[data-period="today"]'
-    );
-    initialPowerBtn.classList.add("bg-emerald-100", "text-emerald-800");
-    initialPowerBtn.classList.remove("bg-gray-100", "text-gray-800");
-
-    // Set initial active energy filter button
-    const initialEnergyBtn = document.querySelector(
-      '.energy-time-filter[data-period="week"]'
-    );
-    initialEnergyBtn.classList.add("bg-emerald-100", "text-emerald-800");
-    initialEnergyBtn.classList.remove("bg-gray-100", "text-gray-800");
-  }
-
-  /**
-   * Set up periodic updates for dashboard data
-   */
-  function setupPeriodicUpdates() {
-    // Update data every 10 seconds to simulate real-time updates
-    setInterval(function () {
-      updateDateTime();
-      updateCapacityDisplay();
-    }, 10000);
-  }
-</script>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set current date
+    const date = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('dashboard-date').textContent = date.toLocaleDateString('en-US', options);
+    
+    // Handle energy time range changes
+    const energyTimeRange = document.getElementById('energy_time_range');
+    if (energyTimeRange) {
+      energyTimeRange.addEventListener('change', function() {
+        // In a real app, this would trigger a data refresh
+        console.log('Time range changed to:', this.value);
+      });
+    }
+  });
+</script>
+{% endblock %} 

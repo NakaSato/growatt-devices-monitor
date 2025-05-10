@@ -1,0 +1,211 @@
+{#
+  Sample Data Component
+  --------------------
+  
+  Provides sample data for operations page when actual data is not passed from the backend.
+  This helps avoid template errors and provides a fallback for development/testing.
+#}
+
+{% macro sample_plants() %}
+<script>
+  // Only define sample data if it hasn't been defined by the backend
+  if (typeof samplePlants === 'undefined') {
+    const samplePlants = [
+      {
+        id: 'plant-001',
+        name: 'Sunnyvale Energy Park',
+        location: 'Sunnyvale, CA',
+        capacity: 85.5,
+        status: 'normal',
+        lastReported: '2023-09-15T10:30:00Z',
+        devices: 12,
+        activeAlerts: 0
+      },
+      {
+        id: 'plant-002',
+        name: 'Desert Sun Array',
+        location: 'Phoenix, AZ',
+        capacity: 120.2,
+        status: 'warning',
+        lastReported: '2023-09-15T09:45:00Z',
+        devices: 18,
+        activeAlerts: 2
+      },
+      {
+        id: 'plant-003',
+        name: 'Mountain View Solar',
+        location: 'Boulder, CO',
+        capacity: 42.8,
+        status: 'normal',
+        lastReported: '2023-09-15T10:15:00Z',
+        devices: 8,
+        activeAlerts: 0
+      },
+      {
+        id: 'plant-004',
+        name: 'Coastal Energy Center',
+        location: 'San Diego, CA',
+        capacity: 75.3,
+        status: 'normal',
+        lastReported: '2023-09-15T10:20:00Z',
+        devices: 14,
+        activeAlerts: 1
+      },
+      {
+        id: 'plant-005',
+        name: 'Greenfield Solar Farm',
+        location: 'Austin, TX',
+        capacity: 65.7,
+        status: 'warning',
+        lastReported: '2023-09-15T08:50:00Z',
+        devices: 10,
+        activeAlerts: 3
+      }
+    ];
+
+    // Make sample data available to Alpine.js components
+    window.samplePlants = samplePlants;
+  }
+</script>
+{% endmacro %}
+
+{% macro sample_maintenance_tasks() %}
+<script>
+  // Only define sample data if it hasn't been defined by the backend
+  if (typeof sampleMaintenanceTasks === 'undefined') {
+    const sampleMaintenanceTasks = [
+      {
+        id: 'task-001',
+        title: 'Inverter Replacement',
+        plantId: 'plant-001',
+        plantName: 'Sunnyvale Energy Park',
+        status: 'scheduled',
+        priority: 'high',
+        dueDate: '2023-10-05',
+        assignedTo: 'John Doe',
+        description: 'Replace faulty inverter on string 3.'
+      },
+      {
+        id: 'task-002',
+        title: 'Panel Cleaning',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        status: 'in-progress',
+        priority: 'medium',
+        dueDate: '2023-09-20',
+        assignedTo: 'Maria Garcia',
+        description: 'Clean dust accumulation on all panels in section A.'
+      },
+      {
+        id: 'task-003',
+        title: 'Communication System Check',
+        plantId: 'plant-004',
+        plantName: 'Coastal Energy Center',
+        status: 'completed',
+        priority: 'low',
+        dueDate: '2023-09-12',
+        assignedTo: 'Alex Johnson',
+        description: 'Verify data communication between inverters and monitoring system.'
+      },
+      {
+        id: 'task-004',
+        title: 'Wiring Inspection',
+        plantId: 'plant-003',
+        plantName: 'Mountain View Solar',
+        status: 'scheduled',
+        priority: 'medium',
+        dueDate: '2023-09-25',
+        assignedTo: 'Sarah Williams',
+        description: 'Inspect all DC wiring connections for wear and tear.'
+      },
+      {
+        id: 'task-005',
+        title: 'Firmware Update',
+        plantId: 'plant-005',
+        plantName: 'Greenfield Solar Farm',
+        status: 'pending',
+        priority: 'high',
+        dueDate: '2023-09-22',
+        assignedTo: 'Robert Chen',
+        description: 'Update firmware on all Growatt inverters to latest version.'
+      }
+    ];
+
+    // Make sample data available to Alpine.js components
+    window.sampleMaintenanceTasks = sampleMaintenanceTasks;
+  }
+</script>
+{% endmacro %}
+
+{% macro sample_alerts() %}
+<script>
+  // Only define sample data if it hasn't been defined by the backend
+  if (typeof sampleAlerts === 'undefined') {
+    const sampleAlerts = [
+      {
+        id: 'alert-001',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        type: 'error',
+        message: 'Inverter communication lost',
+        deviceId: 'INV-002-05',
+        timestamp: '2023-09-15T08:30:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-002',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        type: 'warning',
+        message: 'Low energy production',
+        deviceId: 'STR-002-03',
+        timestamp: '2023-09-15T09:15:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-003',
+        plantId: 'plant-004',
+        plantName: 'Coastal Energy Center',
+        type: 'warning',
+        message: 'Battery charge low',
+        deviceId: 'BAT-004-02',
+        timestamp: '2023-09-15T07:45:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-004',
+        plantId: 'plant-005',
+        plantName: 'Greenfield Solar Farm',
+        type: 'error',
+        message: 'Grid connection failure',
+        deviceId: 'INV-005-01',
+        timestamp: '2023-09-15T06:20:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-005',
+        plantId: 'plant-005',
+        plantName: 'Greenfield Solar Farm',
+        type: 'warning',
+        message: 'System overheating',
+        deviceId: 'INV-005-03',
+        timestamp: '2023-09-15T08:10:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-006',
+        plantId: 'plant-005',
+        plantName: 'Greenfield Solar Farm',
+        type: 'info',
+        message: 'Firmware update available',
+        deviceId: 'ALL',
+        timestamp: '2023-09-14T22:00:00Z',
+        resolved: false
+      }
+    ];
+
+    // Make sample data available to Alpine.js components
+    window.sampleAlerts = sampleAlerts;
+  }
+</script>
+{% endmacro %} 

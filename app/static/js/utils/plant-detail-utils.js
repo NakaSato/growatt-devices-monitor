@@ -2,6 +2,82 @@
  * Plant detail utilities for handling plant detail information
  */
 
+// Sample plant data for fallback when API or backend fails
+const samplePlantData = [
+  {
+    id: 10125058,
+    name: "Sample Plant 1",
+    plantName: "Sample Plant 1",
+    status: "active",
+    currentPower: 15.5,
+    eToday: 75.2,
+    eMonth: 1250.5,
+    eTotal: 42500.8,
+    capacity: 20.0,
+    nominalPower: 20000,
+    latitude: 37.7749,
+    longitude: -122.4194,
+    lat: 37.7749,
+    lng: -122.4194,
+    city: "San Francisco",
+    country: "USA",
+    creatDate: "2023-01-15T08:30:00Z",
+    lastUpdateTime: new Date().toISOString(),
+    co2: 21250.4,
+    coal: 8500.2,
+    tree: 350,
+    plantType: "Commercial",
+    timezone: "8",
+    moneyUnit: "USD",
+    moneyUnitText: "US Dollar",
+    isShare: false,
+    onlineNum: 4,
+    accountName: "demo_account",
+    designCompany: "Solar Solutions Inc."
+  },
+  {
+    id: 10125059,
+    name: "Sample Plant 2",
+    plantName: "Sample Plant 2",
+    status: "warning",
+    currentPower: 8.2,
+    eToday: 45.6,
+    eMonth: 950.3,
+    eTotal: 25800.5,
+    capacity: 12.5,
+    nominalPower: 12500,
+    latitude: 34.0522,
+    longitude: -118.2437,
+    lat: 34.0522,
+    lng: -118.2437,
+    city: "Los Angeles",
+    country: "USA",
+    creatDate: "2023-03-22T10:15:00Z",
+    lastUpdateTime: new Date().toISOString(),
+    co2: 12900.1,
+    coal: 5160.0,
+    tree: 215,
+    plantType: "Residential",
+    timezone: "8",
+    moneyUnit: "USD",
+    moneyUnitText: "US Dollar",
+    isShare: true,
+    onlineNum: 2,
+    accountName: "demo_account",
+    designCompany: "GreenTech Solar"
+  }
+];
+
+/**
+ * Initialize sample plant data if not available
+ * Ensures sample data is available for fallback
+ */
+function initializeSamplePlants() {
+  if (typeof window.sample_plants === 'undefined') {
+    window.sample_plants = samplePlantData;
+  }
+}
+
 /**
  * Format date for display in plant details
  * @param {string} dateString - Date string from API
@@ -257,9 +333,27 @@ function paginatePlantDetails(details, page, perPage) {
   return result;
 }
 
-// Calculate total pages for plant details
+// Calculate total pages for details pagination
 function calculateDetailsTotalPages(details, perPage) {
   if (!details) return 1;
-  const totalItems = Object.keys(details).length;
-  return Math.ceil(totalItems / perPage);
+  return Math.ceil(Object.keys(details).length / perPage);
 }
+
+// Initialize sample data when script loads
+initializeSamplePlants();
+
+// Expose functions to global scope
+window.PlantDetailUtils = {
+  formatDate,
+  formatEnergy,
+  formatPower,
+  formatKeyName,
+  formatPlantValue,
+  fetchPlantDetails,
+  fetchPlantsList,
+  normalizeAPIResponse,
+  getPlantStatus,
+  paginatePlantDetails,
+  calculateDetailsTotalPages,
+  initializeSamplePlants
+};

@@ -1,0 +1,96 @@
+{#
+  Card Components
+  --------------
+  
+  Reusable card layouts for displaying information in the Growatt Monitoring System.
+  
+  Components:
+    * standard_card - Basic card with optional header/footer
+    * metric_card - Card for displaying metrics with title, value, and optional icon
+    * status_card - Card for displaying status information with appropriate status indicators
+#}
+
+{% macro standard_card(title="", icon=None, classes="", header_classes="", body_classes="", footer_classes="") %}
+<div class="bg-white rounded-lg shadow {{ classes }}">
+  {% if title or icon %}
+  <div class="p-4 border-b {{ header_classes }}">
+    <div class="flex items-center justify-between">
+      {% if title %}
+      <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
+      {% endif %}
+      {% if icon %}
+      <div class="bg-blue-100 rounded-full p-2">
+        <i class="{{ icon }} text-blue-600"></i>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="p-4 {{ body_classes }}">
+    {{ caller() }}
+  </div>
+  
+  {% if footer_classes %}
+  <div class="px-4 py-3 bg-gray-50 border-t rounded-b-lg {{ footer_classes }}">
+    {% if kwargs.footer %}
+      {{ kwargs.footer }}
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro metric_card(title="", value="", subtitle="", icon=None, color="blue", classes="") %}
+<div class="bg-white rounded-lg shadow p-4 metric-card {{ classes }}">
+  <div class="flex items-center justify-between">
+    <div>
+      {% if title %}
+      <p class="text-sm font-medium text-gray-500">{{ title }}</p>
+      {% endif %}
+      {% if value %}
+      <h2 class="text-xl font-bold text-gray-900 mt-1">{{ value }}</h2>
+      {% endif %}
+      {% if subtitle %}
+      <p class="text-xs text-gray-600 mt-1">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+    {% if icon %}
+    <div class="bg-{{ color }}-100 rounded-full p-2">
+      <i class="{{ icon }} text-{{ color }}-600"></i>
+    </div>
+    {% endif %}
+  </div>
+  {{ caller() if caller else "" }}
+</div>
+{% endmacro %}
+
+{% macro status_card(title="", status="active", status_text="Active", timestamp=None, icon="fas fa-check", classes="") %}
+{% set status_colors = {
+  'active': 'emerald',
+  'warning': 'amber',
+  'error': 'red',
+  'offline': 'gray',
+  'maintenance': 'blue'
+} %}
+{% set color = status_colors[status] %}
+
+<div class="bg-white rounded-lg shadow p-4 metric-card {{ classes }}">
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-sm font-medium text-gray-500">{{ title }}</p>
+      <div class="flex items-center mt-1">
+        <span class="status-indicator status-{{ status }}"></span>
+        <h2 class="text-xl font-bold text-gray-900">{{ status_text }}</h2>
+      </div>
+    </div>
+    <div class="bg-{{ color }}-100 rounded-full p-2">
+      <i class="{{ icon }} text-{{ color }}-600"></i>
+    </div>
+  </div>
+  {% if timestamp %}
+  <p class="text-xs text-gray-600 mt-2">Last updated: {{ timestamp }}</p>
+  {% endif %}
+  {{ caller() if caller else "" }}
+</div>
+{% endmacro %} 

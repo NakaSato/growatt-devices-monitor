@@ -1,0 +1,140 @@
+{#
+  Simulation Card Component
+  ----------------------
+  
+  Reusable card for simulation parameters in diagnosis.
+  
+  Parameters:
+    * card_id - ID for the card element (default: "simulationCard")
+    * form_id - ID for the form element (default: "simulationForm")
+#}
+
+{% macro simulation_card(card_id="simulationCard", form_id="simulationForm") %}
+<div class="bg-white rounded-lg shadow-md mb-4 hidden" id="{{ card_id }}">
+  <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
+    <h6 class="m-0 font-bold text-white">
+      <i class="fas fa-sliders-h mr-2"></i>Simulation Parameters
+    </h6>
+  </div>
+  <div class="p-4">
+    <form id="{{ form_id }}">
+      <div class="mb-4">
+        <label
+          for="faultType"
+          class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+          >Fault Type</label
+        >
+        <select
+          class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          id="faultType"
+        >
+          <option value="">Normal (No Fault)</option>
+          <option value="partial_shading">Partial Shading</option>
+          <option value="soiling">Soiling</option>
+          <option value="degradation">Degradation</option>
+          <option value="series_resistance">Series Resistance</option>
+          <option value="shunt_resistance">Shunt Resistance</option>
+          <option value="bypass_diode_failure">Bypass Diode Failure</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label
+            for="iph"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Photocurrent (A)</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="iph"
+            value="9.5"
+            step="0.1"
+          />
+        </div>
+        <div>
+          <label
+            for="i0"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Saturation Current (A)</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="i0"
+            value="1e-10"
+            step="1e-11"
+          />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label
+            for="rs"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Series Resistance (Ω)</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="rs"
+            value="0.3"
+            step="0.1"
+          />
+        </div>
+        <div>
+          <label
+            for="rsh"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Shunt Resistance (Ω)</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="rsh"
+            value="1000"
+            step="10"
+          />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label
+            for="n"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Ideality Factor</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="n"
+            value="1.2"
+            step="0.1"
+          />
+        </div>
+        <div>
+          <label
+            for="numCells"
+            class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
+            >Number of Cells</label
+          >
+          <input
+            type="number"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="numCells"
+            value="60"
+            step="1"
+          />
+        </div>
+      </div>
+      <button
+        type="button"
+        class="w-full py-2 px-4 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
+        id="generateSimulationBtn"
+      >
+        <i class="fas fa-bolt mr-1"></i> Generate Simulation
+      </button>
+    </form>
+  </div>
+</div>
+{% endmacro %} 

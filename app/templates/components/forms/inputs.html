@@ -1,0 +1,148 @@
+{#
+  Form Input Components
+  -------------------
+  
+  Reusable form input components for the Growatt Monitoring System.
+  
+  Components:
+    * text_input - Text input field with label, help text, and error handling
+    * select - Dropdown select field with options
+    * checkbox - Checkbox input with label
+    * textarea - Multi-line text input
+    * button - Configurable button with various styles
+#}
+
+{% macro text_input(name, label="", placeholder="", value="", type="text", required=false, readonly=false, classes="", label_classes="", input_classes="", help_text="", error="") %}
+<div class="mb-4 {{ classes }}">
+  {% if label %}
+  <label for="{{ name }}" class="block text-sm font-medium text-gray-700 mb-1 {{ label_classes }}">
+    {{ label }}{% if required %}<span class="text-red-500">*</span>{% endif %}
+  </label>
+  {% endif %}
+  <input 
+    type="{{ type }}" 
+    id="{{ name }}" 
+    name="{{ name }}" 
+    value="{{ value }}" 
+    placeholder="{{ placeholder }}" 
+    {% if required %}required{% endif %} 
+    {% if readonly %}readonly{% endif %}
+    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm {{ 'border-red-500' if error }} {{ input_classes }}"
+  >
+  {% if help_text and not error %}
+  <p class="mt-1 text-xs text-gray-500">{{ help_text }}</p>
+  {% endif %}
+  {% if error %}
+  <p class="mt-1 text-xs text-red-600">{{ error }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro select(name, options, selected="", label="", required=false, classes="", label_classes="", select_classes="", help_text="", error="") %}
+<div class="mb-4 {{ classes }}">
+  {% if label %}
+  <label for="{{ name }}" class="block text-sm font-medium text-gray-700 mb-1 {{ label_classes }}">
+    {{ label }}{% if required %}<span class="text-red-500">*</span>{% endif %}
+  </label>
+  {% endif %}
+  <select 
+    id="{{ name }}" 
+    name="{{ name }}" 
+    {% if required %}required{% endif %}
+    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm {{ 'border-red-500' if error }} {{ select_classes }}"
+  >
+    {% for option in options %}
+      {% if option is mapping %}
+        <option value="{{ option.value }}" {{ 'selected' if option.value == selected }}>{{ option.label }}</option>
+      {% else %}
+        <option value="{{ option }}" {{ 'selected' if option == selected }}>{{ option }}</option>
+      {% endif %}
+    {% endfor %}
+  </select>
+  {% if help_text and not error %}
+  <p class="mt-1 text-xs text-gray-500">{{ help_text }}</p>
+  {% endif %}
+  {% if error %}
+  <p class="mt-1 text-xs text-red-600">{{ error }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro checkbox(name, label="", checked=false, classes="", label_classes="", help_text="", error="") %}
+<div class="mb-4 {{ classes }}">
+  <div class="flex items-start">
+    <div class="flex items-center h-5">
+      <input
+        type="checkbox"
+        id="{{ name }}"
+        name="{{ name }}"
+        {% if checked %}checked{% endif %}
+        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+      >
+    </div>
+    <div class="ml-3 text-sm">
+      {% if label %}
+      <label for="{{ name }}" class="font-medium text-gray-700 {{ label_classes }}">{{ label }}</label>
+      {% endif %}
+      {% if help_text and not error %}
+      <p class="text-xs text-gray-500">{{ help_text }}</p>
+      {% endif %}
+      {% if error %}
+      <p class="text-xs text-red-600">{{ error }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro textarea(name, label="", placeholder="", value="", required=false, readonly=false, rows=4, classes="", label_classes="", textarea_classes="", help_text="", error="") %}
+<div class="mb-4 {{ classes }}">
+  {% if label %}
+  <label for="{{ name }}" class="block text-sm font-medium text-gray-700 mb-1 {{ label_classes }}">
+    {{ label }}{% if required %}<span class="text-red-500">*</span>{% endif %}
+  </label>
+  {% endif %}
+  <textarea 
+    id="{{ name }}" 
+    name="{{ name }}" 
+    rows="{{ rows }}" 
+    placeholder="{{ placeholder }}" 
+    {% if required %}required{% endif %} 
+    {% if readonly %}readonly{% endif %}
+    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm {{ 'border-red-500' if error }} {{ textarea_classes }}"
+  >{{ value }}</textarea>
+  {% if help_text and not error %}
+  <p class="mt-1 text-xs text-gray-500">{{ help_text }}</p>
+  {% endif %}
+  {% if error %}
+  <p class="mt-1 text-xs text-red-600">{{ error }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro button(text="Submit", type="button", color="blue", size="md", icon="", classes="", onclick="") %}
+{% set sizes = {
+  'xs': 'px-2 py-1 text-xs',
+  'sm': 'px-3 py-1.5 text-sm',
+  'md': 'px-4 py-2 text-sm',
+  'lg': 'px-5 py-2.5 text-base',
+  'xl': 'px-6 py-3 text-base'
+} %}
+{% set colors = {
+  'blue': 'bg-blue-600 hover:bg-blue-700 text-white',
+  'green': 'bg-emerald-600 hover:bg-emerald-700 text-white',
+  'red': 'bg-red-600 hover:bg-red-700 text-white',
+  'yellow': 'bg-amber-500 hover:bg-amber-600 text-white',
+  'gray': 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+  'white': 'bg-white border border-gray-300 hover:bg-gray-50 text-gray-700'
+} %}
+
+<button 
+  type="{{ type }}" 
+  {% if onclick %}onclick="{{ onclick }}"{% endif %} 
+  class="inline-flex items-center justify-center font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 {{ sizes[size] }} {{ colors[color] }} {{ classes }}"
+>
+  {% if icon %}<i class="{{ icon }} mr-1.5"></i>{% endif %}
+  {{ text }}
+</button>
+{% endmacro %} 

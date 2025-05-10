@@ -1,0 +1,82 @@
+<!-- Alpine.js Plugins -->
+<script defer src="https://unpkg.com/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://unpkg.com/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+
+<!-- Alpine.js Core -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<!-- Component Loader -->
+<script src="{{ url_for('static', filename='js/component-loader.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
+
+<!-- Responsive Utilities -->
+<script src="{{ url_for('static', filename='js/utils/responsive-utils.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
+
+<!-- Data Formatter Utilities -->
+<script src="{{ url_for('static', filename='js/utils/data-formatter.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
+
+<!-- Tailwind Configuration -->
+<script src="{{ url_for('static', filename='js/config/tailwind-config.js') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}"></script>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  // Set Tailwind configuration from our external file
+  tailwind.config = window.tailwindConfig || {};
+</script>
+
+<!-- Alpine Component Registration -->
+<script>
+  document.addEventListener("alpine:init", () => {
+    // Register global components
+    Alpine.data("componentRegistry", () => ({
+      components: {},
+
+      registerComponent(name, callback) {
+        this.components[name] = callback;
+        return this;
+      },
+
+      getComponent(name) {
+        return this.components[name] || (() => ({}));
+      },
+    }));
+
+    // Add useful directives
+    Alpine.directive("lazy-load", (el, { expression }, { evaluate }) => {
+      const src = evaluate(expression);
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (el.tagName === "IMG") {
+              el.src = src;
+            } else {
+              el.style.backgroundImage = `url(${src})`;
+            }
+            observer.disconnect();
+          }
+        });
+      });
+      observer.observe(el);
+    });
+  });
+
+  // Ensure Alpine plugins are registered
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.Alpine) {
+      // This will be executed after Alpine is loaded
+      // If there's a timing issue, the plugin registration will happen on alpine:init
+    }
+  });
+
+  document.addEventListener("alpine:init", function () {
+    // Ensure plugins are properly registered
+    if (
+      window.Alpine &&
+      window.AlpineCollapse &&
+      !Alpine.hasOwnProperty("collapse")
+    ) {
+      Alpine.plugin(AlpineCollapse);
+    }
+  });
+</script> 

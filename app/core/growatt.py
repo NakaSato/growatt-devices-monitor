@@ -871,16 +871,30 @@ class Growatt:
 
     def get_weather(self, plantId: str):
         """
-        Fetch yearly energy statistics.
+        Retrieve weather data for a specific plant.
 
         Parameters:
-        year (str): The year for the energy statistics in 'YYYY' format.
-        plantId (str): The ID of the plant.
-        mixSn (str): The serial number of the mix device.
+        plantId (str): The ID of the plant to retrieve weather data for.
 
-        Example:
-        api.get_energy_stats_daily(year="2024", plantId="1234567", mixSn="ODCUTJF8IFP")
-
+        Returns:
+            dict: A dictionary containing weather data from environmental sensors.
+            Example:
+                {
+                    "currPage": 1,
+                    "pages": 1,
+                    "count": 1,
+                    "datas": [
+                        {
+                            "envTemp": "24.8",      # Environmental temperature in °C
+                            "envHumidity": "92.5",  # Relative humidity in %
+                            "panelTemp": "23.6",    # Panel temperature in °C
+                            "windSpeed": "0.5",     # Wind speed in m/s
+                            "windAngle": "305",     # Wind direction in degrees
+                            "lost": "false",        # Whether the device is offline
+                            "lastUpdateTime": "2025-05-11 04:12:59"
+                        }
+                    ]
+                }
         """
         data = {
             "plantId": str(plantId),
@@ -1024,6 +1038,7 @@ class Growatt:
             error_msg = f"Request failed for plant {plantId}: {str(e)}"
             logger.error(error_msg)
             raise ValueError(error_msg)
+
     def get_fault_logs(self, plantId: str, date: str = None, device_sn: str = "", page_num: int = 1, device_flag: int = 0, fault_type: int = 1):
         """
         Retrieves fault logs for a specific plant.

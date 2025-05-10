@@ -1,0 +1,103 @@
+{#
+  Device Card Components
+  -------------------
+  
+  Reusable device status card components for the Growatt Monitoring System.
+  
+  Components:
+    * device_card - Card displaying device information with status and metrics
+    * device_list_item - Compact list item for displaying device information in lists
+#}
+
+{% macro device_card(device_name, device_type="inverter", status="active", status_text="Online", metrics=[], icon="fas fa-solar-panel", classes="") %}
+{% set status_colors = {
+  'active': 'emerald',
+  'warning': 'amber',
+  'error': 'red',
+  'offline': 'gray',
+  'maintenance': 'blue'
+} %}
+{% set color = status_colors[status] %}
+
+<div class="bg-white rounded-lg shadow p-4 {{ classes }}">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+        <i class="{{ icon }} text-xl text-gray-600"></i>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-base font-semibold text-gray-900">{{ device_name }}</h3>
+        <div class="flex items-center mt-1">
+          <span class="status-indicator status-{{ status }}"></span>
+          <span class="text-sm text-gray-600">{{ status_text }}</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="text-xs px-2 py-1 bg-{{ color }}-100 text-{{ color }}-800 rounded-full">{{ status_text }}</span>
+    </div>
+  </div>
+  
+  {% if metrics|length > 0 %}
+  <div class="mt-4 grid grid-cols-2 gap-2">
+    {% for metric in metrics %}
+    <div class="bg-gray-50 p-2 rounded">
+      <span class="text-xs text-gray-500">{{ metric.label }}</span>
+      <p class="font-medium">{{ metric.value }}{{ metric.unit }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  
+  <!-- Additional content can be passed via caller -->
+  {{ caller() if caller else "" }}
+</div>
+{% endmacro %}
+
+{% macro device_list_item(device_name, device_type="inverter", status="active", status_text="Online", primary_metric=None, secondary_metric=None, icon="fas fa-solar-panel", classes="") %}
+{% set status_colors = {
+  'active': 'emerald',
+  'warning': 'amber',
+  'error': 'red',
+  'offline': 'gray',
+  'maintenance': 'blue'
+} %}
+{% set color = status_colors[status] %}
+
+<div class="bg-white rounded-lg shadow p-3 flex items-center justify-between {{ classes }}">
+  <div class="flex items-center">
+    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+      <i class="{{ icon }} text-gray-600"></i>
+    </div>
+    <div>
+      <h3 class="text-sm font-medium text-gray-900">{{ device_name }}</h3>
+      <div class="flex items-center mt-0.5">
+        <span class="status-indicator status-{{ status }} w-2 h-2"></span>
+        <span class="text-xs text-gray-600">{{ status_text }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="flex items-center space-x-4">
+    {% if primary_metric %}
+    <div class="text-right">
+      <span class="text-xs text-gray-500">{{ primary_metric.label }}</span>
+      <p class="text-sm font-medium">{{ primary_metric.value }}{{ primary_metric.unit }}</p>
+    </div>
+    {% endif %}
+    
+    {% if secondary_metric %}
+    <div class="text-right">
+      <span class="text-xs text-gray-500">{{ secondary_metric.label }}</span>
+      <p class="text-sm font-medium">{{ secondary_metric.value }}{{ secondary_metric.unit }}</p>
+    </div>
+    {% endif %}
+    
+    <div>
+      <button class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% endmacro %} 

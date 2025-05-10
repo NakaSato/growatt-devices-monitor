@@ -1,0 +1,5 @@
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?_ts={{ now|default(None) or config.get('LAST_UPDATE', '') or range(1, 9999)|random }}" /> 

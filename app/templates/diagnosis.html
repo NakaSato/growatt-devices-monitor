@@ -1,1141 +1,478 @@
-{% extends "base.html" %} {% block title %}IV Curve Diagnosis | Growatt Devices
-Monitor{% endblock %} {% block additional_head %}
+{% extends "base.html" %}
+
+{% block title %}IV Curve Diagnosis | Growatt Devices Monitor{% endblock %}
+
+{% block additional_head %}
 <!-- Chart.js for plotting IV curves -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <!-- html2canvas and jsPDF for PDF generation in browser -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-{% endblock %} {% block content %}
-<!-- Page Heading -->
-<div class="flex flex-col sm:flex-row items-center justify-between mb-4">
-  <h1 class="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
-    <i class="fas fa-wave-square mr-2"></i>IV Curve Diagnosis
-  </h1>
-  <div class="flex space-x-2">
-    <button
-      class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
-      id="generateReportBtn"
-    >
-      <i class="fas fa-file-pdf fa-sm mr-1"></i> Generate Report
-    </button>
-    <button
-      class="px-4 py-2 text-sm font-medium bg-cyan-600 text-white rounded shadow hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
-      id="simulateBtn"
-    >
-      <i class="fas fa-flask fa-sm mr-1"></i> Simulate IV Curve
-    </button>
-  </div>
-</div>
+{% endblock %}
+
+{% block content %}
+<!-- Import components -->
+{% from "components/common/page_header.html" import page_header %}
+{% from "components/diagnosis/iv_curve_form.html" import iv_curve_form %}
+{% from "components/diagnosis/simulation_card.html" import simulation_card %}
+{% from "components/diagnosis/diagnosis_result.html" import diagnosis_result %}
+
+<!-- Page Header -->
+{{ page_header(
+  title="IV Curve Diagnosis",
+  icon_class="fas fa-wave-square",
+  action_buttons=[
+    {
+      "text": "Generate Report",
+      "icon": "fas fa-file-pdf",
+      "id": "generateReportBtn"
+    },
+    {
+      "text": "Simulate IV Curve",
+      "icon": "fas fa-flask",
+      "color": "cyan",
+      "id": "simulateBtn"
+    }
+  ]
+) }}
 
 <!-- Content Row -->
 <div class="flex flex-col lg:flex-row lg:space-x-4">
-  <!-- IV Curve Input -->
+  <!-- Left Column - Input Section -->
   <div class="w-full lg:w-1/2">
-    <div
-      class="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
-    >
-      <div
-        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500"
-      >
-        <h6 class="m-0 font-bold text-white">
-          <i class="fas fa-input mr-2"></i>IV Curve Input
-        </h6>
-        <div class="relative">
-          <button
-            class="text-white opacity-80 hover:opacity-100 focus:outline-none"
-            id="dropdownMenuButton"
-          >
-            <i class="fas fa-ellipsis-v"></i>
-          </button>
-          <div
-            class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
-            id="dropdownMenu"
-          >
-            <div class="px-4 py-2 text-sm text-gray-700 font-semibold border-b">
-              Input Options:
-            </div>
-            <button
-              class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-              id="clearDataBtn"
-            >
-              <i class="fas fa-eraser fa-sm mr-2 text-gray-400"></i>Clear Data
-            </button>
-            <button
-              class="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-              id="uploadCsvBtn"
-            >
-              <i class="fas fa-file-csv fa-sm mr-2 text-gray-400"></i>Upload CSV
-            </button>
-            <input type="file" id="csvFileInput" accept=".csv" class="hidden" />
-          </div>
-        </div>
-      </div>
-      <div class="p-4">
-        <form id="ivCurveForm">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label
-                for="moduleId"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Module ID</label
-              >
-              <input
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="moduleId"
-                placeholder="Enter module ID"
-              />
-            </div>
-            <div>
-              <label
-                for="plantName"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Plant Name</label
-              >
-              <input
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="plantName"
-                placeholder="Enter plant name"
-              />
-            </div>
-          </div>
-          <div class="mb-4">
-            <label
-              for="temperature"
-              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-              >Temperature (°C)</label
-            >
-            <input
-              type="number"
-              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              id="temperature"
-              value="25"
-              step="0.1"
-            />
-          </div>
-          <div class="mb-4">
-            <label
-              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-              >IV Curve Data</label
-            >
-            <div class="mb-3">
-              <div class="flex">
-                <span
-                  class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500"
-                >
-                  <i class="fas fa-bolt mr-1"></i>Voltage (V)
-                </span>
-                <input
-                  type="text"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  id="voltageInput"
-                  placeholder="Comma-separated values, e.g., 0,1,2,3,..."
-                />
-              </div>
-            </div>
-            <div>
-              <div class="flex">
-                <span
-                  class="inline-flex items-center px-3 py-2 text-sm rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500"
-                >
-                  <i class="fas fa-tachometer-alt mr-1"></i>Current (A)
-                </span>
-                <input
-                  type="text"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  id="currentInput"
-                  placeholder="Comma-separated values, e.g., 10,9.5,9,8.5,..."
-                />
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
-            id="diagnoseBtn"
-          >
-            <i class="fas fa-stethoscope mr-1"></i> Diagnose
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Simulation Parameters (Initially Hidden) -->
-    <div class="bg-white rounded-lg shadow-md mb-4 hidden" id="simulationCard">
-      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
-        <h6 class="m-0 font-bold text-white">
-          <i class="fas fa-sliders-h mr-2"></i>Simulation Parameters
-        </h6>
-      </div>
-      <div class="p-4">
-        <form id="simulationForm">
-          <div class="mb-4">
-            <label
-              for="faultType"
-              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-              >Fault Type</label
-            >
-            <select
-              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              id="faultType"
-            >
-              <option value="">Normal (No Fault)</option>
-              <option value="partial_shading">Partial Shading</option>
-              <option value="soiling">Soiling</option>
-              <option value="degradation">Degradation</option>
-              <option value="series_resistance">Series Resistance</option>
-              <option value="shunt_resistance">Shunt Resistance</option>
-              <option value="bypass_diode_failure">Bypass Diode Failure</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label
-                for="iph"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Photocurrent (A)</label
-              >
-              <input
-                type="number"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="iph"
-                value="10.0"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label
-                for="i0"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Saturation Current (A)</label
-              >
-              <input
-                type="number"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="i0"
-                value="1e-10"
-                step="1e-11"
-              />
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label
-                for="rs"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Series Resistance (Ω)</label
-              >
-              <input
-                type="number"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="rs"
-                value="0.1"
-                step="0.01"
-              />
-            </div>
-            <div>
-              <label
-                for="rsh"
-                class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-                >Shunt Resistance (Ω)</label
-              >
-              <input
-                type="number"
-                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                id="rsh"
-                value="100.0"
-                step="5.0"
-              />
-            </div>
-          </div>
-          <div class="mb-4">
-            <label
-              for="voc"
-              class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1"
-              >Open Circuit Voltage (V)</label
-            >
-            <input
-              type="number"
-              class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              id="voc"
-              value="40.0"
-              step="0.5"
-            />
-          </div>
-          <button
-            type="button"
-            class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
-            id="runSimulationBtn"
-          >
-            <i class="fas fa-play-circle mr-1"></i> Run Simulation
-          </button>
-        </form>
-      </div>
-    </div>
+    {{ iv_curve_form(on_submit="diagnoseIVCurve()") }}
+    {{ simulation_card() }}
   </div>
-
-  <!-- Diagnosis Results -->
+  
+  <!-- Right Column - Results -->
   <div class="w-full lg:w-1/2">
-    <div
-      class="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
-    >
-      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
-        <h6 class="m-0 font-bold text-white">
-          <i class="fas fa-chart-line mr-2"></i>IV Curve Analysis
-        </h6>
-      </div>
-      <div class="p-4">
-        <div class="relative h-[300px]" style="position: relative">
-          <canvas id="ivCurveChart"></canvas>
-        </div>
-      </div>
-    </div>
+    {{ diagnosis_result() }}
+  </div>
+</div>
 
-    <div
-      id="diagnosisResultsCard"
-      class="bg-white rounded-lg shadow-md mb-4 hidden overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
-    >
-      <div class="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
-        <h6 class="m-0 font-bold text-white">
-          <i class="fas fa-clipboard-check mr-2"></i>Diagnosis Results
-        </h6>
-      </div>
-      <div class="p-4">
-        <div id="diagnosisResults">
-          <!-- Results will be populated here by JavaScript -->
+<!-- Additional Content: Historical Data Comparison -->
+<div class="mt-6">
+  <div class="bg-white rounded-lg shadow-md overflow-hidden" id="historicalDataCard">
+    <div class="px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500">
+      <h6 class="m-0 font-bold text-white">
+        <i class="fas fa-history mr-2"></i>Historical Data Comparison
+      </h6>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-700 mb-4">Compare current IV curve with historical data to identify degradation patterns.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="comparisonDate" class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">
+            Comparison Date
+          </label>
+          <input type="date" id="comparisonDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
         </div>
+        <div>
+          <label for="comparisonType" class="block text-xs uppercase tracking-wide text-gray-600 font-semibold mb-1">
+            Comparison Type
+          </label>
+          <select id="comparisonType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <option value="direct">Direct Comparison</option>
+            <option value="percentage">Percentage Difference</option>
+            <option value="normalized">Temperature Normalized</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <canvas id="comparisonChart" class="w-full h-64"></canvas>
+      </div>
+      
+      <div class="flex justify-end">
+        <button type="button" id="runComparisonBtn" class="px-4 py-2 bg-indigo-600 text-white font-medium rounded shadow hover:bg-indigo-700 focus:outline-none">
+          <i class="fas fa-chart-line mr-1"></i> Run Comparison
+        </button>
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
 
-<!-- Report Modal -->
-<div
-  class="fixed inset-0 z-50 flex items-center justify-center hidden"
-  id="reportModal"
->
-  <div class="absolute inset-0 bg-black bg-opacity-50" id="modalOverlay"></div>
-  <div
-    class="relative bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] flex flex-col"
-  >
-    <div class="px-6 py-4 border-b flex justify-between items-center">
-      <h5 class="text-xl font-bold text-gray-800">
-        <i class="fas fa-file-medical-alt mr-2"></i>IV Curve Diagnosis Report
-      </h5>
-      <button
-        type="button"
-        class="text-gray-500 hover:text-gray-700 focus:outline-none"
-        id="closeReportBtn"
-      >
-        <span class="text-2xl">&times;</span>
-      </button>
-    </div>
-    <div class="p-6 overflow-y-auto flex-grow">
-      <div id="reportContainer">
-        <!-- Report content will be generated here -->
-      </div>
-    </div>
-    <div class="px-6 py-4 border-t flex justify-end">
-      <button
-        type="button"
-        class="px-4 py-2 mr-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-100"
-        id="closeModalBtn"
-      >
-        Close
-      </button>
-      <button
-        type="button"
-        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        id="downloadReportBtn"
-      >
-        <i class="fas fa-download mr-1"></i> Download as PDF
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Loading Overlay -->
-<div
-  class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 invisible opacity-0 transition-opacity duration-300"
-  id="loadingOverlay"
->
-  <div
-    class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"
-  ></div>
-</div>
-
-{% endblock %} {% block additional_scripts %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/iv-curve-diagnosis.js') }}"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Initialize variables
-    let ivCurveChart = null;
-    let currentDiagnosisResult = null;
-    let simulatedData = null;
-
-    // DOM elements
-    const diagnoseBtn = document.getElementById("diagnoseBtn");
-    const simulateBtn = document.getElementById("simulateBtn");
-    const runSimulationBtn = document.getElementById("runSimulationBtn");
-    const simulationCard = document.getElementById("simulationCard");
-    const diagnosisResultsCard = document.getElementById(
-      "diagnosisResultsCard"
-    );
-    const generateReportBtn = document.getElementById("generateReportBtn");
-    const downloadReportBtn = document.getElementById("downloadReportBtn");
-    const clearDataBtn = document.getElementById("clearDataBtn");
-    const uploadCsvBtn = document.getElementById("uploadCsvBtn");
-    const csvFileInput = document.getElementById("csvFileInput");
-    const loadingOverlay = document.getElementById("loadingOverlay");
-    const reportModal = document.getElementById("reportModal");
-    const closeModalBtn = document.getElementById("closeModalBtn");
-    const closeReportBtn = document.getElementById("closeReportBtn");
-    const modalOverlay = document.getElementById("modalOverlay");
-    const dropdownMenuButton = document.getElementById("dropdownMenuButton");
-    const dropdownMenu = document.getElementById("dropdownMenu");
-
-    // Setup dropdown menu toggle
-    dropdownMenuButton.addEventListener("click", function () {
-      dropdownMenu.classList.toggle("hidden");
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener("click", function (event) {
-      if (
-        !dropdownMenuButton.contains(event.target) &&
-        !dropdownMenu.contains(event.target)
-      ) {
-        dropdownMenu.classList.add("hidden");
-      }
-    });
-
-    // Modal setup
-    const showModal = () => reportModal.classList.remove("hidden");
-    const hideModal = () => reportModal.classList.add("hidden");
-
-    closeModalBtn.addEventListener("click", hideModal);
-    closeReportBtn.addEventListener("click", hideModal);
-    modalOverlay.addEventListener("click", hideModal);
-
-    // Initialize Chart.js
-    function initChart() {
-      const ctx = document.getElementById("ivCurveChart").getContext("2d");
-
-      ivCurveChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: "Current (A)",
-              yAxisID: "y",
-              borderColor: "rgb(59, 130, 246)",
-              backgroundColor: "rgba(59, 130, 246, 0.05)",
-              borderWidth: 2,
-              pointRadius: 0,
-              data: [],
-              fill: true,
-            },
-            {
-              label: "Power (W)",
-              yAxisID: "y1",
-              borderColor: "rgb(239, 68, 68)",
-              backgroundColor: "rgba(239, 68, 68, 0.05)",
-              borderWidth: 2,
-              pointRadius: 0,
-              data: [],
-              fill: true,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: "Voltage (V)",
-              },
-            },
-            y: {
-              type: "linear",
-              display: true,
-              position: "left",
-              title: {
-                display: true,
-                text: "Current (A)",
-              },
-            },
-            y1: {
-              type: "linear",
-              display: true,
-              position: "right",
-              title: {
-                display: true,
-                text: "Power (W)",
-              },
-              grid: {
-                drawOnChartArea: false,
-              },
-            },
-          },
-        },
+  // Initialize IV curve functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    // Toggle simulation card
+    const simulateBtn = document.getElementById('simulateBtn');
+    const simulationCard = document.getElementById('simulationCard');
+    
+    if (simulateBtn && simulationCard) {
+      simulateBtn.addEventListener('click', function() {
+        simulationCard.classList.toggle('hidden');
       });
     }
-
-    // Initialize chart
-    initChart();
-
-    // Event Listeners
-    diagnoseBtn.addEventListener("click", diagnoseIVCurve);
-    simulateBtn.addEventListener("click", toggleSimulationCard);
-    runSimulationBtn.addEventListener("click", runSimulation);
-    generateReportBtn.addEventListener("click", generateReport);
-    downloadReportBtn.addEventListener("click", downloadReportAsPDF);
-    clearDataBtn.addEventListener("click", clearData);
-    uploadCsvBtn.addEventListener("click", () => csvFileInput.click());
-    csvFileInput.addEventListener("change", handleCsvUpload);
-
-    // Functions for IV curve diagnosis
-    function diagnoseIVCurve() {
-      const voltageInput = document.getElementById("voltageInput").value;
-      const currentInput = document.getElementById("currentInput").value;
-      const temperature = parseFloat(
-        document.getElementById("temperature").value
-      );
-      const moduleId = document.getElementById("moduleId").value || "unknown";
-      const plantName =
-        document.getElementById("plantName").value || "Unknown Plant";
-
-      if (!voltageInput || !currentInput) {
-        alert("Please enter voltage and current data");
-        return;
-      }
-
-      // Parse the input data
-      const voltage = voltageInput.split(",").map((v) => parseFloat(v.trim()));
-      const current = currentInput.split(",").map((c) => parseFloat(c.trim()));
-
-      if (voltage.length !== current.length) {
-        alert("Voltage and current arrays must have the same length");
-        return;
-      }
-
-      // Show loading overlay
-      showLoading();
-
-      // Prepare the request data
-      const requestData = {
-        voltage: voltage,
-        current: current,
-        temperature: temperature,
-        module_id: moduleId,
-        plant_name: plantName,
-      };
-
-      // Send diagnosis request to API
-      fetch("/api/diagnosis/iv-curve", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.status === "success") {
-            currentDiagnosisResult = data.data;
-            updateChart(voltage, current);
-            displayDiagnosisResults(data.data);
-            hideLoading();
-          } else {
-            alert("Error: " + data.error);
-            hideLoading();
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          alert("Error occurred during diagnosis: " + error.message);
-          hideLoading();
-        });
-    }
-
-    function toggleSimulationCard() {
-      simulationCard.classList.toggle("hidden");
-    }
-
-    function runSimulation() {
-      const faultType = document.getElementById("faultType").value;
-      const iph = parseFloat(document.getElementById("iph").value);
-      const i0 = parseFloat(document.getElementById("i0").value);
-      const rs = parseFloat(document.getElementById("rs").value);
-      const rsh = parseFloat(document.getElementById("rsh").value);
-      const voc = parseFloat(document.getElementById("voc").value);
-
-      // Show loading overlay
-      showLoading();
-
-      // Build query parameters
-      let queryParams = new URLSearchParams({
-        i_ph: iph,
-        i_0: i0,
-        r_s: rs,
-        r_sh: rsh,
-        v_oc: voc,
+    
+    // Initialize dropdown menu
+    const dropdownMenuButton = document.getElementById('dropdownMenuButton');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    
+    if (dropdownMenuButton && dropdownMenu) {
+      dropdownMenuButton.addEventListener('click', function() {
+        dropdownMenu.classList.toggle('hidden');
       });
-
-      if (faultType) {
-        queryParams.append("fault", faultType);
-      }
-
-      // Send simulation request to API
-      fetch(`/api/diagnosis/simulate-iv-curve?${queryParams.toString()}`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.status === "success") {
-            simulatedData = data.data;
-
-            // Update the input fields with simulated data
-            document.getElementById("voltageInput").value =
-              data.data.voltage.join(",");
-            document.getElementById("currentInput").value =
-              data.data.current.join(",");
-
-            // Fill form fields with simulated data
-            document.getElementById("moduleId").value =
-              "Simulated_" + (faultType || "Normal");
-            document.getElementById("plantName").value = "Simulation Plant";
-
-            // Update the chart
-            updateChart(data.data.voltage, data.data.current);
-
-            // Display the diagnosis results
-            currentDiagnosisResult = data.data.diagnosis;
-            displayDiagnosisResults(data.data.diagnosis);
-
-            hideLoading();
-          } else {
-            alert("Error: " + data.error);
-            hideLoading();
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          alert("Error occurred during simulation: " + error.message);
-          hideLoading();
-        });
-    }
-
-    function updateChart(voltage, current) {
-      // Calculate power
-      const power = voltage.map((v, i) => v * current[i]);
-
-      // Update chart data
-      ivCurveChart.data.labels = voltage;
-      ivCurveChart.data.datasets[0].data = current;
-      ivCurveChart.data.datasets[1].data = power;
-
-      // Update chart
-      ivCurveChart.update();
-    }
-
-    function displayDiagnosisResults(diagnosisResult) {
-      const diagnosisResults = document.getElementById("diagnosisResults");
-      const faultType = diagnosisResult.fault_type;
-      const healthScore = diagnosisResult.health_score;
-      const confidence = diagnosisResult.confidence * 100;
-      const params = diagnosisResult.parameters;
-      const recommendations = diagnosisResult.recommendations;
-
-      // Format the fault type for display
-      const formattedFaultType = faultType
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (l) => l.toUpperCase());
-
-      // Get color based on health score
-      let healthColor = "bg-red-600"; // critical
-      if (healthScore >= 90) {
-        healthColor = "bg-green-500"; // excellent
-      } else if (healthScore >= 75) {
-        healthColor = "bg-green-600"; // good
-      } else if (healthScore >= 50) {
-        healthColor = "bg-yellow-500"; // fair
-      } else if (healthScore >= 25) {
-        healthColor = "bg-orange-500"; // poor
-      }
-
-      // Get color for fault badge
-      let faultColor = "bg-green-500"; // normal
-      if (faultType === "partial_shading") {
-        faultColor = "bg-yellow-500";
-      } else if (
-        [
-          "soiling",
-          "degradation",
-          "series_resistance",
-          "shunt_resistance",
-          "bypass_diode_failure",
-        ].includes(faultType)
-      ) {
-        faultColor = "bg-red-500";
-      }
-
-      // Build HTML for diagnosis results
-      let html = `
-        <div class="border-l-4 border-blue-500 bg-white p-5 rounded shadow-md mb-6 transition-transform duration-300 hover:-translate-y-1">
-          <div class="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide text-white ${faultColor} mb-4 shadow-sm">${formattedFaultType}</div>
-          <h5 class="text-lg font-semibold mb-2">Health Score: ${healthScore.toFixed(
-            1
-          )}%</h5>
-          <div class="relative w-full h-2 bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 rounded mb-3">
-            <div class="absolute w-4 h-4 bg-white rounded-full border-2 border-gray-800 shadow -translate-y-1/2 top-1/2" style="left: ${healthScore}%; transform: translateX(-50%) translateY(-50%);"></div>
-          </div>
-          <p class="mb-4">Confidence: ${confidence.toFixed(1)}%</p>
-        </div>
-        
-        <h6 class="text-sm font-bold uppercase tracking-wide text-gray-700 mb-2">IV Curve Parameters</h6>
-        <div class="overflow-x-auto mb-6">
-          <table class="min-w-full bg-white rounded-lg overflow-hidden">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parameter</th>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Value</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Short Circuit Current (Isc)</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.i_sc.toFixed(
-                  3
-                )} A</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Open Circuit Voltage (Voc)</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.v_oc.toFixed(
-                  3
-                )} V</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power (Pmax)</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.p_max.toFixed(
-                  3
-                )} W</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power Point Voltage (Vmpp)</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.v_mpp.toFixed(
-                  3
-                )} V</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Maximum Power Point Current (Impp)</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.i_mpp.toFixed(
-                  3
-                )} A</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-700">Fill Factor</td>
-                <td class="px-4 py-2 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">${params.fill_factor.toFixed(
-                  3
-                )}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <h6 class="text-sm font-bold uppercase tracking-wide text-gray-700 mb-2">Recommendations</h6>
-        <ul class="bg-blue-50 border-l-4 border-blue-500 rounded p-4 space-y-2">
-      `;
-
-      // Add each recommendation
-      recommendations.forEach((rec) => {
-        html += `
-          <li class="flex items-start py-2 border-b border-blue-100 last:border-0">
-            <i class="fas fa-check-circle text-blue-500 mt-1 mr-3"></i>
-            <span class="text-gray-800">${rec}</span>
-          </li>
-        `;
-      });
-
-      html += `</ul>`;
-
-      // Update the results div and show the card
-      diagnosisResults.innerHTML = html;
-      diagnosisResultsCard.classList.remove("hidden");
-    }
-
-    function generateReport() {
-      if (!currentDiagnosisResult) {
-        alert("Please diagnose an IV curve first");
-        return;
-      }
-
-      const moduleId = document.getElementById("moduleId").value || "unknown";
-      const plantName =
-        document.getElementById("plantName").value || "Unknown Plant";
-      const temperature = parseFloat(
-        document.getElementById("temperature").value
-      );
-
-      // Get the current date and time
-      const now = new Date();
-      const formattedDate = now.toLocaleDateString();
-      const formattedTime = now.toLocaleTimeString();
-
-      // Get parameters
-      const params = currentDiagnosisResult.parameters;
-      const faultType = currentDiagnosisResult.fault_type;
-      const healthScore = currentDiagnosisResult.health_score;
-      const recommendations = currentDiagnosisResult.recommendations;
-
-      // Format the fault type for display
-      const formattedFaultType = faultType
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (l) => l.toUpperCase());
-
-      // Get health score class color
-      let healthColor = "#ef4444"; // critical (red-500)
-      if (healthScore >= 90) {
-        healthColor = "#22c55e"; // excellent (green-500)
-      } else if (healthScore >= 75) {
-        healthColor = "#16a34a"; // good (green-600)
-      } else if (healthScore >= 50) {
-        healthColor = "#eab308"; // fair (yellow-500)
-      } else if (healthScore >= 25) {
-        healthColor = "#f97316"; // poor (orange-500)
-      }
-
-      // Build HTML for recommendations
-      let recommendationsHtml = "";
-      recommendations.forEach((rec) => {
-        recommendationsHtml += `<li class="mb-2">${rec}</li>`;
-      });
-
-      // Build report HTML
-      const reportHtml = `
-        <div class="font-sans max-w-4xl mx-auto">
-          <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">IV Curve Diagnosis Report</h1>
-            <div class="text-gray-500 text-sm">Generated on: ${formattedDate} ${formattedTime}</div>
-          </div>
-          
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Module Information</h2>
-            <p class="mb-2"><span class="font-semibold">Module ID:</span> ${moduleId}</p>
-            <p class="mb-2"><span class="font-semibold">Plant Name:</span> ${plantName}</p>
-            <p><span class="font-semibold">Temperature:</span> ${temperature}°C</p>
-          </div>
-          
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Diagnosis Summary</h2>
-            <div class="bg-gray-50 border-l-4 border-blue-500 p-4 mb-4">
-              <div class="text-lg font-bold mb-2">Fault Type: ${formattedFaultType}</div>
-              <div class="text-lg mb-2">
-                Health Score: <span style="color: ${healthColor}">
-                  ${healthScore.toFixed(1)}%
-                </span>
-              </div>
-              <p><span class="font-semibold">Confidence:</span> ${(
-                currentDiagnosisResult.confidence * 100
-              ).toFixed(1)}%</p>
-            </div>
-          </div>
-          
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">IV Curve Plot</h2>
-            <div class="text-center my-6">
-              <canvas id="reportChart" width="700" height="350"></canvas>
-            </div>
-          </div>
-          
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Key Parameters</h2>
-            <table class="min-w-full bg-white border border-gray-200 mb-4">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="px-4 py-2 text-left border-b">Parameter</th>
-                  <th class="px-4 py-2 text-left border-b">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="px-4 py-2 border-b">Short Circuit Current (Isc)</td>
-                  <td class="px-4 py-2 border-b">${params.i_sc.toFixed(
-                    3
-                  )} A</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 border-b">Open Circuit Voltage (Voc)</td>
-                  <td class="px-4 py-2 border-b">${params.v_oc.toFixed(
-                    3
-                  )} V</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 border-b">Maximum Power (Pmax)</td>
-                  <td class="px-4 py-2 border-b">${params.p_max.toFixed(
-                    3
-                  )} W</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 border-b">Maximum Power Point Voltage (Vmpp)</td>
-                  <td class="px-4 py-2 border-b">${params.v_mpp.toFixed(
-                    3
-                  )} V</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 border-b">Maximum Power Point Current (Impp)</td>
-                  <td class="px-4 py-2 border-b">${params.i_mpp.toFixed(
-                    3
-                  )} A</td>
-                </tr>
-                <tr>
-                  <td class="px-4 py-2 border-b">Fill Factor</td>
-                  <td class="px-4 py-2 border-b">${params.fill_factor.toFixed(
-                    3
-                  )}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="mb-8">
-            <h2 class="text-xl font-bold text-blue-600 border-b pb-2 mb-3">Recommendations</h2>
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
-              <ul class="list-disc pl-5">
-                ${recommendationsHtml}
-              </ul>
-            </div>
-          </div>
-          
-          <div class="text-center mt-10 text-sm text-gray-500">
-            <p>Growatt Devices Monitor - IV Curve Diagnosis System</p>
-          </div>
-        </div>
-      `;
-
-      // Update the report container
-      const reportContainer = document.getElementById("reportContainer");
-      reportContainer.innerHTML = reportHtml;
-
-      // Draw the chart in the report
-      setTimeout(() => {
-        const voltage = document
-          .getElementById("voltageInput")
-          .value.split(",")
-          .map((v) => parseFloat(v.trim()));
-        const current = document
-          .getElementById("currentInput")
-          .value.split(",")
-          .map((c) => parseFloat(c.trim()));
-        const power = voltage.map((v, i) => v * current[i]);
-
-        const reportCtx = document
-          .getElementById("reportChart")
-          .getContext("2d");
-
-        const reportChart = new Chart(reportCtx, {
-          type: "line",
-          data: {
-            labels: voltage,
-            datasets: [
-              {
-                label: "Current (A)",
-                yAxisID: "y",
-                borderColor: "rgb(59, 130, 246)",
-                backgroundColor: "rgba(59, 130, 246, 0.05)",
-                borderWidth: 2,
-                pointRadius: 0,
-                data: current,
-                fill: true,
-              },
-              {
-                label: "Power (W)",
-                yAxisID: "y1",
-                borderColor: "rgb(239, 68, 68)",
-                backgroundColor: "rgba(239, 68, 68, 0.05)",
-                borderWidth: 2,
-                pointRadius: 0,
-                data: power,
-                fill: true,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: {
-                title: {
-                  display: true,
-                  text: "Voltage (V)",
-                },
-              },
-              y: {
-                type: "linear",
-                display: true,
-                position: "left",
-                title: {
-                  display: true,
-                  text: "Current (A)",
-                },
-              },
-              y1: {
-                type: "linear",
-                display: true,
-                position: "right",
-                title: {
-                  display: true,
-                  text: "Power (W)",
-                },
-                grid: {
-                  drawOnChartArea: false,
-                },
-              },
-            },
-          },
-        });
-      }, 100);
-
-      // Show the modal
-      showModal();
-    }
-
-    function downloadReportAsPDF() {
-      // Get the report container element
-      const reportElement = document.getElementById("reportContainer");
-
-      // Define PDF document
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("p", "mm", "a4");
-
-      // Show loading overlay
-      showLoading();
-
-      // Use html2canvas to render the report as an image
-      html2canvas(reportElement).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        // Add image to PDF
-        doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        // Add additional pages if content exceeds page height
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          doc.addPage();
-          doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+      
+      // Close the dropdown when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!dropdownMenuButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
+          dropdownMenu.classList.add('hidden');
         }
-
-        // Save the PDF
-        const moduleId = document.getElementById("moduleId").value || "unknown";
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        doc.save(`iv_curve_report_${moduleId}_${timestamp}.pdf`);
-
-        // Hide loading overlay
-        hideLoading();
       });
     }
-
-    function clearData() {
-      document.getElementById("moduleId").value = "";
-      document.getElementById("plantName").value = "";
-      document.getElementById("temperature").value = "25";
-      document.getElementById("voltageInput").value = "";
-      document.getElementById("currentInput").value = "";
-
-      // Reset the chart
-      ivCurveChart.data.labels = [];
-      ivCurveChart.data.datasets[0].data = [];
-      ivCurveChart.data.datasets[1].data = [];
-      ivCurveChart.update();
-
-      // Hide the diagnosis results
-      diagnosisResultsCard.classList.add("hidden");
-
-      // Reset current diagnosis result
-      currentDiagnosisResult = null;
-      simulatedData = null;
+    
+    // CSV file upload handler
+    const uploadCsvBtn = document.getElementById('uploadCsvBtn');
+    const csvFileInput = document.getElementById('csvFileInput');
+    
+    if (uploadCsvBtn && csvFileInput) {
+      uploadCsvBtn.addEventListener('click', function() {
+        csvFileInput.click();
+      });
+      
+      csvFileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          // Handle CSV file processing
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const content = e.target.result;
+            processCSVData(content);
+          };
+          reader.readAsText(file);
+        }
+      });
     }
-
-    function handleCsvUpload(event) {
-      const file = event.target.files[0];
-      if (!file) {
-        return;
+    
+    // Clear data button handler
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    if (clearDataBtn) {
+      clearDataBtn.addEventListener('click', function() {
+        document.getElementById('voltageInput').value = '';
+        document.getElementById('currentInput').value = '';
+        document.getElementById('moduleId').value = '';
+        document.getElementById('plantName').value = '';
+        document.getElementById('temperature').value = '25';
+      });
+    }
+    
+    // Ensure diagnoseBtn has click handler (in case the onclick attribute doesn't work)
+    const diagnoseBtn = document.getElementById('diagnoseBtn');
+    if (diagnoseBtn) {
+      diagnoseBtn.addEventListener('click', diagnoseIVCurve);
+    }
+    
+    // Ensure generateSimulationBtn has click handler
+    const generateSimulationBtn = document.getElementById('generateSimulationBtn');
+    if (generateSimulationBtn) {
+      generateSimulationBtn.addEventListener('click', generateSimulation);
+    }
+  });
+  
+  // Function to diagnose IV curve
+  function diagnoseIVCurve() {
+    // Show results section
+    document.getElementById('diagnosisResultCard').classList.remove('hidden');
+    
+    // Get input values
+    const voltageStr = document.getElementById('voltageInput').value;
+    const currentStr = document.getElementById('currentInput').value;
+    const moduleId = document.getElementById('moduleId').value;
+    const plantName = document.getElementById('plantName').value;
+    const temperature = document.getElementById('temperature').value;
+    
+    // Update result display
+    document.getElementById('resultModuleId').textContent = moduleId || 'Unknown';
+    document.getElementById('resultPlantName').textContent = plantName || 'Unknown';
+    document.getElementById('resultTemperature').textContent = temperature + ' °C';
+    document.getElementById('resultDate').textContent = new Date().toLocaleString();
+    
+    // Parse data
+    const voltages = voltageStr.split(',').map(v => parseFloat(v.trim()));
+    const currents = currentStr.split(',').map(i => parseFloat(i.trim()));
+    
+    // Validate data
+    if (voltages.length !== currents.length || voltages.length === 0) {
+      alert('Invalid data: Voltage and current arrays must have the same length and contain valid numbers.');
+      return;
+    }
+    
+    // Calculate IV curve parameters
+    const voc = Math.max(...voltages);
+    const isc = Math.max(...currents);
+    let pmax = 0;
+    let vmp = 0;
+    let imp = 0;
+    
+    for (let i = 0; i < voltages.length; i++) {
+      const power = voltages[i] * currents[i];
+      if (power > pmax) {
+        pmax = power;
+        vmp = voltages[i];
+        imp = currents[i];
       }
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const contents = e.target.result;
-          const lines = contents.split("\n");
-
-          // Check if file has header
-          let startRow = 0;
-          if (
-            lines[0].toLowerCase().includes("voltage") ||
-            lines[0].toLowerCase().includes("current")
-          ) {
-            startRow = 1;
+    }
+    
+    const ff = (pmax / (voc * isc)) * 100;
+    
+    // Update results
+    document.getElementById('resultVoc').textContent = voc.toFixed(2) + ' V';
+    document.getElementById('resultIsc').textContent = isc.toFixed(2) + ' A';
+    document.getElementById('resultPmax').textContent = pmax.toFixed(2) + ' W';
+    document.getElementById('resultFF').textContent = ff.toFixed(2) + ' %';
+    
+    // Plot IV curve
+    const ctx = document.getElementById('ivCurveChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'IV Curve',
+            data: voltages.map((v, i) => ({ x: v, y: currents[i] })),
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            showLine: true,
+            tension: 0.4
+          },
+          {
+            label: 'Power Curve',
+            data: voltages.map((v, i) => ({ x: v, y: (v * currents[i]) / 10 })), // Scaled for visibility
+            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            showLine: true,
+            tension: 0.4,
+            yAxisID: 'y1'
           }
-
-          const voltage = [];
-          const current = [];
-
-          // Parse CSV data
-          for (let i = startRow; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line) {
-              const values = line.split(",");
-              if (values.length >= 2) {
-                const v = parseFloat(values[0]);
-                const c = parseFloat(values[1]);
-                if (!isNaN(v) && !isNaN(c)) {
-                  voltage.push(v);
-                  current.push(c);
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const datasetLabel = context.dataset.label || '';
+                if (context.datasetIndex === 0) {
+                  return `${datasetLabel}: (${context.parsed.x.toFixed(2)}V, ${context.parsed.y.toFixed(2)}A)`;
+                } else {
+                  return `Power: ${(context.parsed.x * context.parsed.y * 10).toFixed(2)}W`;
                 }
               }
             }
           }
-
-          if (voltage.length > 0 && current.length > 0) {
-            document.getElementById("voltageInput").value = voltage.join(",");
-            document.getElementById("currentInput").value = current.join(",");
-
-            // Update the chart
-            updateChart(voltage, current);
-
-            // Reset file input
-            csvFileInput.value = "";
-          } else {
-            alert("No valid data found in the CSV file");
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Voltage (V)'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Current (A)'
+            }
+          },
+          y1: {
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Power (W/10)'
+            },
+            grid: {
+              drawOnChartArea: false
+            }
           }
-        } catch (error) {
-          console.error("Error parsing CSV:", error);
-          alert("Error parsing CSV file: " + error.message);
         }
-      };
-
-      reader.readAsText(file);
+      }
+    });
+    
+    // Perform diagnosis
+    performDiagnosis(voltages, currents, voc, isc, pmax, ff);
+  }
+  
+  // Function to perform diagnosis
+  function performDiagnosis(voltages, currents, voc, isc, pmax, ff) {
+    // Simple diagnosis logic
+    const issues = [];
+    const recommendations = [];
+    
+    // Fill factor analysis
+    let healthStatus = 'Healthy';
+    let statusColor = 'bg-green-500';
+    
+    if (ff < 65) {
+      healthStatus = 'Degraded';
+      statusColor = 'bg-amber-500';
+      issues.push('Low fill factor detected (FF < 65%)');
+      recommendations.push('Check for partial shading or soiling');
     }
-
-    function showLoading() {
-      loadingOverlay.style.visibility = "visible";
-      loadingOverlay.style.opacity = "1";
+    
+    if (ff < 50) {
+      healthStatus = 'Critical';
+      statusColor = 'bg-red-500';
+      issues.push('Severely low fill factor (FF < 50%)');
+      recommendations.push('Inspect for cell damage or junction box issues');
     }
-
-    function hideLoading() {
-      loadingOverlay.style.opacity = "0";
-      setTimeout(() => {
-        loadingOverlay.style.visibility = "hidden";
-      }, 300);
+    
+    // Update health status
+    document.getElementById('healthStatus').textContent = healthStatus;
+    document.getElementById('healthStatusIndicator').className = `w-3 h-3 rounded-full mr-2 ${statusColor}`;
+    
+    // Set diagnosis description
+    let description = 'The IV curve appears normal with no significant issues detected.';
+    if (issues.length > 0) {
+      description = `Analysis has detected ${issues.length} potential issue(s) with this module.`;
     }
-  });
+    document.getElementById('diagnosisDescription').textContent = description;
+    
+    // Update issues list
+    const issuesContainer = document.getElementById('detectedIssuesContainer');
+    const issuesList = document.getElementById('detectedIssuesList');
+    
+    if (issues.length > 0) {
+      issuesList.innerHTML = '';
+      issues.forEach(issue => {
+        const li = document.createElement('li');
+        li.className = 'p-2 border-l-4 border-amber-500 bg-amber-50';
+        li.innerHTML = `<i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>${issue}`;
+        issuesList.appendChild(li);
+      });
+      issuesContainer.classList.remove('hidden');
+    } else {
+      issuesContainer.classList.add('hidden');
+    }
+    
+    // Update recommendations
+    const recommendationsContainer = document.getElementById('recommendationsContainer');
+    const recommendationsList = document.getElementById('recommendationsList');
+    
+    if (recommendations.length > 0) {
+      recommendationsList.innerHTML = '';
+      recommendations.forEach(recommendation => {
+        const li = document.createElement('li');
+        li.className = 'p-2 border-l-4 border-blue-500 bg-blue-50';
+        li.innerHTML = `<i class="fas fa-lightbulb text-blue-500 mr-2"></i>${recommendation}`;
+        recommendationsList.appendChild(li);
+      });
+      recommendationsContainer.classList.remove('hidden');
+    } else {
+      recommendationsContainer.classList.add('hidden');
+    }
+  }
+  
+  // Function to process CSV data
+  function processCSVData(content) {
+    const lines = content.split('\n');
+    let voltages = [];
+    let currents = [];
+    
+    // Simple CSV parsing (assumes first column is voltage, second is current)
+    for (let i = 1; i < lines.length; i++) { // Skip header row
+      const line = lines[i].trim();
+      if (line) {
+        const values = line.split(',');
+        if (values.length >= 2) {
+          const voltage = parseFloat(values[0]);
+          const current = parseFloat(values[1]);
+          if (!isNaN(voltage) && !isNaN(current)) {
+            voltages.push(voltage);
+            currents.push(current);
+          }
+        }
+      }
+    }
+    
+    // Update form inputs
+    if (voltages.length > 0 && currents.length > 0) {
+      document.getElementById('voltageInput').value = voltages.join(', ');
+      document.getElementById('currentInput').value = currents.join(', ');
+      
+      // Close dropdown after processing
+      document.getElementById('dropdownMenu').classList.add('hidden');
+    } else {
+      alert('Invalid CSV format. Ensure your file has voltage in the first column and current in the second column.');
+    }
+  }
+  
+  // Function to generate a simulated IV curve
+  function generateSimulation() {
+    const faultType = document.getElementById('faultType').value;
+    const iph = parseFloat(document.getElementById('iph').value);
+    const i0 = parseFloat(document.getElementById('i0').value);
+    const rs = parseFloat(document.getElementById('rs').value);
+    const rsh = parseFloat(document.getElementById('rsh').value);
+    const n = parseFloat(document.getElementById('n').value);
+    const numCells = parseInt(document.getElementById('numCells').value);
+    
+    // Generate voltage points (0 to Voc estimate)
+    const voc_estimate = numCells * 0.6; // Rough estimate of Voc
+    const numPoints = 100;
+    const voltages = Array.from({length: numPoints}, (_, i) => (i * voc_estimate) / (numPoints - 1));
+    const currents = [];
+    
+    // Constants
+    const k = 1.38e-23; // Boltzmann constant
+    const q = 1.6e-19; // Electron charge
+    const T = 273 + parseFloat(document.getElementById('temperature').value); // Temperature in Kelvin
+    const Vt = (n * k * T) / q; // Thermal voltage
+    
+    // Simulate IV curve using single-diode model
+    for (const v of voltages) {
+      let current;
+      
+      // Simplified model for different fault types
+      if (faultType === 'partial_shading') {
+        // Simplified model for partial shading
+        const normalCurrent = iph - i0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / rsh);
+        const shadedCurrent = normalCurrent * 0.5;
+        current = (v < (voc_estimate * 0.7)) ? shadedCurrent : normalCurrent;
+      } else if (faultType === 'soiling') {
+        // Soiling reduces photocurrent
+        const reducedIph = iph * 0.85;
+        current = reducedIph - i0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / rsh);
+      } else if (faultType === 'degradation') {
+        // Degradation affects multiple parameters
+        const reducedIph = iph * 0.9;
+        const increasedI0 = i0 * 5;
+        current = reducedIph - increasedI0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / rsh);
+      } else if (faultType === 'series_resistance') {
+        // Increased series resistance
+        const highRs = rs * 3;
+        // Implicit equation, simplified approximation
+        current = iph - i0 * (Math.exp((v + current * highRs) / (Vt * numCells)) - 1) - ((v + current * highRs) / rsh);
+      } else if (faultType === 'shunt_resistance') {
+        // Decreased shunt resistance
+        const lowRsh = rsh * 0.2;
+        current = iph - i0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / lowRsh);
+      } else if (faultType === 'bypass_diode_failure') {
+        // Bypass diode failure creates a step in the curve
+        const normalCurrent = iph - i0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / rsh);
+        current = (v > (voc_estimate * 0.3) && v < (voc_estimate * 0.4)) ? normalCurrent * 0.3 : normalCurrent;
+      } else {
+        // Normal IV curve
+        current = iph - i0 * (Math.exp(v / (Vt * numCells)) - 1) - (v / rsh);
+      }
+      
+      // Apply realistic constraints
+      current = Math.max(0, current);
+      currents.push(current);
+    }
+    
+    // Update form with simulated data
+    document.getElementById('voltageInput').value = voltages.map(v => v.toFixed(2)).join(', ');
+    document.getElementById('currentInput').value = currents.map(i => i.toFixed(3)).join(', ');
+  }
 </script>
 {% endblock %}

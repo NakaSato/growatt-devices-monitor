@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block title %}{{ plant.name }} - Plant Details{%
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ plant.name }} - Plant Details{%
 endblock %} {% block head_scripts %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -6,17 +8,86 @@ endblock %} {% block head_scripts %}
 <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<script src="{% static 'js/utils/plant-detail-utils.js' %}"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ url_for('static', filename='js/utils/plant-detail-utils.js') }}"></script>
+<script>
+  // Fallback utility functions in case the plant-detail-utils.js file doesn't load correctly
+  if (typeof window.formatDate !== 'function') {
+    window.formatDate = function(dateString) {
+      if (!dateString) return "N/A";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    };
+  }
+  
+  if (typeof window.formatEnergy !== 'function') {
+    window.formatEnergy = function(value) {
+      if (value === undefined || value === null) return "N/A";
+      return Number(value).toFixed(2);
+    };
+  }
+  
+  if (typeof window.getPlantStatus !== 'function') {
+    window.getPlantStatus = function(plant) {
+      if (plant.status) return plant.status;
+      if (plant.onlineNum && parseInt(plant.onlineNum, 10) > 0) {
+        return "active";
+      }
+      if (plant.currentPac && parseFloat(plant.currentPac) > 0) {
+        return "active";
+      }
+      return "inactive";
+    };
+  }
+  
+  // Initialize sample plants if not already defined
+  if (typeof window.sample_plants === 'undefined') {
+    window.sample_plants = [
+      {
+        id: 10125058,
+        name: "Sample Plant 1",
+        status: "active",
+        currentPower: 15.5,
+        eToday: 75.2,
+        eMonth: 1250.5,
+        eTotal: 42500.8,
+        capacity: 20.0,
+        latitude: 37.7749,
+        longitude: -122.4194,
+        city: "San Francisco",
+        country: "USA"
+      },
+      {
+        id: 10125059,
+        name: "Sample Plant 2",
+        status: "warning",
+        currentPower: 8.2,
+        eToday: 45.6,
+        eMonth: 950.3,
+        eTotal: 25800.5,
+        capacity: 12.5,
+        latitude: 34.0522,
+        longitude: -118.2437,
+        city: "Los Angeles",
+        country: "USA"
+      }
+    ];
+  }
+</script>
 {% endblock %} {% block content %}
 <div class="min-h-screen bg-gray-50">
   <!-- Hero section with plant overview -->
   <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white">
-    <div class="container mx-auto px-4 py-8">
-      <div class="flex items-center justify-between mb-2">
         <a
-          href="{{ url_for('main_routes.plants') }}"
+          href="{% url 'plants' %}"
+          class="text-white hover:text-emerald-100 flex items-center"
+        >
           class="text-white hover:text-emerald-100 flex items-center"
         >
           <svg

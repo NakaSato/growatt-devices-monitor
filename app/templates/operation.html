@@ -1,167 +1,81 @@
-{% extends "base.html" %} {% block title %}Operations Management - Growatt
-Monitoring System{% endblock %} {% block styles %}
+{% extends "base.html" %}
+
+{% block title %}Operations Management - Growatt Monitoring System{% endblock %}
+
+{% block styles %}
 <!-- Management specific styles -->
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/management.css') }}"
 />
-{% endblock %} {% block head_scripts %}
-<!-- Management utilities -->
+{% endblock %}
+
+{% block head_scripts %}
+<!-- Management utilities - Load operations-utils first to ensure sample data is initialized -->
+<script src="{{ url_for('static', filename='js/utils/operations-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/plant-data-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/export-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/chart-utils.js') }}"></script>
-<script src="{{ url_for('static', filename='js/utils/operations-utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/operations-app.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %} {% block content %}
+
+<!-- Fallback script to ensure samplePlants is defined -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Double-check that sample data is initialized
+    if (typeof window.OperationsUtils !== 'undefined') {
+      window.OperationsUtils.initializeData();
+    }
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Import components -->
+{% from "components/common/page_header.html" import page_header %}
+{% from "components/common/tab_navigation.html" import tab_navigation, tab_panel %}
+{% from "components/operation/sample_data.html" import sample_plants, sample_maintenance_tasks, sample_alerts %}
+
+<!-- Include sample data fallbacks -->
+{{ sample_plants() }}
+{{ sample_maintenance_tasks() }}
+{{ sample_alerts() }}
+
 <div
   class="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-6 border border-gray-200"
 >
   <div x-data="operationsApp" x-init="init()">
     <!-- Header with Tabs Navigation -->
     <div class="border-b border-gray-200">
-      <div
-        class="sm:px-6 px-4 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0"
-      >
-        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
-          Operations Management
-        </h1>
-        <div class="flex space-x-2">
-          <button
-            @click="refreshData"
-            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Refresh Data
-          </button>
-          <button
-            @click="generateOperationsReport"
-            class="inline-flex items-center px-3 py-2 border border-primary-600 text-sm leading-4 font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Generate Report
-          </button>
-        </div>
-      </div>
+      <!-- Page Header -->
+      {{ page_header(
+        title="Operations Management",
+        action_buttons=[
+          {
+            "text": "Refresh Data",
+            "icon": "fas fa-sync",
+            "onclick": "refreshData"
+          },
+          {
+            "text": "Generate Report",
+            "icon": "fas fa-file-pdf",
+            "color": "secondary",
+            "onclick": "generateOperationsReport"
+          }
+        ]
+      ) }}
 
       <!-- Navigation Tabs -->
-      <div class="flex overflow-x-auto scrollbar-hide overflow-hidden">
-        <nav
-          class="flex -mb-px space-x-8 sm:px-6 px-4"
-          aria-label="Operations Tabs"
-          role="tablist"
-        >
-          <button
-            @click="activeTab = 'dashboard'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'dashboard', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'dashboard' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-dashboard"
-            role="tab"
-            :aria-selected="activeTab === 'dashboard'"
-            aria-controls="panel-dashboard"
-          >
-            Dashboard
-          </button>
-
-          <button
-            @click="activeTab = 'operation'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'operation', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'operation' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-operation"
-            role="tab"
-            :aria-selected="activeTab === 'operation'"
-            aria-controls="panel-operation"
-          >
-            Maintenance
-          </button>
-
-          <button
-            @click="activeTab = 'monitoring'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'monitoring', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'monitoring' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-monitoring"
-            role="tab"
-            :aria-selected="activeTab === 'monitoring'"
-            aria-controls="panel-monitoring"
-          >
-            Monitoring
-          </button>
-
-          <button
-            @click="activeTab = 'performance'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'performance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'performance' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-performance"
-            role="tab"
-            :aria-selected="activeTab === 'performance'"
-            aria-controls="panel-performance"
-          >
-            Performance
-          </button>
-
-          <button
-            @click="activeTab = 'alerts'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'alerts', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'alerts' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-alerts"
-            role="tab"
-            :aria-selected="activeTab === 'alerts'"
-            aria-controls="panel-alerts"
-          >
-            Alerts & Notifications
-          </button>
-
-          <button
-            @click="activeTab = 'configuration'"
-            @keydown.right.prevent="navigateTab('next')"
-            @keydown.left.prevent="navigateTab('prev')"
-            :class="{ 'border-primary-600 text-primary-600': activeTab === 'configuration', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'configuration' }"
-            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 ease-in-out"
-            id="tab-configuration"
-            role="tab"
-            :aria-selected="activeTab === 'configuration'"
-            aria-controls="panel-configuration"
-          >
-            Configuration
-          </button>
-        </nav>
-      </div>
+      {% set operation_tabs = [
+        {"id": "dashboard", "label": "Dashboard"},
+        {"id": "operation", "label": "Maintenance"},
+        {"id": "monitoring", "label": "Monitoring"},
+        {"id": "performance", "label": "Performance"},
+        {"id": "alerts", "label": "Alerts & Notifications"},
+        {"id": "configuration", "label": "Configuration"}
+      ] %}
+      
+      {{ tab_navigation(tabs=operation_tabs, active_tab="dashboard") }}
     </div>
 
     <!-- Loading Spinner -->
@@ -208,70 +122,43 @@ Monitoring System{% endblock %} {% block styles %}
     <!-- Tab Content Sections -->
 
     <!-- Dashboard Tab -->
-    <div
-      x-show="activeTab === 'dashboard' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-dashboard"
-      role="tabpanel"
-      aria-labelledby="tab-dashboard"
-    >
+    {% call tab_panel("dashboard") %}
       {% include 'components/operation/operations_dashboard.html' %}
-    </div>
+    {% endcall %}
 
     <!-- Maintenance Tab -->
-    <div
-      x-show="activeTab === 'operation' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-operation"
-      role="tabpanel"
-      aria-labelledby="tab-operation"
-    >
+    {% call tab_panel("operation") %}
       {% include 'components/operation/operation.html' %}
-    </div>
+    {% endcall %}
 
     <!-- Monitoring Tab -->
-    <div
-      x-show="activeTab === 'monitoring' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-monitoring"
-      role="tabpanel"
-      aria-labelledby="tab-monitoring"
-    >
+    {% call tab_panel("monitoring") %}
       {% include 'components/operation/monitoring.html' %}
-    </div>
+    {% endcall %}
 
     <!-- Performance Tab -->
-    <div
-      x-show="activeTab === 'performance' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-performance"
-      role="tabpanel"
-      aria-labelledby="tab-performance"
-    >
+    {% call tab_panel("performance") %}
       {% include 'components/operation/performance.html' %}
-    </div>
+    {% endcall %}
 
-    <!-- Alerts & Notifications Tab -->
-    <div
-      x-show="activeTab === 'alerts' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-alerts"
-      role="tabpanel"
-      aria-labelledby="tab-alerts"
-    >
+    <!-- Alerts Tab -->
+    {% call tab_panel("alerts") %}
       {% include 'components/operation/alerts.html' %}
-    </div>
+    {% endcall %}
 
     <!-- Configuration Tab -->
-    <div
-      x-show="activeTab === 'configuration' && !isLoading && !hasError"
-      class="p-6"
-      id="panel-configuration"
-      role="tabpanel"
-      aria-labelledby="tab-configuration"
-    >
+    {% call tab_panel("configuration") %}
       {% include 'components/operation/configuration.html' %}
-    </div>
+    {% endcall %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Ensure sample data is available for operations page
+  if (typeof window.samplePlants === 'undefined' && typeof window.OperationsUtils !== 'undefined') {
+    window.OperationsUtils.initializeData();
+  }
+</script>
 {% endblock %}

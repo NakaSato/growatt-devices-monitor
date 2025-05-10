@@ -3,6 +3,99 @@
  * Provides utility functions for operations management and solar system configuration
  */
 
+// Initialize sample data if not defined elsewhere
+function initializeData() {
+  // Initialize sample plants if not defined
+  if (typeof window.samplePlants === 'undefined') {
+    window.samplePlants = [
+      {
+        id: 'plant-001',
+        name: 'Sunnyvale Energy Park',
+        location: 'Sunnyvale, CA',
+        capacity: 85.5,
+        status: 'normal',
+        lastReported: '2023-09-15T10:30:00Z',
+        devices: 12,
+        activeAlerts: 0
+      },
+      {
+        id: 'plant-002',
+        name: 'Desert Sun Array',
+        location: 'Phoenix, AZ',
+        capacity: 120.2,
+        status: 'warning',
+        lastReported: '2023-09-15T09:45:00Z',
+        devices: 18,
+        activeAlerts: 2
+      },
+      {
+        id: 'plant-003',
+        name: 'Mountain View Solar',
+        location: 'Boulder, CO',
+        capacity: 42.8,
+        status: 'normal',
+        lastReported: '2023-09-15T10:15:00Z',
+        devices: 8,
+        activeAlerts: 0
+      }
+    ];
+  }
+
+  // Initialize sample maintenance tasks if not defined
+  if (typeof window.sampleMaintenanceTasks === 'undefined') {
+    window.sampleMaintenanceTasks = [
+      {
+        id: 'task-001',
+        title: 'Inverter Replacement',
+        plantId: 'plant-001',
+        plantName: 'Sunnyvale Energy Park',
+        status: 'scheduled',
+        priority: 'high',
+        dueDate: '2023-10-05',
+        assignedTo: 'John Doe',
+        description: 'Replace faulty inverter on string 3.'
+      },
+      {
+        id: 'task-002',
+        title: 'Panel Cleaning',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        status: 'in-progress',
+        priority: 'medium',
+        dueDate: '2023-09-20',
+        assignedTo: 'Maria Garcia',
+        description: 'Clean dust accumulation on all panels in section A.'
+      }
+    ];
+  }
+
+  // Initialize alerts if not defined
+  if (typeof window.sampleAlerts === 'undefined') {
+    window.sampleAlerts = [
+      {
+        id: 'alert-001',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        type: 'error',
+        message: 'Inverter communication lost',
+        deviceId: 'INV-002-05',
+        timestamp: '2023-09-15T08:30:00Z',
+        resolved: false
+      },
+      {
+        id: 'alert-002',
+        plantId: 'plant-002',
+        plantName: 'Desert Sun Array',
+        type: 'warning',
+        message: 'Low energy production',
+        deviceId: 'STR-002-03',
+        timestamp: '2023-09-15T09:15:00Z',
+        resolved: false
+      }
+    ];
+  }
+}
+
 // Format energy values with proper units (kWh, MWh)
 function formatEnergyValue(value, decimals = 2) {
   if (value === null || value === undefined) return "N/A";
@@ -185,8 +278,14 @@ function generateOperationsReport() {
   URL.revokeObjectURL(url);
 }
 
+// Initialize data when the script loads
+document.addEventListener('DOMContentLoaded', function() {
+  initializeData();
+});
+
 // Export utilities
 window.OperationsUtils = {
+  initializeData,
   formatEnergyValue,
   formatPowerValue,
   calculatePerformanceRatio,

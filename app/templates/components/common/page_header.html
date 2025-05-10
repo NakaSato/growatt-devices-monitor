@@ -1,0 +1,69 @@
+{#
+  Page Header Component
+  --------------------
+  
+  Reusable page header with title and optional action buttons.
+  
+  Parameters:
+    * title - The page title
+    * icon_class - Font Awesome icon class (optional)
+    * subtitle - Optional subtitle text
+    * action_buttons - List of button objects with properties: 
+                       text, icon, color, id, onclick (all optional)
+    * container_class - Additional classes for the container (optional)
+#}
+
+{% macro page_header(
+  title, 
+  icon_class=None, 
+  subtitle=None, 
+  action_buttons=[], 
+  container_class="flex flex-col sm:flex-row items-center justify-between mb-4"
+) %}
+<div class="{{ container_class }}">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
+      {% if icon_class %}
+      <i class="{{ icon_class }} mr-2"></i>
+      {% endif %}
+      {{ title }}
+    </h1>
+    {% if subtitle %}
+    <p class="text-sm text-gray-500">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  
+  {% if action_buttons|length > 0 %}
+  <div class="flex space-x-2">
+    {% for button in action_buttons %}
+    <button
+      {% if button.id %}id="{{ button.id }}"{% endif %}
+      {% if button.onclick %}onclick="{{ button.onclick }}"{% endif %}
+      class="px-4 py-2 text-sm font-medium 
+             {% if button.color == 'primary' or not button.color %}
+             bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
+             {% elif button.color == 'secondary' %}
+             bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 focus:ring-blue-500
+             {% elif button.color == 'success' %}
+             bg-green-600 text-white hover:bg-green-700 focus:ring-green-500
+             {% elif button.color == 'danger' %}
+             bg-red-600 text-white hover:bg-red-700 focus:ring-red-500
+             {% elif button.color == 'warning' %}
+             bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500
+             {% elif button.color == 'info' %}
+             bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500
+             {% else %}
+             bg-{{ button.color }}-600 text-white hover:bg-{{ button.color }}-700 focus:ring-{{ button.color }}-500
+             {% endif %}
+             rounded shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-opacity-50 transition duration-150 ease-in-out"
+    >
+      {% if button.icon %}
+      <i class="{{ button.icon }} fa-sm mr-1"></i>
+      {% endif %}
+      {{ button.text }}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %} 

@@ -1,0 +1,44 @@
+{#
+  Grid Layout Components
+  -------------------
+  
+  Reusable grid layouts for organizing content in the Growatt Monitoring System.
+  
+  Components:
+    * standard_grid - Responsive grid system with configurable columns
+    * sidebar_layout - Two-column layout with configurable widths
+    * section - Section container with title and content
+#}
+
+{% macro standard_grid(cols_mobile=1, cols_tablet=2, cols_desktop=4, gap=4, classes="") %}
+<div class="grid grid-cols-{{ cols_mobile }} md:grid-cols-{{ cols_tablet }} lg:grid-cols-{{ cols_desktop }} gap-{{ gap }} {{ classes }}">
+  {{ caller() }}
+</div>
+{% endmacro %}
+
+{% macro sidebar_layout(sidebar_width="1/3", content_width="2/3", gap=6, sidebar_classes="", content_classes="", reverse_mobile=true) %}
+<div class="flex flex-col {% if reverse_mobile %}flex-col-reverse{% endif %} lg:flex-row lg:gap-{{ gap }}">
+  <div class="w-full lg:w-{{ sidebar_width }} {{ sidebar_classes }}">
+    {% if kwargs.sidebar %}
+      {{ kwargs.sidebar }}
+    {% endif %}
+  </div>
+  <div class="w-full lg:w-{{ content_width }} {{ content_classes }}">
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro section(title="", subtitle="", classes="", header_classes="") %}
+<section class="mb-8 {{ classes }}">
+  {% if title %}
+  <div class="mb-4 {{ header_classes }}">
+    <h2 class="text-xl font-bold text-gray-900">{{ title }}</h2>
+    {% if subtitle %}
+    <p class="text-sm text-gray-600 mt-1">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  {{ caller() }}
+</section>
+{% endmacro %} 
