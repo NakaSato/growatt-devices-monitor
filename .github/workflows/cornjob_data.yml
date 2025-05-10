@@ -26,7 +26,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run data collection script
-        run: python scripts/collect_all_data.py
+        run: python script/collect_all_data.py
         env:
           # Add any environment variables your script needs
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
