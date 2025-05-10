@@ -207,3 +207,18 @@ class Config:
             String value of the environment variable
         """
         return os.getenv(env_var, default)
+
+    @classmethod
+    def load_env(cls):
+        """Load environment variables from .env files"""
+        env_paths = [
+            Path('.env'),                   # Root directory .env
+            Path('.env.local'),             # Local overrides
+            Path('app/.env'),               # App directory .env
+            Path(os.path.expanduser('~/.env.growatt'))  # User-specific .env
+        ]
+        
+        for env_path in env_paths:
+            if env_path.exists():
+                load_dotenv(dotenv_path=str(env_path))
+                print(f"Loaded environment from {env_path}")

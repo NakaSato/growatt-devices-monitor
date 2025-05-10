@@ -180,66 +180,50 @@ class GrowattDataCollector:
                 
                 # Store JSON data if collection is enabled
                 if self.collect_json:
-                    # Extract metadata from function and args to determine data type
-                    data_type = 'unknown'
-                    plant_id = None
-                    device_sn = None
-                    
-                    if 'plant' in func_name.lower():
-                        data_type = 'plants'
-                    elif 'device' in func_name.lower():
-                        data_type = 'devices'
-                        if len(args) > 0:
-                            plant_id = args[0]
-                    elif 'energy' in func_name.lower():
-                        data_type = 'energy'
-                        if kwargs.get('plant_id'):
-                            plant_id = kwargs.get('plant_id')
-                        if kwargs.get('device_sn'):
-                            device_sn = kwargs.get('device_sn')
-                    elif 'weather' in func_name.lower():
-                        data_type = 'weather'
-                        if len(args) > 0:
-                            plant_id = args[0]
-                    
-                    self._add_json_data(
-                        data_type=data_type,
-                        data=result,
-                        plant_id=plant_id,
-                        device_sn=device_sn,
-                        source=func_name
-                    )
-                
-                # Check for common API error patterns
-                if isinstance(result, dict):
-                    if result.get('error') or result.get('result') == False or result.get('success') == False:
-                        error_msg = result.get('msg', 'Unknown API error')
-                        logger.error(f"API error in response: {error_msg}")
-                        
-                        # Check if session expired
-                        if 'session' in error_msg.lower() or 'login' in error_msg.lower() or 'auth' in error_msg.lower():
-                            logger.info("Session may have expired, attempting to re-authenticate")
-                            if self.authenticate():
-                                logger.info("Re-authentication successful, retrying API call")
-                                continue
+                    self._collect_json_data(func_name, result, args, kwargs)
                 
                 return result
             except Exception as e:
-                logger.error(f"API call error (attempt {attempt + 1}/{self.retry_count}): {str(e)}")
-                logger.debug("Exception details:", exc_info=True)
-                
+                logger.error(f"Error calling {func_name} (attempt {attempt + 1}/{self.retry_count}): {str(e)}")
                 if attempt < self.retry_count - 1:
-                    logger.info(f"Retrying API call in {self.retry_delay} seconds")
+                    logger.info(f"Retrying in {self.retry_delay} seconds...")
                     time.sleep(self.retry_delay)
-                    
-                    # If this is the second attempt, try re-authenticating
-                    if attempt == 1:
-                        logger.info("Attempting to re-authenticate before retry")
-                        if self.authenticate():
-                            logger.info("Re-authentication successful")
+                else:
+                    logger.error(f"Failed after {self.retry_count} attempts")
+                    return None
+
+    def _collect_json_data(self, func_name, result, args, kwargs):
+        """
+        Helper method to collect JSON data from API calls if enabled.
         
-        logger.critical(f"Failed to call {func_name} after {self.retry_count} attempts")
-        return None  # Return None instead of raising to allow partial data collection
+        Args:
+            func_name: Name of the API function
+            result: Result of the API call
+            args: Arguments passed to the function
+            kwargs: Keyword arguments passed to the function
+        """
+        data_type = 'unknown'
+        plant_id = None
+        device_sn = None
+        
+        if 'plant' in func_name.lower():
+            data_type = 'plants'
+        elif 'device' in func_name.lower():
+            data_type = 'devices'
+            if len(args) > 0:
+                plant_id = args[0]
+        elif 'energy' in func_name.lower():
+            data_type = 'energy'
+            if kwargs.get('plant_id'):
+                plant_id = kwargs.get('plant_id')
+            if kwargs.get('device_sn'):
+                device_sn = kwargs.get('device_sn')
+        elif 'weather' in func_name.lower():
+            data_type = 'weather'
+            if kwargs.get('plant_id'):
+                plant_id = kwargs.get('plant_id')
+        
+        self._add_json_data(data_type, result, plant_id, device_sn, func_name)
     
     def collect_and_store_all_data(self, days_back: int = 7, include_weather: bool = True) -> Dict[str, Any]:
         """

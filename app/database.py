@@ -56,33 +56,7 @@ def get_connection_pool():
         
         while retry_count < max_retries:
             try:
-                # Start with the configured host
-                host = Config.POSTGRES_HOST
-                
-                # If a direct IP address is provided in config, use it to bypass DNS
-                if Config.POSTGRES_IP_ADDRESS:
-                    logger.info(f"Using provided IP address {Config.POSTGRES_IP_ADDRESS} instead of hostname {host}")
-                    host = Config.POSTGRES_IP_ADDRESS
-                else:
-                    logger.info(f"Attempting to connect pool to PostgreSQL database at {host} (attempt {retry_count + 1}/{max_retries})")
-                    
-                    # Try to resolve hostname to IP address
-                    try:
-                        # Force IPv4 resolution if configured
-                        socket_family = socket.AF_INET if Config.POSTGRES_USE_IPV4_ONLY else 0
-                        ip_address = socket.getaddrinfo(host, Config.POSTGRES_PORT, family=socket_family, type=socket.SOCK_STREAM)[0][4][0]
-                        logger.info(f"Resolved {host} to IP address: {ip_address}")
-                        host = ip_address  # Use resolved IP address
-                    except socket.gaierror as dns_error:
-                        logger.warning(f"Could not resolve hostname {host}: {dns_error}")
-                        
-                        # If the hostname contains 'supabase', try using preconfigured Supabase pooler IPs
-                        if 'supabase' in host.lower() and SUPABASE_POOLER_IPS:
-                            # Use the first IP for this attempt, will try others on subsequent retries if needed
-                            pooler_ip_index = retry_count % len(SUPABASE_POOLER_IPS)
-                            host = SUPABASE_POOLER_IPS[pooler_ip_index]
-                            logger.info(f"Trying Supabase pooler IP address: {host}")
-                
+                host = resolve_host()
                 logger.info(f"Creating connection pool to {host}:{Config.POSTGRES_PORT} as {Config.POSTGRES_USER}")
                 _connection_pool = psycopg2.pool.ThreadedConnectionPool(
                     minconn=min_connections,
@@ -127,6 +101,41 @@ def get_connection_pool():
                 raise
                 
     return _connection_pool
+
+def resolve_host():
+    """
+    Resolves the PostgreSQL host from configuration or environment.
+    
+    Returns:
+        str: Resolved host (IP address or hostname)
+    """
+    host = Config.POSTGRES_HOST
+    
+    # If a direct IP address is provided in config, use it to bypass DNS
+    if Config.POSTGRES_IP_ADDRESS:
+        logger.info(f"Using provided IP address {Config.POSTGRES_IP_ADDRESS} instead of hostname {host}")
+        return Config.POSTGRES_IP_ADDRESS
+    
+    logger.info(f"Attempting to resolve hostname {host}")
+    
+    # Try to resolve hostname to IP address
+    try:
+        # Force IPv4 resolution if configured
+        socket_family = socket.AF_INET if Config.POSTGRES_USE_IPV4_ONLY else 0
+        ip_address = socket.getaddrinfo(host, Config.POSTGRES_PORT, family=socket_family, type=socket.SOCK_STREAM)[0][4][0]
+        logger.info(f"Resolved {host} to IP address: {ip_address}")
+        return ip_address
+    except socket.gaierror as dns_error:
+        logger.warning(f"Could not resolve hostname {host}: {dns_error}")
+        
+        # If the hostname contains 'supabase', try using preconfigured Supabase pooler IPs
+        if 'supabase' in host.lower() and SUPABASE_POOLER_IPS:
+            # Use the first IP for this attempt, will try others on subsequent retries if needed
+            pooler_ip_index = retry_count % len(SUPABASE_POOLER_IPS)
+            host = SUPABASE_POOLER_IPS[pooler_ip_index]
+            logger.info(f"Trying Supabase pooler IP address: {host}")
+            return host
+        raise
 
 @contextmanager
 def get_db_connection():
@@ -302,7 +311,209 @@ class DatabaseConnector:
     def __init__(self):
         """Initialize the database connector."""
         pass
+
+    def _prepare_device_data(self, device: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Prepare device data for database insertion/update.
         
+        Args:
+            device: Raw device data dictionary
+            
+        Returns:
+            Dict containing prepared device data with standardized fields
+        """
+        if not device.get('serial_number'):
+            logger.warning(f"Skipping device with no serial number: {device}")
+            return {}
+        
+        # Handle last_update_time field - could be string or datetime
+        if isinstance(device.get('last_update_time'), str):
+            try:
+                # Convert to datetime object if it's a string
+                device['last_update_time'] = datetime.strptime(device['last_update_time'], '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                # If parsing fails, use current datetime
+                logger.warning(f"Invalid date format for last_update_time: {device['last_update_time']}")
+                device['last_update_time'] = datetime.now()
+        
+        # Prepare raw_data as JSON if present
+        raw_data = Json(device.get('raw_data', {})) if device.get('raw_data') else Json({})
+        
+        return {
+            'serial_number': device['serial_number'],
+            'plant_id': device['plant_id'],
+            'alias': device.get('alias', ''),
+            'type': device.get('type', ''),
+            'status': device.get('status', 'unknown'),
+            'last_update_time': device['last_update_time'],
+            'raw_data': raw_data
+        }
+
+    def _check_raw_data_column(self, cursor) -> bool:
+        """
+        Check if raw_data column exists in the devices table.
+        
+        Args:
+            cursor: Database cursor
+            
+        Returns:
+            bool: True if raw_data column exists, False otherwise
+        """
+        try:
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'devices' AND column_name = 'raw_data'
+            """)
+            return cursor.fetchone() is not None
+        except Exception:
+            # If we can't check, assume it doesn't exist
+            return False
+
+    def _save_device_to_db(self, cursor, device_data: Dict[str, Any], raw_data_column_exists: bool) -> None:
+        """
+        Save a single device to the database.
+        
+        Args:
+            cursor: Database cursor
+            device_data: Prepared device data dictionary
+            raw_data_column_exists: Whether raw_data column exists in the table
+        """
+        # Check if the device already exists
+        cursor.execute(
+            """
+            SELECT serial_number FROM devices 
+            WHERE serial_number = %s
+            """,
+            (device_data['serial_number'],)
+        )
+        exists = cursor.fetchone()
+        
+        if exists:
+            if raw_data_column_exists:
+                # Update existing device with raw_data
+                cursor.execute(
+                    """
+                    UPDATE devices 
+                    SET plant_id = %s,
+                        alias = %s,
+                        type = %s,
+                        status = %s,
+                        last_update_time = %s,
+                        last_updated = NOW(),
+                        raw_data = %s
+                    WHERE serial_number = %s
+                    """,
+                    (
+                        device_data['plant_id'],
+                        device_data['alias'],
+                        device_data['type'],
+                        device_data['status'],
+                        device_data['last_update_time'],
+                        device_data['raw_data'],
+                        device_data['serial_number']
+                    )
+                )
+            else:
+                # Update existing device without raw_data
+                cursor.execute(
+                    """
+                    UPDATE devices 
+                    SET plant_id = %s,
+                        alias = %s,
+                        type = %s,
+                        status = %s,
+                        last_update_time = %s,
+                        last_updated = NOW()
+                    WHERE serial_number = %s
+                    """,
+                    (
+                        device_data['plant_id'],
+                        device_data['alias'],
+                        device_data['type'],
+                        device_data['status'],
+                        device_data['last_update_time'],
+                        device_data['serial_number']
+                    )
+                )
+        else:
+            if raw_data_column_exists:
+                # Insert new device with raw_data
+                cursor.execute(
+                    """
+                    INSERT INTO devices 
+                    (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
+                    """,
+                    (
+                        device_data['serial_number'],
+                        device_data['plant_id'],
+                        device_data['alias'],
+                        device_data['type'],
+                        device_data['status'],
+                        device_data['last_update_time'],
+                        device_data['raw_data']
+                    )
+                )
+            else:
+                # Insert new device without raw_data
+                cursor.execute(
+                    """
+                    INSERT INTO devices 
+                    (serial_number, plant_id, alias, type, status, last_update_time, last_updated)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                    """,
+                    (
+                        device_data['serial_number'],
+                        device_data['plant_id'],
+                        device_data['alias'],
+                        device_data['type'],
+                        device_data['status'],
+                        device_data['last_update_time']
+                    )
+                )
+
+    def save_device_data(self, devices_data: List[Dict[str, Any]]) -> bool:
+        """
+        Save device data to the database.
+        This is used by the data collector to save device data retrieved from the Growatt API.
+        
+        Args:
+            devices_data: List of device data dictionaries
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Check if raw_data column exists once for all devices
+                raw_data_column_exists = self._check_raw_data_column(cursor)
+                
+                for device in devices_data:
+                    # Prepare device data
+                    device_data = self._prepare_device_data(device)
+                    if not device_data:
+                        continue
+                    
+                    # Save device to database
+                    self._save_device_to_db(cursor, device_data, raw_data_column_exists)
+                
+                conn.commit()
+                return True
+            
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL error saving device data: {e}")
+            if conn:
+                conn.rollback()
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error saving device data: {e}")
+            if conn:
+                conn.rollback()
+            return False
+
     def query(self, query_string: str, params: Optional[Union[Tuple, Dict[str, Any], List[Any]]] = None) -> List[Dict[str, Any]]:
         """
         Execute a query and return results.
@@ -547,159 +758,6 @@ class DatabaseConnector:
                 cursor.close()
             if conn:
                 conn.close()
-
-    def save_device_data(self, devices_data: List[Dict[str, Any]]) -> bool:
-        """
-        Save device data to the database.
-        This is used by the data collector to save device data retrieved from the Growatt API.
-        
-        Args:
-            devices_data: List of device data dictionaries
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            with get_db_connection() as conn:
-                cursor = conn.cursor()
-                
-                for device in devices_data:
-                    if not device.get('serial_number'):
-                        logger.warning(f"Skipping device with no serial number: {device}")
-                        continue
-                    
-                    # Handle last_update_time field - could be string or datetime
-                    if isinstance(device.get('last_update_time'), str):
-                        try:
-                            # Convert to datetime object if it's a string
-                            device['last_update_time'] = datetime.strptime(device['last_update_time'], '%Y-%m-%d %H:%M:%S')
-                        except ValueError:
-                            # If parsing fails, use current datetime
-                            logger.warning(f"Invalid date format for last_update_time: {device['last_update_time']}")
-                            device['last_update_time'] = datetime.now()
-                    
-                    # Prepare raw_data as JSON if present
-                    raw_data = Json(device.get('raw_data', {})) if device.get('raw_data') else Json({})
-                    
-                    # Check if raw_data column exists in the table
-                    try:
-                        cursor.execute("""
-                            SELECT column_name 
-                            FROM information_schema.columns 
-                            WHERE table_name = 'devices' AND column_name = 'raw_data'
-                        """)
-                        raw_data_column_exists = cursor.fetchone() is not None
-                    except Exception:
-                        # If we can't check, assume it doesn't exist
-                        raw_data_column_exists = False
-                    
-                    # Check if the device already exists
-                    cursor.execute(
-                        """
-                        SELECT serial_number FROM devices 
-                        WHERE serial_number = %s
-                        """,
-                        (device['serial_number'],)
-                    )
-                    exists = cursor.fetchone()
-                    
-                    if exists:
-                        if raw_data_column_exists:
-                            # Update existing device with raw_data
-                            cursor.execute(
-                                """
-                                UPDATE devices 
-                                SET plant_id = %s,
-                                    alias = %s,
-                                    type = %s,
-                                    status = %s,
-                                    last_update_time = %s,
-                                    last_updated = NOW(),
-                                    raw_data = %s
-                                WHERE serial_number = %s
-                                """,
-                                (
-                                    device['plant_id'],
-                                    device.get('alias', ''),
-                                    device.get('type', ''),
-                                    device.get('status', 'unknown'),
-                                    device['last_update_time'],
-                                    raw_data,
-                                    device['serial_number']
-                                )
-                            )
-                        else:
-                            # Update existing device without raw_data
-                            cursor.execute(
-                                """
-                                UPDATE devices 
-                                SET plant_id = %s,
-                                    alias = %s,
-                                    type = %s,
-                                    status = %s,
-                                    last_update_time = %s,
-                                    last_updated = NOW()
-                                WHERE serial_number = %s
-                                """,
-                                (
-                                    device['plant_id'],
-                                    device.get('alias', ''),
-                                    device.get('type', ''),
-                                    device.get('status', 'unknown'),
-                                    device['last_update_time'],
-                                    device['serial_number']
-                                )
-                            )
-                    else:
-                        if raw_data_column_exists:
-                            # Insert new device with raw_data
-                            cursor.execute(
-                                """
-                                INSERT INTO devices 
-                                (serial_number, plant_id, alias, type, status, last_update_time, last_updated, raw_data)
-                                VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s)
-                                """,
-                                (
-                                    device['serial_number'],
-                                    device['plant_id'],
-                                    device.get('alias', ''),
-                                    device.get('type', ''),
-                                    device.get('status', 'unknown'),
-                                    device['last_update_time'],
-                                    raw_data
-                                )
-                            )
-                        else:
-                            # Insert new device without raw_data
-                            cursor.execute(
-                                """
-                                INSERT INTO devices 
-                                (serial_number, plant_id, alias, type, status, last_update_time, last_updated)
-                                VALUES (%s, %s, %s, %s, %s, %s, NOW())
-                                """,
-                                (
-                                    device['serial_number'],
-                                    device['plant_id'],
-                                    device.get('alias', ''),
-                                    device.get('type', ''),
-                                    device.get('status', 'unknown'),
-                                    device['last_update_time']
-                                )
-                            )
-                
-                conn.commit()
-                return True
-            
-        except psycopg2.Error as e:
-            logger.error(f"PostgreSQL error saving device data: {e}")
-            if conn:
-                conn.rollback()
-            return False
-        except Exception as e:
-            logger.error(f"Unexpected error saving device data: {e}")
-            if conn:
-                conn.rollback()
-            return False
 
     def save_energy_data_batch(self, batch_data: List[Dict[str, Any]]) -> int:
         """
