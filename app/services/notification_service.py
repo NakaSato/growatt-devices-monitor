@@ -174,6 +174,166 @@ class NotificationService:
         
         return notification_sent
     
+    def send_device_status_notification(self, device_data: Dict[str, Any]) -> bool:
+        """
+        Send a notification about device status change
+        
+        Args:
+            device_data: Dictionary containing device information
+                - serial_number: Device serial number
+                - alias: Device friendly name
+                - plant_id: ID of the plant the device belongs to
+                - plant_name: Name of the plant (if available)
+                - status: Current device status
+                - last_update_time: Last time the device was updated
+                - energy_today: Energy generated today
+                - energy_total: Total energy generated
+                
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        # Validate required fields
+        serial_number = device_data.get('serial_number')
+        if not serial_number:
+            logger.error("Cannot send status notification - missing serial_number")
+            return False
+            
+        # Check if we're in cooldown period for this device
+        now = datetime.now().timestamp()
+        last_sent = self.last_notification_sent.get(serial_number, 0)
+        cooldown_remaining = self.notification_cooldown - (now - last_sent)
+        
+        if now - last_sent < self.notification_cooldown:
+            logger.debug(
+                f"Skipping notification for device {serial_number} - "
+                f"in cooldown period (remaining: {int(cooldown_remaining)}s)"
+            )
+            return False
+        
+        # Prepare notification content
+        alias = device_data.get('alias', 'Unknown Device')
+        plant_name = device_data.get('plant_name', 'Unknown Plant')
+        status = device_data.get('status', 'Unknown')
+        energy_today = device_data.get('energy_today', 'N/A')
+        energy_total = device_data.get('energy_total', 'N/A')
+        
+        # Prepare subject and message
+        subject = f"📊 Device Status Update: {alias} ({serial_number})"
+        
+        # Create HTML message with better formatting
+        message = (
+            f"<b>📊 Device Status Update</b><br><br>"
+            f"<b>Device:</b> {alias}<br>"
+            f"<b>Serial Number:</b> {serial_number}<br>"
+            f"<b>Plant:</b> {plant_name}<br>"
+            f"<b>Status:</b> {status}<br>"
+            f"<b>Energy Today:</b> {energy_today} kWh<br>"
+            f"<b>Total Energy:</b> {energy_total} kWh<br>"
+        )
+        
+        # Send notification
+        notification_sent = self.send_notification(message, subject)
+        
+        # Update notification tracking
+        if notification_sent:
+            self.last_notification_sent[serial_number] = now
+            logger.info(f"Status notification sent for device {alias} ({serial_number})")
+        else:
+            logger.warning(f"Failed to send status notification for device {alias} ({serial_number})")
+        
+        return notification_sent
+    
+    def send_energy_milestone_notification(self, device_data: Dict[str, Any], milestone_value: float) -> bool:
+        """
+        Send a notification when a device reaches an energy milestone
+        
+        Args:
+            device_data: Dictionary containing device information
+                - serial_number: Device serial number
+                - alias: Device friendly name
+                - plant_id: ID of the plant the device belongs to
+                - plant_name: Name of the plant (if available)
+                - energy_today: Energy generated today
+                - energy_total: Total energy generated
+            milestone_value: The energy milestone reached
+                
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        # Validate required fields
+        serial_number = device_data.get('serial_number')
+        if not serial_number:
+            logger.error("Cannot send milestone notification - missing serial_number")
+            return False
+            
+        # Prepare notification content
+        alias = device_data.get('alias', 'Unknown Device')
+        plant_name = device_data.get('plant_name', 'Unknown Plant')
+        energy_total = device_data.get('energy_total', 'N/A')
+        
+        # Prepare subject and message
+        subject = f"🎉 Energy Milestone: {alias} ({serial_number})"
+        
+        # Create HTML message with better formatting
+        message = (
+            f"<b>🎉 Energy Milestone Reached!</b><br><br>"
+            f"<b>Device:</b> {alias}<br>"
+            f"<b>Serial Number:</b> {serial_number}<br>"
+            f"<b>Plant:</b> {plant_name}<br>"
+            f"<b>Milestone:</b> {milestone_value} kWh<br>"
+            f"<b>Total Energy:</b> {energy_total} kWh<br><br>"
+            f"Congratulations on reaching this energy production milestone!"
+        )
+        
+        # Send notification
+        notification_sent = self.send_notification(message, subject)
+        
+        # Log outcome
+        if notification_sent:
+            logger.info(f"Milestone notification sent for device {alias} ({serial_number})")
+        else:
+            logger.warning(f"Failed to send milestone notification for device {alias} ({serial_number})")
+        
+        return notification_sent
+        
+    def send_system_alert(self, alert_type: str, message: str, details: Dict[str, Any] = None) -> bool:
+        """
+        Send a system alert notification
+        
+        Args:
+            alert_type: Type of alert (error, warning, info)
+            message: Alert message
+            details: Additional details to include in the notification
+                
+        Returns:
+            bool: True if notification was sent successfully, False otherwise
+        """
+        # Prepare icons and subject based on alert type
+        icons = {
+            'error': '❌',
+            'warning': '⚠️',
+            'info': 'ℹ️',
+        }
+        icon = icons.get(alert_type.lower(), 'ℹ️')
+        
+        # Prepare subject and message
+        subject = f"{icon} System Alert: {alert_type.capitalize()}"
+        
+        # Start building the HTML message
+        html_message = f"<b>{icon} System Alert: {alert_type.capitalize()}</b><br><br>{message}<br>"
+        
+        # Add details if provided
+        if details:
+            html_message += "<br><b>Details:</b><br>"
+            for key, value in details.items():
+                html_message += f"<b>{key}:</b> {value}<br>"
+        
+        # Add timestamp
+        html_message += f"<br><i>Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</i>"
+        
+        # Send notification
+        return self.send_notification(html_message, subject)
+    
     def _send_email(self, subject: str, message: str) -> bool:
         """
         Send an email notification
@@ -274,7 +434,114 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Error sending Telegram message: {e}")
             return False
+
+    def send_telegram_photo(self, photo_path: str, caption: str = None) -> bool:
+        """
+        Send a photo via Telegram
+        
+        Args:
+            photo_path: Path to the photo file or URL
+            caption: Optional caption for the photo
             
+        Returns:
+            bool: True if photo was sent successfully, False otherwise
+        """
+        if not self.telegram_bot_token:
+            logger.error("Telegram bot token is not configured")
+            return False
+            
+        if not self.telegram_chat_id:
+            logger.error("Telegram chat ID is not configured")
+            return False
+        
+        try:
+            url = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendPhoto"
+            
+            # Handle chat_id as either a single value or a list
+            chat_ids = self.telegram_chat_id
+            
+            # If chat_id is a list, send to all recipients
+            if isinstance(chat_ids, list):
+                if not chat_ids:  # Empty list
+                    logger.error("No valid Telegram chat IDs found")
+                    return False
+                    
+                success = False
+                for chat_id in chat_ids:
+                    if not chat_id:  # Skip empty chat IDs
+                        continue
+                    
+                    success |= self._send_single_telegram_photo(url, chat_id.strip(), photo_path, caption)
+                
+                return success
+            else:
+                # Handle single chat ID
+                return self._send_single_telegram_photo(url, chat_ids, photo_path, caption)
+                
+        except Exception as e:
+            logger.error(f"Error sending Telegram photo: {e}")
+            return False
+            
+    def _send_single_telegram_photo(self, url: str, chat_id: str, photo_path: str, caption: str = None) -> bool:
+        """
+        Send a photo to a single Telegram chat
+        
+        Args:
+            url: Telegram API URL
+            chat_id: Chat ID to send to
+            photo_path: Path to the photo file or URL
+            caption: Optional caption for the photo
+            
+        Returns:
+            bool: True if photo was sent successfully, False otherwise
+        """
+        try:
+            files = None
+            data = {
+                'chat_id': chat_id,
+                'parse_mode': 'HTML'
+            }
+            
+            # If caption is provided, add it to the request
+            if caption:
+                data['caption'] = caption
+                
+            # Check if photo_path is a URL or a file path
+            if photo_path.startswith(('http://', 'https://')):
+                # It's a URL
+                data['photo'] = photo_path
+                response = requests.post(url, data=data, timeout=10)
+            else:
+                # It's a file path
+                with open(photo_path, 'rb') as photo:
+                    files = {'photo': photo}
+                    response = requests.post(url, data=data, files=files, timeout=10)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data.get('ok'):
+                    logger.info(f"Telegram photo sent successfully to chat ID: {chat_id}")
+                    return True
+                else:
+                    logger.error(f"Telegram API error: {response_data.get('description')}")
+                    return False
+            else:
+                logger.error(f"Failed to send Telegram photo to chat ID {chat_id}: {response.text}")
+                return False
+                
+        except FileNotFoundError:
+            logger.error(f"Photo file not found: {photo_path}")
+            return False
+        except requests.exceptions.Timeout:
+            logger.error(f"Telegram request timed out for chat ID: {chat_id}")
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Telegram request exception for chat ID {chat_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending Telegram photo to chat ID {chat_id}: {e}")
+            return False
+
     def _send_single_telegram_message(self, url: str, chat_id: str, message: str) -> bool:
         """
         Send a Telegram message to a single chat ID
