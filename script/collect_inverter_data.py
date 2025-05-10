@@ -210,7 +210,51 @@ class InverterDataCollector:
             plant_devices = self.growatt_api.get_devices_by_plant_list(plantId=plant_id)
             
             if plant_devices and isinstance(plant_devices, dict) and "obj" in plant_devices:
-                devices = plant_devices["obj"].get("datas", [])
+                # Check structure of response for debugging
+                logger.debug(f"Device response structure: {list(plant_devices.keys())}")
+                obj = plant_devices["obj"]
+                logger.debug(f"Device obj structure: {list(obj.keys())}")
+                
+                # Extract devices from different device type arrays
+                all_devices = []
+                
+                # The API returns devices categorized by type (mix, inv, tlx, max, etc.)
+                for device_type_key in ["mix", "inv", "tlx", "max", "storage", "datas"]:
+                    if device_type_key in obj and isinstance(obj[device_type_key], list):
+                        type_devices = obj[device_type_key]
+                        logger.debug(f"Found {len(type_devices)} devices of type {device_type_key}")
+                        
+                        # Print the first device structure if available
+                        if type_devices and len(type_devices) > 0:
+                            first_device = type_devices[0]
+                            logger.debug(f"Sample device structure for {device_type_key}: {list(first_device.keys())}")
+                            
+                            # Map fields for consistent structure
+                            mapped_devices = []
+                            for device in type_devices:
+                                # Different device types use different field names
+                                # Map them to a consistent structure
+                                mapped_device = {
+                                    "deviceSn": device.get("sn", device.get("deviceSn", "")),
+                                    "plantId": plant_id,
+                                    "deviceType": device_type_key,
+                                    "deviceTypeName": device.get("deviceTypeName", device.get("type", device_type_key)),
+                                    "deviceAilas": device.get("alias", device.get("deviceAilas", "")),
+                                    "nominalPower": device.get("nominalPower", 0),
+                                    # Include all original fields for reference
+                                    **device
+                                }
+                                mapped_devices.append(mapped_device)
+                            
+                            all_devices.extend(mapped_devices)
+                
+                # If we found devices in sub-arrays, use those
+                if all_devices:
+                    devices = all_devices
+                else:
+                    # Fallback to direct "datas" array if present
+                    devices = obj.get("datas", [])
+                
                 logger.info(f"Successfully fetched {len(devices)} devices for plant {plant_id}")
             else:
                 logger.warning(f"No devices returned for plant {plant_id}")
@@ -234,45 +278,73 @@ class InverterDataCollector:
         try:
             device_sn = device.get("deviceSn", "")
             plant_id = device.get("plantId", "")
+            device_type = device.get("deviceType", "")
+            device_type_name = device.get("deviceTypeName", "")
+            
             if not device_sn or not plant_id:
                 logger.warning(f"Device missing serial number or plant ID: {device}")
                 return {}
             
-            # Get device details from API - depending on device type
-            # For now, we'll use a basic approach to get device data
-            # You may need to call specific endpoints based on device type
+            logger.debug(f"Getting data for device {device_sn}, type: {device_type}/{device_type_name}")
             
             # Wait to avoid rate limiting
             time.sleep(1)
             
-            # Use get_mix_status endpoint to get current status
-            device_status = self.growatt_api.get_mix_status(plantId=plant_id, mixSn=device_sn)
+            # Get device details - different methods based on device type
+            device_status = None
+            try:
+                # Try using mix status endpoint first (for MIX/MAX/SPF type devices)
+                if device_type_name and any(name in device_type_name.upper() for name in ["MIX", "SPF", "MAX"]):
+                    logger.debug(f"Using get_mix_status for device {device_sn}")
+                    device_status = self.growatt_api.get_mix_status(plantId=plant_id, mixSn=device_sn)
+                else:
+                    # For standard inverters, we need to use the plant data that includes device status
+                    logger.debug(f"Using get_plant for device {device_sn}")
+                    plant_data = self.growatt_api.get_plant(plantId=plant_id)
+                    
+                    # Find the device in the plant data
+                    if plant_data and "deviceList" in plant_data:
+                        for plant_device in plant_data.get("deviceList", []):
+                            if plant_device.get("sn") == device_sn:
+                                device_status = plant_device
+                                break
+            except Exception as api_e:
+                logger.warning(f"Error using primary status method for device {device_sn}: {str(api_e)}")
+                # If the specific method fails, try a generic approach as fallback
+            
+            # If we still don't have data, try using the device directly (fallback)
+            if not device_status:
+                logger.debug(f"Using fallback method for device {device_sn}")
+                # Use device data directly from the device list
+                device_status = device
             
             if not device_status:
                 logger.warning(f"No data returned for device {device_sn}")
                 return {}
             
-            # Map the raw data to our schema
+            # Log the device status data for debugging
+            logger.debug(f"Device status keys: {list(device_status.keys())}")
+            
+            # Map the raw data to our schema - adapted to handle different response formats
             inverter_data = {
                 "serial_number": device_sn,
                 "plant_id": plant_id,
-                "model": device.get("deviceTypeName", ""),
+                "model": device_type_name or device_status.get("deviceTypeName", ""),
                 "firmware_version": device_status.get("firmwareVersion", ""),
                 "hardware_version": device_status.get("hardwareVersion", ""),
                 "nominal_power": float(device.get("nominalPower", 0)),
-                "max_ac_power": float(device_status.get("maxAcPower", 0)),
-                "max_dc_power": float(device_status.get("maxDcPower", 0)),
-                "efficiency": float(device_status.get("efficiency", 0)),
+                # Case-insensitive field mapping to handle different response formats
                 "temperature": float(device_status.get("temperature", 0)),
-                "dc_voltage_1": float(device_status.get("vPv1", 0)),
-                "dc_current_1": float(device_status.get("iPv1", 0)),
-                "dc_power_1": float(device_status.get("pPv1", 0)),
-                "dc_voltage_2": float(device_status.get("vPv2", 0)),
-                "dc_current_2": float(device_status.get("iPv2", 0)),
-                "dc_power_2": float(device_status.get("pPv2", 0)),
-                "ac_voltage": float(device_status.get("vac1", 0)),
+                # Different possible field names for the same data
+                "dc_voltage_1": float(device_status.get("vPv1", device_status.get("vpv1", 0))),
+                "dc_current_1": float(device_status.get("iPv1", device_status.get("ipv1", 0))),
+                "dc_power_1": float(device_status.get("pPv1", device_status.get("ppv1", 0))),
+                "dc_voltage_2": float(device_status.get("vPv2", device_status.get("vpv2", 0))),
+                "dc_current_2": float(device_status.get("iPv2", device_status.get("ipv2", 0))),
+                "dc_power_2": float(device_status.get("pPv2", device_status.get("ppv2", 0))),
+                "ac_voltage": float(device_status.get("vac1", device_status.get("vac", 0))),
                 "ac_current": float(device_status.get("iac", 0)),
-                "ac_frequency": float(device_status.get("fAc", 0)),
+                "ac_frequency": float(device_status.get("fAc", device_status.get("fac", 0))),
                 "ac_power": float(device_status.get("pac", 0)),
                 "daily_energy": float(device_status.get("eToday", 0)),
                 "total_energy": float(device_status.get("eTotal", 0)),
@@ -312,34 +384,39 @@ class InverterDataCollector:
                 # Wait to avoid rate limiting
                 time.sleep(1)
                 
-                # Get daily energy chart data
-                daily_data = self.growatt_api.get_energy_stats_daily(
-                    date=target_date,
-                    plantId=plant_id,
-                    mixSn=device_sn
-                )
+                # Try to get daily energy chart data based on device type
+                daily_data = None
                 
-                if not daily_data or not isinstance(daily_data, dict):
-                    logger.warning(f"No daily history data returned for device {device_sn} on {target_date}")
+                try:
+                    # First try using the MIX energy chart endpoint (works for MIX/MAX/SPF inverters)
+                    logger.debug(f"Trying to get history data for device {device_sn} on {target_date} using MIX endpoint")
+                    daily_data = self.growatt_api.get_energy_stats_daily(
+                        date=target_date,
+                        plantId=plant_id,
+                        mixSn=device_sn
+                    )
+                except Exception as e:
+                    logger.warning(f"Error getting MIX history data for device {device_sn}: {str(e)}")
+                    daily_data = None
+                
+                # If that didn't work, try a different approach
+                if not daily_data or not isinstance(daily_data, dict) or "obj" not in daily_data:
+                    logger.debug("MIX endpoint didn't work, trying alternative methods")
+                    # Could implement alternative data sources here in the future
+                    # For now, just skip this device/day
                     continue
                 
                 # Extract chart data
                 charts = daily_data.get("obj", {}).get("charts", {})
                 
-                # Process each data point
-                # The API returns multiple arrays for different metrics
-                # We need to merge them by timestamp
-                
-                # Example chart data structure:
-                # {
-                #   "ppv": [["00:00", 0], ["00:05", 0], ...],
-                #   "pac": [["00:00", 0], ["00:05", 0], ...],
-                #   ...
-                # }
+                if not charts:
+                    logger.warning(f"No chart data found for device {device_sn} on {target_date}")
+                    continue
                 
                 # Get timestamps from the first chart data (assuming all charts have the same timestamps)
                 first_chart_key = next(iter(charts), None)
                 if not first_chart_key or not charts[first_chart_key]:
+                    logger.warning(f"Empty chart data for device {device_sn} on {target_date}")
                     continue
                 
                 # Create a dict to hold data for each timestamp
@@ -347,8 +424,13 @@ class InverterDataCollector:
                 
                 # Process each chart data type
                 for metric, data_points in charts.items():
+                    if not isinstance(data_points, list):
+                        logger.warning(f"Invalid data points format for metric {metric}: {data_points}")
+                        continue
+                        
                     for point in data_points:
-                        if len(point) < 2:
+                        if not isinstance(point, list) or len(point) < 2:
+                            logger.debug(f"Skipping invalid data point: {point}")
                             continue
                             
                         time_str, value = point[0], point[1]
@@ -356,6 +438,10 @@ class InverterDataCollector:
                         # Create timestamp
                         try:
                             time_parts = time_str.split(":")
+                            if len(time_parts) < 2:
+                                logger.debug(f"Invalid time format: {time_str}")
+                                continue
+                                
                             hour, minute = int(time_parts[0]), int(time_parts[1])
                             timestamp = datetime.strptime(f"{target_date} {hour:02d}:{minute:02d}:00", "%Y-%m-%d %H:%M:%S")
                             
@@ -367,23 +453,39 @@ class InverterDataCollector:
                                     "timestamp": timestamp
                                 }
                             
-                            # Map metric to our database schema
-                            if metric == "ppv" or metric == "ppv1":
-                                timestamp_data[timestamp]["dc_power_1"] = float(value)
-                            elif metric == "ppv2":
-                                timestamp_data[timestamp]["dc_power_2"] = float(value)
-                            elif metric == "pac":
-                                timestamp_data[timestamp]["ac_power"] = float(value)
-                            # Add more mappings as needed
+                            # Map different possible metric names to our database schema
+                            value_float = float(value) if value is not None else 0
+                            
+                            # Handle various field naming conventions
+                            metric_lower = metric.lower()
+                            if any(m in metric_lower for m in ["ppv1", "ppv_1"]):
+                                timestamp_data[timestamp]["dc_power_1"] = value_float
+                            elif any(m in metric_lower for m in ["ppv2", "ppv_2"]):
+                                timestamp_data[timestamp]["dc_power_2"] = value_float
+                            elif metric_lower == "ppv" or "pv" in metric_lower:
+                                # Total PV power
+                                timestamp_data[timestamp]["dc_power_1"] = value_float
+                            elif any(m in metric_lower for m in ["pac", "ac_power"]):
+                                timestamp_data[timestamp]["ac_power"] = value_float
+                            elif "temperature" in metric_lower or "temp" in metric_lower:
+                                timestamp_data[timestamp]["temperature"] = value_float
+                            elif "energy" in metric_lower or "e_" in metric_lower:
+                                timestamp_data[timestamp]["energy"] = value_float
                             
                         except (ValueError, IndexError) as e:
-                            logger.warning(f"Error processing data point {point}: {str(e)}")
+                            logger.debug(f"Error processing data point {point}: {str(e)}")
                 
                 # Add all timestamp data to the history data list
                 for timestamp, data in timestamp_data.items():
-                    history_data.append(data)
+                    # Only add points that have at least one power value
+                    if data.get("dc_power_1") or data.get("dc_power_2") or data.get("ac_power"):
+                        history_data.append(data)
                 
-                logger.info(f"Successfully retrieved {len(timestamp_data)} history points for device {device_sn} on {target_date}")
+                points_count = len([d for d in timestamp_data.values() if d.get("dc_power_1") or d.get("dc_power_2") or d.get("ac_power")])
+                if points_count > 0:
+                    logger.info(f"Successfully retrieved {points_count} history points for device {device_sn} on {target_date}")
+                else:
+                    logger.warning(f"No valid power data points found for device {device_sn} on {target_date}")
             
             return history_data
             
@@ -607,20 +709,35 @@ class InverterDataCollector:
             # Process each plant
             for plant in plants:
                 plant_id = plant.get("id", "")
+                plant_name = plant.get("plantName", "Unknown Plant")
                 if not plant_id:
+                    logger.warning(f"Plant missing ID: {plant}")
                     continue
+                
+                logger.info(f"Processing plant: {plant_name} (ID: {plant_id})")
                 
                 # Get devices for the plant
                 devices = self.get_devices_for_plant(plant_id)
+                if not devices:
+                    logger.warning(f"No devices found for plant {plant_id}")
+                    continue
+                    
+                logger.info(f"Found {len(devices)} devices for plant {plant_id}")
                 
-                # Process each device (inverter)
+                # Process each device
                 for device in devices:
-                    # Only process inverters
-                    device_type = device.get("deviceType", "")
+                    # Get device info
                     device_sn = device.get("deviceSn", "")
+                    device_type = device.get("deviceType", "")
+                    device_type_name = device.get("deviceTypeName", "")
+                    device_alias = device.get("deviceAilas", device.get("alias", "Unknown Device"))
                     
                     if not device_sn:
+                        logger.warning(f"Device missing serial number in plant {plant_id}")
                         continue
+                    
+                    # Log device details
+                    logger.info(f"Processing device: {device_alias} (SN: {device_sn}, Type: {device_type_name})")
                     
                     # Increment counter
                     result["inverters_processed"] += 1
@@ -629,20 +746,34 @@ class InverterDataCollector:
                     inverter_data = self.get_inverter_data(device)
                     
                     if inverter_data:
+                        logger.info(f"Retrieved data for device {device_sn}")
                         # Save inverter data to database
                         if self.save_inverter_data_to_db(inverter_data):
                             result["inverters_success"] += 1
+                            logger.info(f"Successfully saved data for device {device_sn}")
+                        else:
+                            logger.warning(f"Failed to save data for device {device_sn}")
+                    else:
+                        logger.warning(f"No data retrieved for device {device_sn}")
                     
                     # Get inverter history data
-                    history_data = self.get_inverter_history(plant_id, device_sn, days_back)
-                    
-                    if history_data:
-                        # Count history points
-                        result["history_points_processed"] += len(history_data)
+                    try:
+                        logger.info(f"Getting history data for device {device_sn}")
+                        history_data = self.get_inverter_history(plant_id, device_sn, days_back)
                         
-                        # Save history data to database
-                        saved_count = self.save_inverter_history_to_db(history_data)
-                        result["history_points_success"] += saved_count
+                        if history_data:
+                            # Count history points
+                            result["history_points_processed"] += len(history_data)
+                            logger.info(f"Retrieved {len(history_data)} history points for device {device_sn}")
+                            
+                            # Save history data to database
+                            saved_count = self.save_inverter_history_to_db(history_data)
+                            result["history_points_success"] += saved_count
+                            logger.info(f"Successfully saved {saved_count} history points for device {device_sn}")
+                        else:
+                            logger.warning(f"No history data retrieved for device {device_sn}")
+                    except Exception as e:
+                        logger.error(f"Error processing history data for device {device_sn}: {str(e)}")
             
             # Set success flag
             result["success"] = True

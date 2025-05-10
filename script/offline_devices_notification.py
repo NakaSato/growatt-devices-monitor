@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Script for sending device status notifications via Telegram
+Script for sending offline device status notifications via Telegram
 
-This script fetches offline devices directly from the database (status = -1) 
-and sends notifications via Telegram about their status.
+This script specifically checks for devices with status = -1 in the database
+and sends notifications via Telegram about these offline devices.
 
 Usage:
-    python device_notification.py [--debug] [--force] [--clear-history] [--device DEVICE_SN]
+    python offline_devices_notification.py [--debug] [--force] [--clear-history]
 """
 
 import os
@@ -14,10 +14,10 @@ import sys
 import logging
 import argparse
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Configure logging to write to file
-LOG_FILE = "logs/device_notifications.log"
+LOG_FILE = "logs/offline_devices_notification.log"
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 logging.basicConfig(
@@ -33,27 +33,21 @@ logger = logging.getLogger(__name__)
 # Set path to include the application
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def fetch_offline_devices_from_db() -> List[Dict[str, Any]]:
+def fetch_offline_devices() -> List[Dict[str, Any]]:
     """
-    Fetch offline devices directly from the database (status = -1)
+    Fetch devices with status = -1 from the database
     
     Returns:
-        List[Dict[str, Any]]: List of offline device status dictionaries
+        List[Dict[str, Any]]: List of offline device dictionaries
     """
     try:
         from app.database import DatabaseConnector
-        from app.core.device_status import get_timezone, is_device_offline
-        
-        offline_devices = []
-        offline_threshold_minutes = int(os.environ.get('DEVICE_OFFLINE_THRESHOLD_MINUTES', '30'))
-        
-        logger.info(f"Fetching offline devices (with status = -1 or offline for {offline_threshold_minutes} minutes)")
         
         # Initialize database connector
         db = DatabaseConnector()
         
-        # Query for explicitly offline devices
-        offline_query = """
+        # Query for devices with status = -1
+        query = """
             SELECT 
                 d.serial_number, 
                 d.alias, 
@@ -67,57 +61,18 @@ def fetch_offline_devices_from_db() -> List[Dict[str, Any]]:
             LEFT JOIN 
                 plants p ON d.plant_id = p.id
             WHERE 
-                d.status = '-1' OR 
-                LOWER(d.status) = 'offline'
+                d.status = '-1'
         """
         
         # Execute the query using the DatabaseConnector
-        explicit_offline_devices = db.query(offline_query)
+        offline_devices = db.query(query)
         
-        if explicit_offline_devices:
-            logger.info(f"Found {len(explicit_offline_devices)} devices explicitly marked as offline")
-            offline_devices.extend(explicit_offline_devices)
+        if offline_devices:
+            logger.info(f"Found {len(offline_devices)} devices with offline status (-1)")
+        else:
+            logger.info("No devices with offline status (-1) found")
             
-        # Get current time and threshold for time-based offline detection
-        current_time = datetime.now(get_timezone())
-        threshold_time = current_time - timedelta(minutes=offline_threshold_minutes)
-        
-        # Format the threshold time for SQL
-        threshold_time_str = threshold_time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # Query for devices that haven't updated in the threshold period
-        time_based_query = """
-            SELECT 
-                d.serial_number, 
-                d.alias, 
-                d.plant_id, 
-                d.status, 
-                d.last_update_time,
-                d.type,
-                p.name as plant_name
-            FROM 
-                devices d
-            LEFT JOIN 
-                plants p ON d.plant_id = p.id
-            WHERE 
-                d.last_update_time < %s
-                AND LOWER(d.status) != 'offline'
-                AND d.status != '-1'
-        """
-        
-        # Execute query with parameter
-        time_based_offline_devices = db.query(time_based_query, (threshold_time_str,))
-        
-        if time_based_offline_devices:
-            logger.info(f"Found {len(time_based_offline_devices)} devices inactive for more than {offline_threshold_minutes} minutes")
-            
-            # Mark these devices as offline for notification purposes
-            for device in time_based_offline_devices:
-                device['status'] = 'offline'
-                offline_devices.append(device)
-        
-        logger.info(f"Found total of {len(offline_devices)} offline devices in database")
-        return offline_devices
+        return offline_devices or []
         
     except ImportError as e:
         logger.error(f"Failed to import required modules: {e}")
@@ -131,7 +86,7 @@ def send_offline_device_notifications(devices: List[Dict[str, Any]], force: bool
     Send notifications for offline devices
     
     Args:
-        devices: List of offline device status dictionaries
+        devices: List of offline device dictionaries
         force: If True, ignore cooldown periods
         
     Returns:
@@ -145,7 +100,7 @@ def send_offline_device_notifications(devices: List[Dict[str, Any]], force: bool
         
         # Check if Telegram is enabled
         if not notification_service.telegram_enabled:
-            logger.error("Telegram notifications are not enabled. Please enable them in .env file.")
+            logger.error("Telegram notifications are not enabled. Please check .env configuration.")
             return 0
             
         # Override cooldown if force is enabled
@@ -182,13 +137,10 @@ def send_offline_device_notifications(devices: List[Dict[str, Any]], force: bool
         logger.error(f"Unexpected error sending notifications: {e}")
         return 0
 
-def clear_notification_history(device_serial: str = None) -> bool:
+def clear_notification_history() -> bool:
     """
-    Clear notification history for a device or all devices
+    Clear all offline notification history
     
-    Args:
-        device_serial: Optional device serial number. If None, clear all history.
-        
     Returns:
         bool: True if history was cleared successfully, False otherwise
     """
@@ -213,22 +165,14 @@ def clear_notification_history(device_serial: str = None) -> bool:
             logger.error("Notification history table does not exist in database")
             return False
         
-        # Prepare query based on whether a device serial was provided
-        if device_serial:
-            # Clear history for specific device
-            query = "DELETE FROM notification_history WHERE device_serial_number = %s"
-            params = (device_serial,)
-            logger.info(f"Clearing notification history for device {device_serial}")
-        else:
-            # Clear all history
-            query = "DELETE FROM notification_history"
-            params = None
-            logger.info("Clearing all notification history")
+        # Clear history for offline notifications
+        query = "DELETE FROM notification_history WHERE notification_type = 'offline'"
+        logger.info("Clearing offline notification history")
         
         # Execute the query
-        db.execute(query, params)
+        db.execute(query)
         
-        logger.info("Notification history cleared successfully")
+        logger.info("Offline notification history cleared successfully")
         return True
         
     except ImportError as e:
@@ -246,14 +190,12 @@ def main():
         int: Exit code (0 for success, 1 for failure)
     """
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Send device status notifications via Telegram")
+    parser = argparse.ArgumentParser(description="Send offline device status notifications via Telegram")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--force", action="store_true", 
                         help="Force sending notifications ignoring cooldown periods")
     parser.add_argument("--clear-history", action="store_true",
-                        help="Clear notification history before sending new notifications")
-    parser.add_argument("--device", type=str, 
-                        help="Specific device serial number to focus on (for sending or clearing history)")
+                        help="Clear offline notification history before sending new notifications")
     args = parser.parse_args()
     
     # Set debug level if requested
@@ -264,39 +206,44 @@ def main():
     try:
         # If clear history is requested
         if args.clear_history:
-            logger.info("Clearing notification history requested")
-            success = clear_notification_history(args.device)
+            logger.info("Clearing offline notification history requested")
+            success = clear_notification_history()
             if not success:
-                logger.error("Failed to clear notification history")
+                logger.error("Failed to clear offline notification history")
                 return 1
             
-            if args.device:
-                logger.info(f"Successfully cleared notification history for device {args.device}")
-            else:
-                logger.info("Successfully cleared all notification history")
+            logger.info("Successfully cleared offline notification history")
                 
-            # If only clearing history was requested, exit
-            if args.device and not args.force:
-                return 0
-                
-        logger.info("Starting device notification script for offline devices")
+        logger.info("Starting offline device notification script")
         
         # Fetch offline devices from database
-        logger.info("Fetching offline devices from database...")
-        offline_devices = fetch_offline_devices_from_db()
-        
-        # If specific device is specified, filter the list
-        if args.device and not args.clear_history:
-            offline_devices = [d for d in offline_devices if d.get('serial_number') == args.device]
-            if not offline_devices:
-                logger.warning(f"Device {args.device} is not offline or does not exist")
-                return 0
+        logger.info("Fetching devices with status = -1 from database...")
+        offline_devices = fetch_offline_devices()
         
         if not offline_devices:
             logger.info("No offline devices found in the database")
             return 0
             
         logger.info(f"Found {len(offline_devices)} offline devices")
+        
+        # Display header information about offline devices
+        print(f"\nOffline Devices (status = -1) Found: {len(offline_devices)}")
+        print("-" * 80)
+        print(f"{'Serial Number':<20} | {'Alias':<30} | {'Last Update':<20} | {'Plant'}")
+        print("-" * 80)
+        
+        for device in offline_devices:
+            serial = device.get('serial_number', 'Unknown')
+            alias = device.get('alias', 'Unknown')
+            last_update = device.get('last_update_time', 'Unknown')
+            plant = device.get('plant_name', 'Unknown')
+            
+            if isinstance(last_update, datetime):
+                last_update = last_update.strftime('%Y-%m-%d %H:%M:%S')
+                
+            print(f"{serial:<20} | {alias[:30]:<30} | {str(last_update)[:20]:<20} | {plant}")
+        
+        print("-" * 80)
         
         # Send notifications for offline devices
         logger.info("Sending notifications for offline devices...")
@@ -307,7 +254,7 @@ def main():
         return 0 if notifications_sent > 0 else 1
         
     except Exception as e:
-        logger.error(f"Error in device notification script: {e}")
+        logger.error(f"Error in offline device notification script: {e}")
         return 1
 
 if __name__ == "__main__":

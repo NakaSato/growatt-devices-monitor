@@ -132,7 +132,14 @@ def test_device_offline_notification(notification_service):
         'last_update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     
+    # Temporarily disable the cooldown to allow testing
+    original_cooldown = notification_service.notification_cooldown
+    notification_service.notification_cooldown = 0
+    
     success = notification_service.send_device_offline_notification(device_data)
+    
+    # Restore original cooldown
+    notification_service.notification_cooldown = original_cooldown
     
     if success:
         print("✅ Device offline notification sent successfully!")
@@ -159,7 +166,14 @@ def test_device_status_notification(notification_service):
         'energy_total': '1500.75'
     }
     
+    # Temporarily disable the cooldown to allow testing
+    original_cooldown = notification_service.notification_cooldown
+    notification_service.notification_cooldown = 0
+    
     success = notification_service.send_device_status_notification(device_data)
+    
+    # Restore original cooldown
+    notification_service.notification_cooldown = original_cooldown
     
     if success:
         print("✅ Device status notification sent successfully!")
@@ -184,7 +198,14 @@ def test_energy_milestone_notification(notification_service):
         'energy_total': '1500.0'
     }
     
+    # Temporarily disable the cooldown to allow testing
+    original_cooldown = notification_service.notification_cooldown
+    notification_service.notification_cooldown = 0
+    
     success = notification_service.send_energy_milestone_notification(device_data, 1500.0)
+    
+    # Restore original cooldown
+    notification_service.notification_cooldown = original_cooldown
     
     if success:
         print("✅ Energy milestone notification sent successfully!")

@@ -311,6 +311,33 @@ class DatabaseConnector:
     def __init__(self):
         """Initialize the database connector."""
         pass
+        
+    def execute(self, query_string: str, params: Optional[Union[Tuple, Dict[str, Any], List[Any]]] = None) -> bool:
+        """
+        Execute a SQL statement without expecting results (for INSERT, UPDATE, CREATE, etc.).
+        
+        Args:
+            query_string: SQL query string
+            params: Parameters for the query (tuple, dict, or list)
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                if params:
+                    cursor.execute(query_string, params)
+                else:
+                    cursor.execute(query_string)
+                return True
+                    
+        except psycopg2.Error as e:
+            logger.error(f"PostgreSQL execute error: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected execute error: {e}")
+            return False
 
     def _prepare_device_data(self, device: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -1,0 +1,43 @@
+name: Offline Devices Notification Cron Job
+
+on:
+  schedule:
+    # Runs every hour at minute 30
+    - cron: "30 * * * *"
+  workflow_dispatch: # Manual trigger option
+
+jobs:
+  send_offline_notifications:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run offline notifications script
+        run: python script/offline_devices_notification.py
+        env:
+          # Database connection
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+          # Telegram configuration
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_NOTIFICATIONS_ENABLED: "True"
+
+          # Notification settings
+          NOTIFICATION_COOLDOWN_SECONDS: "3600" # 1 hour cooldown between notifications
+
+          # Optional: Timezone setting
+          TZ: "Asia/Bangkok" # Set to your local timezone

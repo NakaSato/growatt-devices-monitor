@@ -11,7 +11,7 @@ import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Union, Tuple
 
 # Third-party imports
@@ -19,6 +19,7 @@ import requests
 
 # Application imports
 from app.config import Config
+from app.database import DatabaseConnector
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -44,11 +45,39 @@ class NotificationService:
         self.telegram_chat_id = Config.TELEGRAM_CHAT_ID
         
         # Notification state management
-        self.last_notification_sent = {}  # Track when notifications were last sent for each device
+        self.last_notification_sent = {}  # In-memory tracking (backwards compatibility)
         self.notification_cooldown = Config.NOTIFICATION_COOLDOWN_SECONDS  # Cooldown period in seconds
+        self.db = DatabaseConnector() if self._check_database_available() else None
         
         # Log initialization status
         self._log_initialization_status()
+    
+    def _check_database_available(self) -> bool:
+        """Check if the database and notification_history table are available"""
+        try:
+            db = DatabaseConnector()
+            
+            # Check if notification_history table exists
+            table_exists_query = """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'notification_history'
+                )
+            """
+            
+            result = db.query(table_exists_query)
+            
+            if result and result[0]['exists']:
+                logger.debug("Notification history table exists in database")
+                return True
+            else:
+                logger.warning("Notification history table does not exist in database. Using in-memory tracking only.")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Failed to connect to database for notification history: {e}")
+            return False
     
     def _log_initialization_status(self) -> None:
         """Log the initialization status of notification channels"""
@@ -64,7 +93,137 @@ class NotificationService:
             if not all([self.telegram_bot_token, self.telegram_chat_id]):
                 telegram_status += ' (incomplete configuration)'
                 
+        # Log the status of notification channels
         logger.info(f"Notification service initialized - Email: {email_status}, Telegram: {telegram_status}")
+        
+        # Log notification cooldown
+        logger.info(f"Notification cooldown period: {self.notification_cooldown} seconds")
+        
+        # Log database-backed tracking status
+        if self.db:
+            logger.info("Using database-backed notification history tracking")
+        else:
+            logger.info("Using in-memory notification history tracking only")
+    
+    def _get_last_notification_time(self, device_serial: str, notification_type: str = 'offline') -> float:
+        """
+        Get the timestamp of the last notification sent for a device
+        
+        Args:
+            device_serial: The serial number of the device
+            notification_type: The type of notification to check
+            
+        Returns:
+            float: Unix timestamp when the last notification was sent, or 0 if no record
+        """
+        # First check in-memory cache (performance optimization)
+        if device_serial in self.last_notification_sent:
+            return self.last_notification_sent[device_serial]
+            
+        # If database is available, check there for persistence across restarts
+        if self.db:
+            try:
+                query = """
+                    SELECT sent_at 
+                    FROM notification_history 
+                    WHERE device_serial_number = %s 
+                      AND notification_type = %s 
+                      AND success = TRUE
+                    ORDER BY sent_at DESC 
+                    LIMIT 1
+                """
+                
+                result = self.db.query(query, (device_serial, notification_type))
+                
+                if result and result[0]['sent_at']:
+                    # Parse datetime and convert to timestamp
+                    sent_at = result[0]['sent_at']
+                    if isinstance(sent_at, str):
+                        sent_at = datetime.fromisoformat(sent_at.replace('Z', '+00:00'))
+                    
+                    timestamp = sent_at.timestamp()
+                    
+                    # Update in-memory cache
+                    self.last_notification_sent[device_serial] = timestamp
+                    
+                    return timestamp
+            except Exception as e:
+                logger.error(f"Error retrieving notification history: {e}")
+        
+        # Return 0 to indicate no previous notification
+        return 0
+    
+    def _record_notification(self, device_serial: str, notification_type: str, message: str, success: bool) -> bool:
+        """
+        Record a notification in the history
+        
+        Args:
+            device_serial: The serial number of the device
+            notification_type: The type of notification sent
+            message: The notification message
+            success: Whether the notification was sent successfully
+            
+        Returns:
+            bool: True if record was saved, False otherwise
+        """
+        # Always update in-memory cache for quick access
+        now = datetime.now().timestamp()
+        if success:
+            self.last_notification_sent[device_serial] = now
+        
+        # If database is available, record there for persistence
+        if self.db:
+            try:
+                query = """
+                    INSERT INTO notification_history 
+                    (device_serial_number, notification_type, sent_at, message, success)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                
+                self.db.execute(query, (
+                    device_serial,
+                    notification_type,
+                    datetime.now(),
+                    message,
+                    success
+                ))
+                
+                return True
+            except Exception as e:
+                logger.error(f"Error recording notification history: {e}")
+                return False
+        
+        return True  # Return success even if only in-memory tracking is used
+    
+    def _check_notification_cooldown(self, device_serial: str, notification_type: str = 'offline') -> bool:
+        """
+        Check if a device is still in cooldown period for notifications
+        
+        Args:
+            device_serial: The serial number of the device
+            notification_type: The type of notification to check
+            
+        Returns:
+            bool: True if in cooldown (should not send notification), False otherwise
+        """
+        # If cooldown is disabled (0 seconds), always allow notifications
+        if self.notification_cooldown <= 0:
+            return False
+            
+        # Get the timestamp of the last notification
+        now = datetime.now().timestamp()
+        last_sent = self._get_last_notification_time(device_serial, notification_type)
+        cooldown_remaining = self.notification_cooldown - (now - last_sent)
+        
+        # Check if we're in cooldown period
+        if now - last_sent < self.notification_cooldown:
+            logger.debug(
+                f"Skipping notification for device {device_serial} - "
+                f"in cooldown period (remaining: {int(cooldown_remaining)}s)"
+            )
+            return True
+            
+        return False
     
     
     def send_notification(self, message: str, subject: str = "Growatt Device Notification") -> bool:
@@ -133,15 +292,7 @@ class NotificationService:
             return False
             
         # Check if we're in cooldown period for this device
-        now = datetime.now().timestamp()
-        last_sent = self.last_notification_sent.get(serial_number, 0)
-        cooldown_remaining = self.notification_cooldown - (now - last_sent)
-        
-        if now - last_sent < self.notification_cooldown:
-            logger.debug(
-                f"Skipping notification for device {serial_number} - "
-                f"in cooldown period (remaining: {int(cooldown_remaining)}s)"
-            )
+        if self._check_notification_cooldown(serial_number, 'offline'):
             return False
         
         # Prepare notification content
@@ -154,20 +305,22 @@ class NotificationService:
         
         # Create HTML message with better formatting
         message = (
-            f"<b>⚠️ Device Offline Alert</b><br><br>"
-            f"<b>Device:</b> {alias}<br>"
-            f"<b>Serial Number:</b> {serial_number}<br>"
-            f"<b>Plant:</b> {plant_name}<br>"
-            f"<b>Last Seen:</b> {last_seen}<br><br>"
+            f"<b>⚠️ Device Offline Alert</b>\n\n"
+            f"<b>Device:</b> {alias}\n"
+            f"<b>Serial Number:</b> {serial_number}\n"
+            f"<b>Plant:</b> {plant_name}\n"
+            f"<b>Last Seen:</b> {last_seen}\n\n"
             f"The device has gone offline and may require attention."
         )
         
         # Send notification
         notification_sent = self.send_notification(message, subject)
         
-        # Update notification tracking
+        # Record notification in history
+        self._record_notification(serial_number, 'offline', message, notification_sent)
+        
+        # Log outcome
         if notification_sent:
-            self.last_notification_sent[serial_number] = now
             logger.info(f"Offline notification sent for device {alias} ({serial_number})")
         else:
             logger.warning(f"Failed to send offline notification for device {alias} ({serial_number})")
@@ -199,15 +352,7 @@ class NotificationService:
             return False
             
         # Check if we're in cooldown period for this device
-        now = datetime.now().timestamp()
-        last_sent = self.last_notification_sent.get(serial_number, 0)
-        cooldown_remaining = self.notification_cooldown - (now - last_sent)
-        
-        if now - last_sent < self.notification_cooldown:
-            logger.debug(
-                f"Skipping notification for device {serial_number} - "
-                f"in cooldown period (remaining: {int(cooldown_remaining)}s)"
-            )
+        if self._check_notification_cooldown(serial_number, 'status'):
             return False
         
         # Prepare notification content
@@ -222,21 +367,23 @@ class NotificationService:
         
         # Create HTML message with better formatting
         message = (
-            f"<b>📊 Device Status Update</b><br><br>"
-            f"<b>Device:</b> {alias}<br>"
-            f"<b>Serial Number:</b> {serial_number}<br>"
-            f"<b>Plant:</b> {plant_name}<br>"
-            f"<b>Status:</b> {status}<br>"
-            f"<b>Energy Today:</b> {energy_today} kWh<br>"
-            f"<b>Total Energy:</b> {energy_total} kWh<br>"
+            f"<b>📊 Device Status Update</b>\n\n"
+            f"<b>Device:</b> {alias}\n"
+            f"<b>Serial Number:</b> {serial_number}\n"
+            f"<b>Plant:</b> {plant_name}\n"
+            f"<b>Status:</b> {status}\n"
+            f"<b>Energy Today:</b> {energy_today} kWh\n"
+            f"<b>Total Energy:</b> {energy_total} kWh\n"
         )
         
         # Send notification
         notification_sent = self.send_notification(message, subject)
         
-        # Update notification tracking
+        # Record notification in history
+        self._record_notification(serial_number, 'status', message, notification_sent)
+        
+        # Log outcome
         if notification_sent:
-            self.last_notification_sent[serial_number] = now
             logger.info(f"Status notification sent for device {alias} ({serial_number})")
         else:
             logger.warning(f"Failed to send status notification for device {alias} ({serial_number})")
@@ -266,6 +413,8 @@ class NotificationService:
             logger.error("Cannot send milestone notification - missing serial_number")
             return False
             
+        # No cooldown for milestone notifications - they're special!
+        
         # Prepare notification content
         alias = device_data.get('alias', 'Unknown Device')
         plant_name = device_data.get('plant_name', 'Unknown Plant')
@@ -276,17 +425,20 @@ class NotificationService:
         
         # Create HTML message with better formatting
         message = (
-            f"<b>🎉 Energy Milestone Reached!</b><br><br>"
-            f"<b>Device:</b> {alias}<br>"
-            f"<b>Serial Number:</b> {serial_number}<br>"
-            f"<b>Plant:</b> {plant_name}<br>"
-            f"<b>Milestone:</b> {milestone_value} kWh<br>"
-            f"<b>Total Energy:</b> {energy_total} kWh<br><br>"
+            f"<b>🎉 Energy Milestone Reached!</b>\n\n"
+            f"<b>Device:</b> {alias}\n"
+            f"<b>Serial Number:</b> {serial_number}\n"
+            f"<b>Plant:</b> {plant_name}\n"
+            f"<b>Milestone:</b> {milestone_value} kWh\n"
+            f"<b>Total Energy:</b> {energy_total} kWh\n\n"
             f"Congratulations on reaching this energy production milestone!"
         )
         
         # Send notification
         notification_sent = self.send_notification(message, subject)
+        
+        # Record notification in history
+        self._record_notification(serial_number, 'milestone', message, notification_sent)
         
         # Log outcome
         if notification_sent:
@@ -320,16 +472,16 @@ class NotificationService:
         subject = f"{icon} System Alert: {alert_type.capitalize()}"
         
         # Start building the HTML message
-        html_message = f"<b>{icon} System Alert: {alert_type.capitalize()}</b><br><br>{message}<br>"
+        html_message = f"<b>{icon} System Alert: {alert_type.capitalize()}</b>\n\n{message}\n"
         
         # Add details if provided
         if details:
-            html_message += "<br><b>Details:</b><br>"
+            html_message += "\n<b>Details:</b>\n"
             for key, value in details.items():
-                html_message += f"<b>{key}:</b> {value}<br>"
+                html_message += f"<b>{key}:</b> {value}\n"
         
         # Add timestamp
-        html_message += f"<br><i>Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</i>"
+        html_message += f"\n<i>Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</i>"
         
         # Send notification
         return self.send_notification(html_message, subject)
@@ -585,3 +737,33 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Unexpected error sending Telegram message to chat ID {chat_id}: {e}")
             return False
+            
+    def get_device_notification_history(self, device_serial: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get notification history for a device
+        
+        Args:
+            device_serial: The serial number of the device
+            limit: Maximum number of records to return
+            
+        Returns:
+            List[Dict[str, Any]]: List of notification history records
+        """
+        if not self.db:
+            logger.warning("Database not available for notification history")
+            return []
+            
+        try:
+            query = """
+                SELECT device_serial_number, notification_type, sent_at, message, success
+                FROM notification_history
+                WHERE device_serial_number = %s
+                ORDER BY sent_at DESC
+                LIMIT %s
+            """
+            
+            return self.db.query(query, (device_serial, limit))
+            
+        except Exception as e:
+            logger.error(f"Error retrieving notification history: {e}")
+            return []
