@@ -57,9 +57,6 @@ zopfli==0.2.3.post1
 azure-identity==1.15.0
 azure-keyvault-secrets==4.8.0
 azure-storage-blob==12.19.0
-<<<<<<< HEAD
 opencensus-ext-azure==1.1.13
 opencensus-ext-flask==0.8.2
 opencensus-ext-logging==0.1.1
-=======
->>>>>>> ce2194f (Fix:   × No solution found when resolving dependencies:)
