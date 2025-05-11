@@ -16,7 +16,7 @@ parent_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(parent_dir))
 
 # Import directly from the same directory
-from script.devices_data_collector import DevicesDataCollector, ensure_logs_dir
+from devices_data_collector import DevicesDataCollector, ensure_logs_dir
 from app.config import Config
 
 # Configure logging

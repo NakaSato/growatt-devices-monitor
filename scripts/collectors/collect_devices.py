@@ -12,9 +12,13 @@ import logging
 import argparse
 from datetime import datetime
 
-# Import common utilities from script package
-from script import configure_script_logging
-from script.utils import (
+# Add the project root directory to the path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(project_root)
+
+# Import common utilities from scripts package
+from app.config import Config
+from scripts.utils.utils import (
     ensure_dir,
     save_to_json,
     retry_with_backoff,
@@ -23,12 +27,25 @@ from script.utils import (
 )
 
 # Configure logging
-logger = configure_script_logging("collect_devices")
+# Ensure logs directory exists
+logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
+logger = logging.getLogger("collect_devices")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(logs_dir, 'collect_devices.log'))
+    ]
+)
 
 class DevicesCollector:
     """Collects device data from the Growatt API and stores it in a local JSON file"""
 
-    def __init__(self, base_url="http://localhost:8000", username=None, password=None):
+    def __init__(self, base_url="https://monitoring.boring9.dev", username=None, password=None):
         """
         Initialize the devices collector
         
@@ -37,9 +54,9 @@ class DevicesCollector:
             username: Growatt API username (optional)
             password: Growatt API password (optional)
         """
-        self.base_url = base_url
-        self.username = username
-        self.password = password
+        self.base_url = Config.GROWATT_BASE_URL
+        self.username = Config.GROWATT_USERNAME
+        self.password = Config.GROWATT_PASSWORD
         self.is_authenticated = False
         
     def authenticate(self) -> bool:

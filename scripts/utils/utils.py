@@ -15,8 +15,13 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 
-# Import from the package's __init__.py
-from script import configure_script_logging
+# Add the project root directory to the path if not already there
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+# Import from scripts package if needed
+# from scripts import configure_script_logging
 
 def ensure_dir(directory: str) -> str:
     """

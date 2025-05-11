@@ -30,7 +30,7 @@ jobs:
         run: |
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python scripts/offline_devices_notification.py
+          python scripts/notifications/offline_devices_notification.py
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
