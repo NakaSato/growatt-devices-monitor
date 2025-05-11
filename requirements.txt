@@ -58,5 +58,5 @@ azure-identity==1.15.0
 azure-keyvault-secrets==4.8.0
 azure-storage-blob==12.19.0
 opencensus-ext-azure==1.1.13
-opencensus-ext-flask==0.8.3
+opencensus-ext-flask==0.8.2
 opencensus-ext-logging==0.1.1
