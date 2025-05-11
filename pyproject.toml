@@ -3,7 +3,7 @@ name = "growatt-devices-monitor"
 version = "0.1.0"
 description = "A monitoring tool for Growatt solar devices that collects and displays performance data"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "apscheduler>=3.11.0",
     "blinker>=1.9.0",
