@@ -15,9 +15,10 @@ import requests
 from datetime import datetime
 from pathlib import Path
 
-# Add parent directory to path so we can import from app
-parent_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(parent_dir)
+# Add project root directory to path so we can import from app
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(script_dir))
+sys.path.append(project_root)
 
 # Import from the app for direct access
 from app.config import Config
@@ -30,14 +31,14 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(os.path.join('logs', 'collect_all_data.log'))
+        logging.FileHandler(os.path.join(project_root, 'logs', 'collect_all_data.log'))
     ]
 )
 logger = logging.getLogger("collect_all_data")
 
 def ensure_logs_dir():
     """Ensure logs directory exists"""
-    logs_dir = os.path.join(parent_dir, 'logs')
+    logs_dir = os.path.join(project_root, 'logs')
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
         logger.info(f"Created logs directory at {logs_dir}")
