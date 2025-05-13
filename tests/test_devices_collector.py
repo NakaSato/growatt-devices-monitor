@@ -17,7 +17,7 @@ from tempfile import NamedTemporaryFile
 
 # Add the parent directory to the path so we can import from the app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from script.devices_data_collector import DevicesDataCollector, run_collection
+from scripts.collectors.devices_data_collector import DevicesDataCollector, run_collection
 from app.config import Config
 
 # Configure logging to stdout only for tests
@@ -155,7 +155,7 @@ class TestDevicesDataCollector(unittest.TestCase):
         self.assertEqual(result, self.sample_devices)
         self.assertEqual(mock_get.call_count, 2)
 
-    @patch('script.devices_data_collector.DevicesDataCollector.connect_to_db')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.connect_to_db')
     def test_ensure_table_exists(self, mock_connect_db):
         """Test database table creation"""
         # Create mock connection and cursor
@@ -177,7 +177,7 @@ class TestDevicesDataCollector(unittest.TestCase):
         create_calls = [call for call in mock_cursor.execute.call_args_list if 'CREATE TABLE' in str(call)]
         self.assertTrue(len(create_calls) > 0)
 
-    @patch('script.devices_data_collector.DevicesDataCollector.connect_to_db')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.connect_to_db')
     def test_save_devices_to_db(self, mock_connect_db):
         """Test saving devices to database"""
         # Create mock connection and cursor
@@ -201,10 +201,10 @@ class TestDevicesDataCollector(unittest.TestCase):
         insert_calls = [call for call in mock_cursor.execute.call_args_list if 'INSERT INTO' in str(call)]
         self.assertEqual(len(insert_calls), len(self.sample_devices))
 
-    @patch('script.devices_data_collector.DevicesDataCollector.authenticate')
-    @patch('script.devices_data_collector.DevicesDataCollector.ensure_table_exists')
-    @patch('script.devices_data_collector.DevicesDataCollector.fetch_devices')
-    @patch('script.devices_data_collector.DevicesDataCollector.save_devices_to_db')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.authenticate')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.ensure_table_exists')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.fetch_devices')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.save_devices_to_db')
     def test_run_success(self, mock_save, mock_fetch, mock_ensure, mock_auth):
         """Test successful run of collector"""
         # Configure mocks
@@ -223,10 +223,10 @@ class TestDevicesDataCollector(unittest.TestCase):
         mock_fetch.assert_called_once()
         mock_save.assert_called_once_with(self.sample_devices)
 
-    @patch('script.devices_data_collector.DevicesDataCollector.authenticate')
-    @patch('script.devices_data_collector.DevicesDataCollector.ensure_table_exists')
-    @patch('script.devices_data_collector.DevicesDataCollector.fetch_devices')
-    @patch('script.devices_data_collector.DevicesDataCollector.save_devices_to_db')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.authenticate')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.ensure_table_exists')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.fetch_devices')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.save_devices_to_db')
     def test_run_failure(self, mock_save, mock_fetch, mock_ensure, mock_auth):
         """Test collector run with failure"""
         # Configure mocks - authentication fails
@@ -243,7 +243,7 @@ class TestDevicesDataCollector(unittest.TestCase):
         mock_fetch.assert_not_called()
         mock_save.assert_not_called()
 
-    @patch('script.devices_data_collector.DevicesDataCollector.run')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.run')
     def test_run_collection(self, mock_run):
         """Test the run_collection function"""
         # Configure mock
@@ -256,7 +256,7 @@ class TestDevicesDataCollector(unittest.TestCase):
         self.assertTrue(result)
         mock_run.assert_called_once()
 
-    @patch('script.devices_data_collector.DevicesDataCollector.run')
+    @patch('scripts.collectors.devices_data_collector.DevicesDataCollector.run')
     def test_run_collection_exception(self, mock_run):
         """Test the run_collection function with exception"""
         # Configure mock to raise exception
