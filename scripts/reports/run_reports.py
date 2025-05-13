@@ -59,7 +59,7 @@ def configure_script_logging(name, level=logging.INFO):
     return logger
 
 # Import common utilities
-from script.utils import (
+from scripts.utils import (
     create_common_parser,
     add_date_range_args,
     parse_date_range
@@ -81,11 +81,11 @@ def run_database_report(args):
     try:
         # Try to import the improved database report module
         try:
-            from script.reports.improved_database_report import main as db_report_main
+            from scripts.reports.improved_database_report import main as db_report_main
             logger.info("Using improved database report generator")
         except ImportError:
             # Fall back to the original database report module
-            from script.reports.database_report import main as db_report_main
+            from scripts.reports.database_report import main as db_report_main
             logger.info("Using original database report generator")
         
         # Run the report generator

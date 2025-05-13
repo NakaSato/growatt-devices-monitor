@@ -13,7 +13,7 @@ import os
 import sys
 import logging
 import argparse
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional, Union
 from datetime import datetime, timedelta
 import pandas as pd
 import matplotlib
@@ -170,11 +170,20 @@ def fetch_device_status_data(days: int = 7) -> pd.DataFrame:
         # Parse dates
         df['last_update_time'] = pd.to_datetime(df['last_update_time'])
         
-        # Clean status values
+        # Map status values to human-readable labels
+        df['status_label'] = df['status'].apply(lambda x: 
+                                           'Waiting' if x == '-1' else
+                                           'Offline' if x == '0' else
+                                           'Online' if x == '1' else
+                                           'None' if x == '3' else
+                                           x)
+        
+        # Clean status values for numeric operations
         df['status_value'] = df['status'].apply(lambda x: 
-                                            -1 if x == '-1' or x == 'offline' or x == 'Offline' else
+                                            -1 if x == '-1' else
                                             0 if x == '0' else
-                                            1 if x == '1' or x == 'online' or x == 'Online' else
+                                            1 if x == '1' else
+                                            3 if x == '3' else
                                             float(x) if isinstance(x, str) and x.replace('.', '', 1).replace('-', '', 1).isdigit() else
                                             None)
         
@@ -288,7 +297,7 @@ def generate_device_status_plots(df: pd.DataFrame, output_dir: str) -> List[str]
         
         # 1. Status Distribution Plot
         plt.figure(figsize=(10, 6))
-        status_counts = df['status'].value_counts().sort_values(ascending=False)
+        status_counts = df['status_label'].value_counts().sort_values(ascending=False)
         sns.barplot(x=status_counts.index, y=status_counts.values)
         plt.title('Device Status Distribution')
         plt.xlabel('Status')
@@ -302,7 +311,7 @@ def generate_device_status_plots(df: pd.DataFrame, output_dir: str) -> List[str]
         
         # 2. Status by Device Type
         plt.figure(figsize=(12, 8))
-        type_status = pd.crosstab(df['type'], df['status'])
+        type_status = pd.crosstab(df['type'], df['status_label'])
         type_status.plot(kind='bar', stacked=True)
         plt.title('Device Status by Device Type')
         plt.xlabel('Device Type')
@@ -329,9 +338,16 @@ def generate_device_status_plots(df: pd.DataFrame, output_dir: str) -> List[str]
                     device_name = device_df['alias'].iloc[0] if not device_df['alias'].isnull().all() else device
                     plt.plot(device_df['last_update_time'], device_df['status_value'], marker='o', linestyle='-', label=device_name)
                 
+                # Add annotations for status values
+                plt.axhline(y=-1, color='orange', linestyle='--', alpha=0.3)
+                plt.axhline(y=0, color='red', linestyle='--', alpha=0.3)
+                plt.axhline(y=1, color='green', linestyle='--', alpha=0.3)
+                plt.axhline(y=3, color='gray', linestyle='--', alpha=0.3)
+                
                 plt.title('Device Status Changes Over Time')
                 plt.xlabel('Time')
                 plt.ylabel('Status Value')
+                plt.yticks([-1, 0, 1, 3], ['Waiting', 'Offline', 'Online', 'None'])
                 plt.legend(title='Device', bbox_to_anchor=(1.05, 1), loc='upper left')
                 plt.grid(True)
                 plt.tight_layout()
@@ -342,7 +358,7 @@ def generate_device_status_plots(df: pd.DataFrame, output_dir: str) -> List[str]
         
         # 4. Offline Frequency by Plant
         plt.figure(figsize=(10, 6))
-        offline_by_plant = df[df['status'].isin(['-1', 'offline', 'Offline'])].groupby('plant_name').size()
+        offline_by_plant = df[df['status'] == '0'].groupby('plant_name').size()
         
         if not offline_by_plant.empty:
             offline_by_plant = offline_by_plant.sort_values(ascending=False)
@@ -502,7 +518,7 @@ def generate_pdf_report(
     
     # Generate filename with timestamp
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    pdf_path = os.path.join(reports_dir, f"device_report_{timestamp}.pdf")
+    pdf_path = os.path.join(reports_dir, f"devices_report_{timestamp}.pdf")
     
     try:
         # Create PDF
@@ -510,14 +526,14 @@ def generate_pdf_report(
             # Title page
             plt.figure(figsize=(12, 8))
             plt.axis('off')
-            plt.text(0.5, 0.8, "Growatt Devices Status Report", fontsize=24, ha='center')
+            plt.text(0.5, 0.8, "Growatt Devices Report", fontsize=24, ha='center')
             plt.text(0.5, 0.7, f"Report Period: Last {days} Days", fontsize=18, ha='center')
             plt.text(0.5, 0.6, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", fontsize=14, ha='center')
             
             # Device stats
             if not status_df.empty:
                 total_devices = len(status_df['serial_number'].unique())
-                offline_devices = len(status_df[status_df['status'].isin(['-1', 'offline', 'Offline'])]['serial_number'].unique())
+                offline_devices = len(status_df[status_df['status'] == '0']['serial_number'].unique())
                 plt.text(0.5, 0.4, f"Total Devices: {total_devices}", fontsize=14, ha='center')
                 plt.text(0.5, 0.35, f"Devices with Offline Events: {offline_devices}", fontsize=14, ha='center')
             
@@ -556,7 +572,8 @@ def generate_pdf_report(
             if not status_df.empty:
                 # Get current status for each device
                 current_status = status_df.sort_values('last_update_time').groupby('serial_number').last()
-                current_status = current_status.reset_index()[['serial_number', 'alias', 'status', 'last_update_time', 'plant_name']]
+                current_status = current_status.reset_index()[['serial_number', 'alias', 'status_label', 'last_update_time', 'plant_name']]
+                current_status.columns = ['Serial Number', 'Device Name', 'Status', 'Last Update', 'Plant']
                 
                 # Split into chunks for the table
                 chunk_size = 20
@@ -587,7 +604,7 @@ def generate_pdf_report(
             
             # Add offline events summary if available
             if not status_df.empty:
-                offline_events = status_df[status_df['status'].isin(['-1', 'offline', 'Offline'])]
+                offline_events = status_df[status_df['status'] == '0']  # Using '0' for Offline status
                 
                 if not offline_events.empty:
                     offline_summary = offline_events.groupby('serial_number').agg({
@@ -597,6 +614,7 @@ def generate_pdf_report(
                     }).rename(columns={'last_update_time': 'offline_count'}).reset_index()
                     
                     offline_summary = offline_summary.sort_values('offline_count', ascending=False)
+                    offline_summary.columns = ['Serial Number', 'Device Name', 'Plant', 'Offline Count']
                     
                     # Split into chunks for the table
                     chunk_size = 20
@@ -632,17 +650,48 @@ def generate_pdf_report(
         logger.error(f"Error generating PDF report: {e}")
         return ""
 
-def send_email(pdf_path: str, recipient: str) -> bool:
+def send_email(pdf_path: str, recipient: Union[str, List[str]]) -> bool:
     """
     Send the PDF report via email
     
     Args:
         pdf_path: Path to the PDF report
-        recipient: Email address to send the report to
+        recipient: Email address or list of addresses to send the report to
         
     Returns:
         bool: True if email was sent successfully, False otherwise
     """
+    # Process recipient (can be string or list)
+    # Convert string input that looks like a list to an actual list
+    if isinstance(recipient, str) and recipient.startswith('[') and recipient.endswith(']'):
+        try:
+            # This handles cases where the recipient is a string like '["email@example.com"]'
+            # Strip the outer quotes and brackets, then split by comma
+            cleaned = recipient.strip('[]').replace('"', '').replace("'", "")
+            recipient_list = [email.strip() for email in cleaned.split(',') if email.strip()]
+            if recipient_list:
+                recipient = recipient_list
+            else:
+                logger.error(f"Failed to parse recipient list from string: {recipient}")
+        except Exception as e:
+            logger.warning(f"Error parsing recipient string as list: {e}. Will treat as a regular string.")
+    
+    # Now handle the recipient appropriately based on its type
+    if isinstance(recipient, list):
+        if not recipient:
+            logger.error("Empty recipient list provided")
+            return False
+        # For SMTP, we'll use all emails in the list
+        email_recipients = recipient
+        # For the 'To' header, join with commas
+        email_recipient_header = ', '.join(recipient)
+    else:
+        email_recipients = [recipient]  # Convert to list for consistent handling
+        email_recipient_header = recipient
+        
+    if not email_recipients:
+        logger.error("No recipient email provided")
+        return False
     try:
         from app.config import Config
         
@@ -671,16 +720,23 @@ def send_email(pdf_path: str, recipient: str) -> bool:
         # Create message
         msg = MIMEMultipart()
         msg['From'] = Config.EMAIL_FROM
-        msg['To'] = recipient
-        msg['Subject'] = f"Growatt Devices Status Report - {datetime.now().strftime('%Y-%m-%d')}"
+        msg['To'] = email_recipient_header
+        msg['Subject'] = f"Growatt Devices Report - {datetime.now().strftime('%Y-%m-%d')}"
         
         # Email body
         body = """
         <html>
             <body>
-                <h2>Growatt Devices Status Report</h2>
-                <p>Please find attached the devices status report with data visualizations.</p>
+                <h2>Growatt Devices Report</h2>
+                <p>Please find attached the devices report with data visualizations.</p>
                 <p>This report includes device status information and energy production data.</p>
+                <p>Status codes in this report:</p>
+                <ul>
+                    <li><strong>Waiting (-1)</strong>: Device is in waiting state</li>
+                    <li><strong>Offline (0)</strong>: Device is offline</li>
+                    <li><strong>Online (1)</strong>: Device is online and functioning</li>
+                    <li><strong>None (3)</strong>: Status information not available</li>
+                </ul>
                 <p>The report was automatically generated on {datetime}.</p>
                 <p>Best regards,<br>
                 Growatt Monitoring System</p>
@@ -722,11 +778,11 @@ def send_email(pdf_path: str, recipient: str) -> bool:
                             logger.error(f"SMTP authentication error: {auth_err}")
                         return False
                 
-                logger.info(f"Sending email from {Config.EMAIL_FROM} to {recipient}")
+                logger.info(f"Sending email from {Config.EMAIL_FROM} to {email_recipient_header}")
                 server.send_message(msg)
                 logger.info("Email sent successfully")
             
-            logger.info(f"Sent report email to {recipient}")
+            logger.info(f"Sent report email to {email_recipient_header}")
             return True
             
         except smtplib.SMTPConnectError as conn_err:
@@ -754,7 +810,7 @@ def main():
         int: Exit code (0 for success, 1 for failure)
     """
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Generate database report with visualizations and send via email")
+    parser = argparse.ArgumentParser(description="Generate devices report with visualizations and send via email")
     parser.add_argument("--days", type=int, default=7, help="Number of days to include in the report")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--email", type=str, help="Email address to send report to (if not specified, uses the default from config)")
@@ -766,7 +822,7 @@ def main():
         logging.getLogger("app").setLevel(logging.DEBUG)
         
     try:
-        logger.info("Starting database report generation")
+        logger.info("Starting devices report generation")
         
         # Create temporary directory for plots
         temp_dir = os.path.join("reports", "temp")
@@ -834,11 +890,11 @@ def main():
         except Exception:
             pass
             
-        logger.info("Database report generation completed successfully")
+        logger.info("Devices report generation completed successfully")
         return 0
         
     except Exception as e:
-        logger.error(f"Error in database report generation: {e}")
+        logger.error(f"Error in devices report generation: {e}")
         return 1
 
 if __name__ == "__main__":

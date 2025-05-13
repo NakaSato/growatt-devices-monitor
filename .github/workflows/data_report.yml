@@ -1,4 +1,4 @@
-name: Database Report Generation
+name: Data Report Job
 
 on:
   schedule:
@@ -11,11 +11,12 @@ on:
       days:
         description: "Number of days to include in the report"
         required: false
-        default: "30"
+        default: "7"
         type: string
       email:
         description: "Email address to send the report to"
         required: false
+        default: "enwuft@gmail.com"
         type: string
 
 jobs:

@@ -46,21 +46,20 @@ def fetch_energy_data(timeframe: str) -> Dict[str, Any]:
         Dict containing energy data for all devices
     """
     try:
-        from app.core.growatt import GrowattAPI
+        from app.core.growatt import Growatt
         from app.config import Config
         from datetime import datetime, timedelta
         
         # Initialize Growatt API
-        growatt_api = GrowattAPI(
-            username=Config.GROWATT_USERNAME,
-            password=Config.GROWATT_PASSWORD,
-            base_url=Config.GROWATT_BASE_URL
-        )
+        growatt_api = Growatt()
         
         # Authenticate
-        login_result = growatt_api.login()
-        if not login_result.get('success', False):
-            logger.error(f"Failed to login to Growatt API: {login_result.get('msg', 'Unknown error')}")
+        login_result = growatt_api.login(
+            username=Config.GROWATT_USERNAME,
+            password=Config.GROWATT_PASSWORD
+        )
+        if not login_result:
+            logger.error("Failed to login to Growatt API")
             return {}
         
         # Calculate date range based on timeframe
@@ -89,12 +88,11 @@ def fetch_energy_data(timeframe: str) -> Dict[str, Any]:
         logger.info(f"Fetching {timeframe} energy data from {start_date_str} to {end_date_str}")
         
         # Fetch plants
-        plants_result = growatt_api.get_plants()
-        if not plants_result.get('success', False):
-            logger.error(f"Failed to fetch plants: {plants_result.get('msg', 'Unknown error')}")
+        plants = growatt_api.get_plants()
+        if not plants:
+            logger.error("Failed to fetch plants")
             return {}
             
-        plants = plants_result.get('data', [])
         all_data = {
             'timeframe': timeframe,
             'start_date': start_date,
@@ -105,7 +103,7 @@ def fetch_energy_data(timeframe: str) -> Dict[str, Any]:
         
         # Fetch energy data for each plant
         for plant in plants:
-            plant_id = plant.get('plantId')
+            plant_id = plant.get('id')
             plant_name = plant.get('plantName', 'Unknown Plant')
             
             plant_data = {
@@ -115,17 +113,17 @@ def fetch_energy_data(timeframe: str) -> Dict[str, Any]:
             }
             
             # Fetch devices for this plant
-            devices_result = growatt_api.get_plant_devices(plant_id)
-            if not devices_result.get('success', False):
-                logger.warning(f"Failed to fetch devices for plant {plant_id}: {devices_result.get('msg')}")
+            devices_result = growatt_api.get_device_list(plant_id)
+            if not devices_result or 'obj' not in devices_result or 'datas' not in devices_result['obj']:
+                logger.warning(f"Failed to fetch devices for plant {plant_id}")
                 continue
                 
-            devices = devices_result.get('data', [])
+            devices = devices_result['obj']['datas']
             
             # For each device, fetch energy data
             for device in devices:
-                serial_number = device.get('deviceSn')
-                device_alias = device.get('deviceAilas', 'Unknown Device')  # API typo 'Ailas'
+                serial_number = device.get('sn') or device.get('deviceSn')
+                device_alias = device.get('alias') or device.get('deviceAilas') or device.get('deviceName', 'Unknown Device')
                 
                 device_data = {
                     'serial_number': serial_number,
@@ -134,26 +132,59 @@ def fetch_energy_data(timeframe: str) -> Dict[str, Any]:
                 }
                 
                 # Fetch the appropriate energy data based on timeframe
-                if timeframe == 'daily':
-                    # For daily, get hourly data for the past 24 hours
-                    energy_result = growatt_api.get_device_energy_by_day(
-                        serial_number, start_date_str
-                    )
-                elif timeframe == 'weekly':
-                    # For weekly, get daily data for the past 7 days
-                    energy_result = growatt_api.get_device_energy_by_day(
-                        serial_number, start_date_str, end_date_str
-                    )
-                elif timeframe == 'monthly':
-                    # For monthly, get daily data for the past 30 days
-                    energy_result = growatt_api.get_device_energy_by_day(
-                        serial_number, start_date_str, end_date_str
-                    )
-                
-                if energy_result.get('success', False):
-                    device_data['energy_data'] = energy_result.get('data', [])
-                else:
-                    logger.warning(f"Failed to fetch energy data for device {serial_number}: {energy_result.get('msg')}")
+                try:
+                    if timeframe == 'daily':
+                        # For daily, get hourly data for the past 24 hours
+                        energy_result = growatt_api.get_energy_stats_daily(
+                            start_date_str, plant_id, serial_number
+                        )
+                    elif timeframe == 'weekly':
+                        # For weekly, get daily data for the past 7 days
+                        energy_result = {}
+                        for d in range(7):
+                            current_date = start_date + timedelta(days=d)
+                            current_date_str = current_date.strftime("%Y-%m-%d")
+                            daily_data = growatt_api.get_energy_stats_daily(
+                                current_date_str, plant_id, serial_number
+                            )
+                            if daily_data and 'obj' in daily_data and 'etoday' in daily_data['obj']:
+                                energy_data = {
+                                    'date': current_date_str,
+                                    'energy': daily_data['obj']['etoday']
+                                }
+                                device_data['energy_data'].append(energy_data)
+                    elif timeframe == 'monthly':
+                        # For monthly, get daily data for the past 30 days
+                        energy_result = {}
+                        for d in range(30):
+                            current_date = start_date + timedelta(days=d)
+                            current_date_str = current_date.strftime("%Y-%m-%d")
+                            daily_data = growatt_api.get_energy_stats_daily(
+                                current_date_str, plant_id, serial_number
+                            )
+                            if daily_data and 'obj' in daily_data and 'etoday' in daily_data['obj']:
+                                energy_data = {
+                                    'date': current_date_str,
+                                    'energy': daily_data['obj']['etoday']
+                                }
+                                device_data['energy_data'].append(energy_data)
+                    
+                    # Daily data needs special handling to extract hourly values
+                    if timeframe == 'daily' and energy_result and 'obj' in energy_result and 'charts' in energy_result['obj']:
+                        hourly_data = energy_result['obj']['charts'].get('pac', [])
+                        hours = len(hourly_data)
+                        for i, value in enumerate(hourly_data):
+                            if value is not None and value > 0:
+                                # Create hour timestamp
+                                hour = i % 24
+                                hour_str = f"{start_date_str} {hour:02d}:00"
+                                energy_data = {
+                                    'date': hour_str,
+                                    'energy': value
+                                }
+                                device_data['energy_data'].append(energy_data)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch energy data for device {serial_number}: {e}")
                 
                 plant_data['devices'].append(device_data)
             
