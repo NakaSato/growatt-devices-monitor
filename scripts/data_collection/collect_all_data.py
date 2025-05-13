@@ -25,7 +25,6 @@ from app.database import DatabaseConnector, get_db_connection
 from app.core.growatt import Growatt
 
 # Import our new weather data collector
-from script.collect_weather_data import WeatherDataCollector
 
 # Configure logging
 logging.basicConfig(

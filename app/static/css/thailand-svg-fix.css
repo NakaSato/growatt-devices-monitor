@@ -1,0 +1,40 @@
+/* CSS to ensure SVG map interaction works properly */
+
+/* Make sure map containers allow pointer events */
+#thailand-map-container,
+#thailand-solar-map,
+#thailand-svg {
+  pointer-events: auto !important;
+}
+
+/* Ensure SVG regions can be clicked */
+.region {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Fix any potential overlay issues */
+.region {
+  z-index: 10;
+}
+
+/* Add specific hover styling */
+.region:hover {
+  filter: brightness(1.1);
+}
+
+/* Make sure map markers are clickable */
+#map-markers * {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+/* Ensure the map container isn't blocking clicks */
+#thailand-map-container {
+  z-index: 1;
+}
+
+/* Fix for any Alpine.js interaction issues */
+[x-data] .region {
+  pointer-events: auto !important;
+}

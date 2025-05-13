@@ -15,6 +15,8 @@ import logging
 import requests
 from datetime import datetime
 
+from app.config import Config
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -35,7 +37,7 @@ def ensure_output_dir(directory="data"):
 class DevicesCollector:
     """Collects device data from the Growatt API and stores it in a local JSON file"""
 
-    def __init__(self, base_url="http://localhost:8000", username=None, password=None):
+    def __init__(self, base_url="https://monitoring.boring9.dev", username=None, password=None):
         """
         Initialize the devices collector
         
@@ -193,7 +195,7 @@ class DevicesCollector:
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="Collect device data from Growatt API")
-    parser.add_argument("--server", dest="server_url", default="http://localhost:8000", 
+    parser.add_argument("--server", dest="server_url", default="https://monitoring.boring9.dev", 
                       help="URL of the server running the Growatt monitor")
     parser.add_argument("--username", dest="username", help="Growatt API username")
     parser.add_argument("--password", dest="password", help="Growatt API password")

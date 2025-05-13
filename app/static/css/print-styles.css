@@ -1,0 +1,111 @@
+/* Print-specific styles for maps */
+
+@media print {
+  /* Hide non-essential elements */
+  header,
+  footer,
+  .map-controls,
+  #filter-panel,
+  button,
+  .hidden-print {
+    display: none !important;
+  }
+
+  /* Ensure map is visible and properly sized */
+  .print-content,
+  .print-content * {
+    visibility: visible !important;
+  }
+
+  /* Full-width container for print */
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Custom map container sizing for print */
+  #thailand-map-container,
+  #leaflet-map-container {
+    height: 500px !important;
+    width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Page settings */
+  @page {
+    size: landscape;
+    margin: 1cm;
+  }
+
+  /* Background colors for print */
+  body {
+    background-color: white !important;
+  }
+
+  /* Ensure proper map legend colors */
+  .marker-pin.bg-green-500 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .marker-pin.bg-yellow-500 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .marker-pin.bg-red-500 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .marker-pin.bg-gray-400 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Ensure SVG colors print properly */
+  svg path,
+  svg rect,
+  svg circle {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Add a border to the map container */
+  .print-border {
+    border: 1px solid #ccc !important;
+  }
+
+  /* Print header styles */
+  .print-header {
+    text-align: center;
+    margin-bottom: 1cm;
+  }
+
+  .print-header h1 {
+    font-size: 24pt;
+    color: #000 !important;
+  }
+
+  .print-header p {
+    font-size: 12pt;
+    color: #666 !important;
+  }
+
+  /* Print footer */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10pt;
+    color: #999 !important;
+  }
+}

@@ -1,0 +1,442 @@
+<!-- Thailand SVG Map -->
+<style>
+  /* Make sure SVG elements are clickable */
+  #thailand-svg {
+    cursor: grab;
+  }
+  #thailand-svg:active {
+    cursor: grabbing;
+  }
+  #thailand-svg .region {
+    cursor: pointer;
+    pointer-events: all;
+    transition: fill 0.2s ease-in-out, stroke-width 0.2s ease-in-out;
+  }
+  #thailand-svg .svg-marker {
+    cursor: pointer;
+    pointer-events: all;
+  }
+  #map-markers path,
+  #map-markers circle {
+    pointer-events: all;
+  }
+</style>
+<svg
+  id="thailand-svg"
+  width="100%"
+  height="100%"
+  viewBox="0 0 800 1000"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- SVG Map Definitions -->
+  <defs>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" />
+      <feOffset dx="2" dy="2" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="water-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a8d5ff" />
+      <stop offset="100%" stop-color="#5a95d6" />
+    </linearGradient>
+    <radialGradient
+      id="region-gradient"
+      cx="50%"
+      cy="50%"
+      r="75%"
+      fx="50%"
+      fy="50%"
+    >
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.1" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#f0f9ff" />
+
+  <!-- Water Background -->
+  <rect width="100%" height="100%" fill="url(#water-gradient)" />
+
+  <!-- Thailand Map Regions -->
+  <g id="thailand-regions" filter="url(#drop-shadow)">
+    <!-- Northern Thailand -->
+    <path
+      id="northern-region"
+      d="M400,150 L350,200 L320,180 L300,220 L280,260 L300,300 L280,330 L300,350 L340,360 L380,340 L420,360 L440,340 L480,360 L520,340 L500,300 L520,260 L500,220 L470,190 L450,170 L400,150 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="northern"
+      data-region-name="Northern Thailand"
+    />
+
+    <!-- Northeastern Thailand -->
+    <path
+      id="northeastern-region"
+      d="M520,340 L560,360 L600,340 L620,380 L600,420 L620,450 L600,480 L560,500 L520,480 L480,500 L450,480 L420,500 L400,470 L420,430 L400,400 L420,360 L440,340 L480,360 L520,340 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="northeastern"
+      data-region-name="Northeastern Thailand"
+    />
+
+    <!-- Central Thailand -->
+    <path
+      id="central-region"
+      d="M400,400 L380,430 L400,470 L380,500 L350,480 L320,510 L350,540 L320,570 L350,600 L380,570 L420,590 L450,570 L420,540 L450,500 L480,500 L450,480 L420,500 L400,470 L420,430 L400,400 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="central"
+      data-region-name="Central Thailand"
+    />
+
+    <!-- Eastern Thailand -->
+    <path
+      id="eastern-region"
+      d="M480,500 L520,480 L560,500 L580,530 L560,570 L520,590 L480,570 L480,540 L450,500 L480,500 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="eastern"
+      data-region-name="Eastern Thailand"
+    />
+
+    <!-- Western Thailand -->
+    <path
+      id="western-region"
+      d="M280,330 L240,360 L220,400 L240,450 L220,500 L260,520 L280,560 L320,570 L350,540 L320,510 L350,480 L380,500 L380,430 L400,400 L380,340 L340,360 L300,350 L280,330 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="western"
+      data-region-name="Western Thailand"
+    />
+
+    <!-- Southern Thailand -->
+    <path
+      id="southern-region"
+      d="M350,600 L320,620 L340,650 L320,680 L340,710 L320,740 L340,770 L320,800 L350,830 L380,800 L400,830 L380,860 L400,890 L380,920 L400,950 L380,980 L420,950 L450,980 L470,940 L450,900 L470,860 L450,820 L470,780 L450,740 L470,700 L450,660 L470,620 L450,590 L420,590 L380,570 L350,600 Z"
+      class="region"
+      fill="#e6f4ff"
+      stroke="#3b82f6"
+      stroke-width="2"
+      data-region-id="southern"
+      data-region-name="Southern Thailand"
+    />
+  </g>
+
+  <!-- Markers will be added dynamically by JavaScript -->
+  <g id="map-markers"></g>
+
+  <!-- Region Labels -->
+  <g id="region-labels" class="region-labels">
+    <text
+      x="400"
+      y="270"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Northern
+    </text>
+    <text
+      x="520"
+      y="420"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Northeastern
+    </text>
+    <text
+      x="400"
+      y="520"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Central
+    </text>
+    <text
+      x="520"
+      y="540"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Eastern
+    </text>
+    <text
+      x="280"
+      y="470"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Western
+    </text>
+    <text
+      x="400"
+      y="750"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="16"
+      fill="#3b82f6"
+      font-weight="bold"
+    >
+      Southern
+    </text>
+  </g>
+
+  <!-- Title and Info -->
+  <g id="map-info">
+    <text
+      x="400"
+      y="60"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="24"
+      fill="#1e40af"
+      font-weight="bold"
+    >
+      Thailand Solar Plants
+    </text>
+    <text
+      x="400"
+      y="90"
+      text-anchor="middle"
+      font-family="Arial, sans-serif"
+      font-size="14"
+      fill="#3b82f6"
+    >
+      Interactive map showing all solar installations
+    </text>
+  </g>
+</svg>
+
+<script type="text/javascript">
+  // Initialize Solar Map functionality when the DOM is loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    // Create and initialize the Solar Map object
+    const svgElement = document.getElementById("thailand-svg");
+    if (!svgElement) return;
+
+    // Initialize Solar Map object
+    window.solarMap = new SolarMap(svgElement);
+
+    // Add event listeners for region interactions
+    const regions = document.querySelectorAll(".region");
+    regions.forEach((region) => {
+      region.addEventListener("click", function (e) {
+        const regionId = this.getAttribute("data-region-id");
+        const regionName = this.getAttribute("data-region-name");
+
+        // Dispatch custom event for region selection
+        const regionData = {
+          name: regionName,
+          plants: getRegionPlants(regionId),
+        };
+
+        const event = new CustomEvent("region-selected", {
+          detail: {
+            regionId,
+            regionData,
+            isActive: true,
+            plants: getRegionPlants(regionId),
+          },
+        });
+        document.dispatchEvent(event);
+      });
+
+      // Add hover effect
+      region.addEventListener("mouseenter", function () {
+        this.setAttribute("fill", "url(#region-gradient)");
+        this.setAttribute("stroke-width", "3");
+      });
+
+      region.addEventListener("mouseleave", function () {
+        this.setAttribute("fill", "#e6f4ff");
+        this.setAttribute("stroke-width", "2");
+      });
+    });
+
+    // Helper function to get plants for a region
+    function getRegionPlants(regionId) {
+      // This would normally filter the global plants data by region
+      // For now, return a sample array
+      return (window.plantsData || []).filter(
+        (plant) =>
+          plant.region && plant.region.toLowerCase() === regionId.toLowerCase()
+      );
+    }
+  });
+
+  /**
+   * Solar Map Class
+   * Handles map interactions like zooming, panning, and markers
+   */
+  class SolarMap {
+    constructor(svgElement) {
+      this.svg = svgElement;
+      this.mapGroup = document.getElementById("thailand-regions");
+      this.markersGroup = document.getElementById("map-markers");
+
+      // Initial state
+      this.currentScale = 1;
+      this.currentTranslateX = 0;
+      this.currentTranslateY = 0;
+
+      // Initialize pan functionality
+      this.isPanning = false;
+      this.startPoint = { x: 0, y: 0 };
+      this.endPoint = { x: 0, y: 0 };
+
+      this.initializeMapInteractions();
+
+      // Make methods available to window
+      this.svgToGpsCoordinates = this.svgToGpsCoordinates.bind(this);
+    }
+
+    initializeMapInteractions() {
+      // Add mouse wheel event for zooming
+      this.svg.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        this.zoom(delta, e.clientX, e.clientY);
+      });
+
+      // Add mouse events for panning
+      this.svg.addEventListener("mousedown", (e) => {
+        if (e.button === 0) {
+          // Left button only
+          this.isPanning = true;
+          this.startPoint = { x: e.clientX, y: e.clientY };
+          this.svg.style.cursor = "grabbing";
+        }
+      });
+
+      this.svg.addEventListener("mousemove", (e) => {
+        if (this.isPanning) {
+          this.endPoint = { x: e.clientX, y: e.clientY };
+          const dx = this.endPoint.x - this.startPoint.x;
+          const dy = this.endPoint.y - this.startPoint.y;
+
+          this.currentTranslateX += dx;
+          this.currentTranslateY += dy;
+
+          this.updateMapTransform();
+
+          this.startPoint = { x: e.clientX, y: e.clientY };
+        }
+      });
+
+      this.svg.addEventListener("mouseup", () => {
+        this.isPanning = false;
+        this.svg.style.cursor = "grab";
+      });
+
+      this.svg.addEventListener("mouseleave", () => {
+        this.isPanning = false;
+        this.svg.style.cursor = "grab";
+      });
+    }
+
+    zoom(delta, clientX, clientY) {
+      // Calculate new scale with limits
+      const newScale = Math.max(0.5, Math.min(5, this.currentScale + delta));
+
+      // Calculate the scaling change
+      const scalingChange = newScale / this.currentScale;
+
+      // Update scale
+      this.currentScale = newScale;
+
+      // Update transform
+      this.updateMapTransform();
+    }
+
+    updateMapTransform() {
+      // Apply transform to the map group
+      if (this.mapGroup) {
+        this.mapGroup.setAttribute(
+          "transform",
+          `translate(${this.currentTranslateX},${this.currentTranslateY}) scale(${this.currentScale})`
+        );
+      }
+
+      // Apply same transform to markers
+      if (this.markersGroup) {
+        this.markersGroup.setAttribute(
+          "transform",
+          `translate(${this.currentTranslateX},${this.currentTranslateY}) scale(${this.currentScale})`
+        );
+      }
+    }
+
+    resetView() {
+      // Reset to initial state
+      this.currentScale = 1;
+      this.currentTranslateX = 0;
+      this.currentTranslateY = 0;
+
+      // Update transform
+      this.updateMapTransform();
+    }
+
+    // Convert SVG coordinates to GPS coordinates (approximate)
+    svgToGpsCoordinates(svgX, svgY) {
+      // This is a simplified conversion for demo purposes
+      // In a real application, you would use proper geospatial mapping
+
+      // Define the bounding box of Thailand in lat/lng
+      const thailandBounds = {
+        north: 20.4178496, // Max latitude
+        south: 5.6366753, // Min latitude
+        west: 97.3758964, // Min longitude
+        east: 105.589038, // Max longitude
+      };
+
+      // Get SVG dimensions
+      const svgWidth = this.svg.viewBox.baseVal.width;
+      const svgHeight = this.svg.viewBox.baseVal.height;
+
+      // Calculate the position ratio within the SVG
+      const xRatio = svgX / svgWidth;
+      const yRatio = svgY / svgHeight;
+
+      // Convert to lat/lng using the ratios
+      const lng =
+        thailandBounds.west +
+        (thailandBounds.east - thailandBounds.west) * xRatio;
+      const lat =
+        thailandBounds.north -
+        (thailandBounds.north - thailandBounds.south) * yRatio;
+
+      return { lat, lng };
+    }
+  }
+</script>

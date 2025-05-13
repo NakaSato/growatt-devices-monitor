@@ -1,0 +1,99 @@
+/* Custom Leaflet Marker Styles */
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+.marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  background: #3b82f6; /* Default blue */
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.marker-pin.bg-green-500 {
+  background: #10b981;
+}
+
+.marker-pin.bg-yellow-500 {
+  background: #f59e0b;
+}
+
+.marker-pin.bg-red-500 {
+  background: #ef4444;
+}
+
+.marker-pin.bg-gray-400 {
+  background: #9ca3af;
+}
+
+.marker-pin::after {
+  content: "";
+  width: 24px;
+  height: 24px;
+  margin: 3px 0 0 3px;
+  background: #fff;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.marker-pin i {
+  transform: rotate(45deg);
+  color: rgba(0, 0, 0, 0.8);
+  font-size: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Cluster Customization */
+.marker-cluster {
+  background-color: rgba(59, 130, 246, 0.6);
+  border: 3px solid rgba(59, 130, 246, 0.4);
+}
+
+.marker-cluster div {
+  background-color: rgba(59, 130, 246, 0.8);
+}
+
+/* Animation for markers */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-45deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-45deg);
+  }
+}
+
+.marker-pin:hover {
+  animation: bounce 0.5s ease infinite;
+}
+
+/* Responsive adjustments for maps */
+@media (max-width: 768px) {
+  .marker-pin {
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+  }
+
+  .marker-pin::after {
+    width: 18px;
+    height: 18px;
+    margin: 3px 0 0 3px;
+  }
+
+  .marker-pin i {
+    font-size: 10px;
+  }
+}

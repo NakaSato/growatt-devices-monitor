@@ -1,0 +1,44 @@
+/* Global Notifications Styles */
+
+#notification-container {
+  pointer-events: none; /* Allow clicking through the container */
+}
+
+#notification-container > div {
+  pointer-events: auto; /* Make each notification clickable */
+  opacity: 0;
+  transform: translateY(1rem);
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.notification-success {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2),
+    0 4px 6px -1px rgba(34, 197, 94, 0.1),
+    0 2px 4px -1px rgba(34, 197, 94, 0.06);
+}
+
+.notification-error {
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2),
+    0 4px 6px -1px rgba(239, 68, 68, 0.1),
+    0 2px 4px -1px rgba(239, 68, 68, 0.06);
+}
+
+.notification-warning {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2),
+    0 4px 6px -1px rgba(245, 158, 11, 0.1),
+    0 2px 4px -1px rgba(245, 158, 11, 0.06);
+}
+
+.notification-info {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2),
+    0 4px 6px -1px rgba(59, 130, 246, 0.1),
+    0 2px 4px -1px rgba(59, 130, 246, 0.06);
+}
+
+/* Print styles */
+@media print {
+  #notification-container {
+    display: none !important;
+  }
+}

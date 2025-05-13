@@ -1,0 +1,143 @@
+/* Responsive styles for solar plants map */
+
+/* Mobile sidebar toggle button */
+#mobile-sidebar-toggle {
+  display: none; /* Hidden by default, shown via JavaScript */
+  transition: all 0.3s ease;
+}
+
+#mobile-sidebar-toggle:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+  /* Map container height adjustments for smaller screens */
+  .lg\:col-span-3 {
+    height: calc(100vh - 230px) !important;
+    min-height: 400px;
+  }
+
+  /* Controls bar adjustments */
+  .bg-white.rounded-xl.shadow-md.mb-6 {
+    padding: 0.75rem !important;
+  }
+
+  /* Button sizing for touch */
+  button,
+  .button {
+    min-height: 44px; /* Better touch targets */
+  }
+
+  /* Filter panel adjustments */
+  #filter-panel .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Small mobile screens */
+@media (max-width: 639px) {
+  /* Compact header */
+  h1.text-xl {
+    font-size: 1.1rem;
+  }
+
+  /* Simplified controls */
+  .map-controls {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .map-controls button {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Simplified legend */
+  .absolute.bottom-4.left-4 {
+    bottom: 1rem;
+    left: 1rem;
+    padding: 0.5rem;
+    max-width: 150px;
+  }
+
+  /* Make text more readable on small screens */
+  .text-xs {
+    font-size: 0.7rem !important;
+  }
+
+  /* Adjust weather indicator */
+  .absolute.top-4.right-4 {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.4rem;
+  }
+
+  /* Mobile sidebar fullscreen */
+  .mobile-ready.fixed {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 1rem;
+  }
+}
+
+/* Mobile sidebar styles */
+.mobile-ready.fixed {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile backdrop */
+#mobile-sidebar-backdrop {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* Mobile close button */
+.mobile-close-btn {
+  transition: all 0.2s ease;
+}
+
+.mobile-close-btn:hover {
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.dark .mobile-close-btn:hover {
+  background-color: #4b5563; /* gray-600 */
+}
+
+/* Improved touch targets for mobile */
+.marker-pin {
+  width: 36px;
+  height: 36px;
+}
+
+@media (max-width: 767px) {
+  /* Adjust the filter dropdown for better mobile UX */
+  #export-options {
+    right: 0;
+    left: auto;
+    width: 200px;
+  }
+
+  /* Ensure dropdown menu items are large enough for touch */
+  #export-options button {
+    padding: 12px 16px;
+  }
+}
