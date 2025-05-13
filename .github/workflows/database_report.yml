@@ -62,15 +62,23 @@ jobs:
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
 
+          # Ensure reports directory exists
+          mkdir -p reports
+
           # Get input parameters or use defaults
           DAYS="${{ github.event.inputs.days || '30' }}"
           EMAIL="${{ github.event.inputs.email }}"
 
+          # Run with output filename to make debugging easier
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           if [ -z "$EMAIL" ]; then
-            python scripts/reports/database_report.py --days $DAYS
+            python scripts/reports/database_report.py --days $DAYS --output "reports/device_report_${TIMESTAMP}.pdf"
           else
-            python scripts/reports/database_report.py --days $DAYS --email $EMAIL
+            python scripts/reports/database_report.py --days $DAYS --email $EMAIL --output "reports/device_report_${TIMESTAMP}.pdf"
           fi
+          
+          # Print the output filename for reference
+          echo "Generated report: reports/device_report_${TIMESTAMP}.pdf"
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -93,9 +101,16 @@ jobs:
           # Timezone setting
           TZ: "Asia/Bangkok"
 
+      - name: Debug report files
+        run: |
+          echo "Checking for generated report files:"
+          mkdir -p reports  # Ensure directory exists
+          ls -la reports/
+          
       - name: Upload report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: database-reports
           path: reports/*.pdf
+          if-no-files-found: warn
           retention-days: 14 # Keep reports for 14 days
