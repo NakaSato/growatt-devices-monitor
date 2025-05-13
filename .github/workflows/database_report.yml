@@ -71,11 +71,18 @@ jobs:
 
           # Run with output filename to make debugging easier
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          
+          # Set more verbose output for debugging
+          set -x
+          
           if [ -z "$EMAIL" ]; then
             python scripts/reports/database_report.py --days $DAYS --output "reports/device_report_${TIMESTAMP}.pdf"
           else
             python scripts/reports/database_report.py --days $DAYS --email $EMAIL --output "reports/device_report_${TIMESTAMP}.pdf"
           fi
+          
+          # Turn off verbose output
+          set +x
           
           # Print the output filename for reference
           echo "Generated report: reports/device_report_${TIMESTAMP}.pdf"
@@ -108,7 +115,7 @@ jobs:
           ls -la reports/
           
       - name: Upload report as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: database-reports
           path: reports/*.pdf
