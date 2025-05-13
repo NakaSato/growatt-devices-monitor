@@ -38,7 +38,9 @@ jobs:
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           # Run the devices collection script with the current timestamp in the filename
-          python scripts/collectors/collect_devices.py --output-dir data/devices --output "devices_$(date +%Y%m%d_%H%M%S).json"
+          OUTPUT_FILE="devices_$(date +%Y%m%d_%H%M%S).json"
+          python scripts/collectors/collect_devices.py --output-dir data/devices --output "$OUTPUT_FILE"
+          echo "DEVICE_OUTPUT_FILE=data/devices/$OUTPUT_FILE" >> $GITHUB_ENV
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -49,3 +51,15 @@ jobs:
 
           # Optional: Timezone setting
           TZ: "Asia/Bangkok" # Set to Thai timezone
+          
+      - name: Debug data files
+        run: |
+          echo "Checking collected data files:"
+          ls -la data/devices/
+          
+      - name: Upload device data as artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: device-data
+          path: ${{ env.DEVICE_OUTPUT_FILE }}
+          retention-days: 7
