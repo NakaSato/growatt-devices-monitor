@@ -21,6 +21,23 @@ on:
 jobs:
   generate_report:
     runs-on: ubuntu-latest
+    
+    # Add PostgreSQL service container
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: growatt_db
+        ports:
+          - 5432:5432
+        # Health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -49,13 +66,13 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           python -m app.db_migration
         env:
-          # Database connection
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          # Database connection - use local postgres service container
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/growatt_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: growatt_db
 
       - name: Run database report script
         run: |
@@ -69,40 +86,42 @@ jobs:
           DAYS="${{ github.event.inputs.days || '30' }}"
           EMAIL="${{ github.event.inputs.email }}"
 
-          # Run with output filename to make debugging easier
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          
           # Set more verbose output for debugging
           set -x
           
+          # Run the script without the unsupported --output parameter
           if [ -z "$EMAIL" ]; then
-            python scripts/reports/database_report.py --days $DAYS --output "reports/device_report_${TIMESTAMP}.pdf"
+            python scripts/reports/database_report.py --days $DAYS
           else
-            python scripts/reports/database_report.py --days $DAYS --email $EMAIL --output "reports/device_report_${TIMESTAMP}.pdf"
+            python scripts/reports/database_report.py --days $DAYS --email $EMAIL
           fi
+          
+          # Copy any generated PDF reports to our reports directory for artifacts
+          find . -name "*.pdf" -type f -mmin -60 -exec cp {} reports/ \;
           
           # Turn off verbose output
           set +x
           
-          # Print the output filename for reference
-          echo "Generated report: reports/device_report_${TIMESTAMP}.pdf"
+          # List found reports
+          echo "Found the following reports:"
+          ls -la reports/
         env:
-          # Database connection
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          # Database connection - use local postgres service container
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/growatt_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: growatt_db
 
-          # Email configuration
+          # Email configuration - use simple values for testing
           EMAIL_NOTIFICATIONS_ENABLED: "True"
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: "noreply@example.com"
+          EMAIL_TO: "admin@example.com"
+          SMTP_SERVER: "localhost"
+          SMTP_PORT: "25"
+          SMTP_USERNAME: ""
+          SMTP_PASSWORD: ""
           SMTP_USE_TLS: "True"
 
           # Timezone setting
@@ -111,8 +130,7 @@ jobs:
       - name: Debug report files
         run: |
           echo "Checking for generated report files:"
-          mkdir -p reports  # Ensure directory exists
-          ls -la reports/
+          find . -name "*.pdf" -type f -ls
           
       - name: Upload report as artifact
         uses: actions/upload-artifact@v4
