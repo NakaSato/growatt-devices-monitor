@@ -67,9 +67,9 @@ jobs:
           EMAIL="${{ github.event.inputs.email }}"
 
           if [ -z "$EMAIL" ]; then
-            python script/database_report.py --days $DAYS
+            python scripts/reports/database_report.py --days $DAYS
           else
-            python script/database_report.py --days $DAYS --email $EMAIL
+            python scripts/reports/database_report.py --days $DAYS --email $EMAIL
           fi
         env:
           # Database connection
