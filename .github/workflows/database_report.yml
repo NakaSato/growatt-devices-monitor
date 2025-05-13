@@ -121,3 +121,10 @@ jobs:
           path: reports/*.pdf
           if-no-files-found: warn
           retention-days: 14 # Keep reports for 14 days
+          
+      - name: Download artifact (if needed)
+        uses: actions/download-artifact@v4
+        with:
+          name: database-reports
+          path: downloaded-reports
+        # This step is optional and only needed if you want to process the reports further in this workflow
