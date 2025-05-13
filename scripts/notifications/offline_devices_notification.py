@@ -17,7 +17,8 @@ from typing import Dict, Any, List
 from datetime import datetime
 
 # Configure logging to write to file
-LOG_FILE = "logs/offline_devices_notification.log"
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+LOG_FILE = os.path.join(project_root, "logs", "offline_devices_notification.log")
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 logging.basicConfig(
@@ -31,7 +32,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Set path to include the application
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the project root directory to the path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, project_root)
 
 def fetch_offline_devices() -> List[Dict[str, Any]]:
     """

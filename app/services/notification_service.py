@@ -506,7 +506,13 @@ class NotificationService:
             # Create a multipart message
             msg = MIMEMultipart()
             msg['From'] = self.email_from
-            msg['To'] = self.email_to
+            
+            # Handle email_to as either a list or a string
+            if isinstance(self.email_to, list):
+                msg['To'] = ', '.join(self.email_to)
+            else:
+                msg['To'] = self.email_to
+                
             msg['Subject'] = subject
             
             # Attach message body - try to detect if HTML content and use appropriate MIME type
