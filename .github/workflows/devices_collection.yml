@@ -1,13 +1,13 @@
-name: Growatt Data Collection Cron Job
+name: Growatt Devices Collection
 
 on:
   schedule:
-    # Runs every hour at minute 0
-    - cron: "0 * * * *"
+    # Run every 15 minutes from 6 AM to 7 PM (UTC+7)
+    - cron: "*/15 6-19 * * *"
   workflow_dispatch: # Manual trigger option
 
 jobs:
-  collect_data:
+  collect_devices:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,11 +26,19 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install -e .  # Install the package in development mode
 
-      - name: Run data collection script
+      - name: Create output directories
+        run: |
+          # Create logs directory
+          mkdir -p logs
+          # Create directory for storing device data
+          mkdir -p data/devices
+
+      - name: Run devices collection script
         run: |
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python scripts/collectors/collect_all_data.py
+          # Run the devices collection script with the current timestamp in the filename
+          python scripts/collectors/collect_devices.py --output-dir data/devices --output "devices_$(date +%Y%m%d_%H%M%S).json"
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -40,4 +48,4 @@ jobs:
           GROWATT_PASSWORD: ${{ secrets.GROWATT_PASSWORD }}
 
           # Optional: Timezone setting
-          TZ: "Asia/Bangkok" # Set to your local timezone
+          TZ: "Asia/Bangkok" # Set to Thai timezone

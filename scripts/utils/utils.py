@@ -120,34 +120,35 @@ def load_from_json(filename: str) -> Any:
         logging.error(f"Error loading data from {filename}: {str(e)}")
         return None
 
-def retry_with_backoff(func, retries: int = 3, backoff_factor: int = 2):
+def retry_with_backoff(retries: int = 3, backoff_factor: int = 2):
     """
     Decorator for retrying a function with exponential backoff
     
     Args:
-        func: Function to retry
         retries: Maximum number of retries
         backoff_factor: Base factor for exponential backoff
         
     Returns:
-        Wrapped function with retry logic
+        Decorator function
     """
-    def wrapper(*args, **kwargs):
-        for attempt in range(retries):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if attempt == retries - 1:
-                    # Last attempt failed, re-raise exception
-                    raise
-                
-                # Log error and wait before retry
-                logging.warning(f"Attempt {attempt+1}/{retries} failed: {str(e)}")
-                wait_time = backoff_factor ** attempt
-                logging.info(f"Retrying in {wait_time} seconds...")
-                time.sleep(wait_time)
-    
-    return wrapper
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == retries - 1:
+                        # Last attempt failed, re-raise exception
+                        raise
+                    
+                    # Log error and wait before retry
+                    logging.warning(f"Attempt {attempt+1}/{retries} failed: {str(e)}")
+                    wait_time = backoff_factor ** attempt
+                    logging.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+        
+        return wrapper
+    return decorator
 
 def create_common_parser() -> argparse.ArgumentParser:
     """
@@ -159,10 +160,14 @@ def create_common_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Growatt Devices Monitor Script")
     
     # Common arguments
-    parser.add_argument("--server", dest="server_url", default="http://localhost:8000", 
+    parser.add_argument("--server", dest="server_url", default="https://monitoring.boring9.dev/", 
                         help="URL of the server running the Growatt monitor")
     parser.add_argument("--username", dest="username", help="Growatt API username")
     parser.add_argument("--password", dest="password", help="Growatt API password")
+    parser.add_argument("--no-auth", dest="no_auth", action="store_true",
+                       help="Skip authentication (for servers that don't require it)")
+    parser.add_argument("--mock-data", dest="mock_data", action="store_true",
+                       help="Use mock data instead of calling the actual API (useful for testing)")
     parser.add_argument("--verbose", dest="verbose", action="store_true", 
                         help="Enable verbose logging")
     parser.add_argument("--output-dir", dest="output_dir", default="data",
@@ -219,7 +224,7 @@ def parse_date_range(args: argparse.Namespace) -> Dict[str, Any]:
     return date_range
 
 def make_api_request(url: str, method: str = "GET", data: Dict = None, 
-                     timeout: int = 60, retries: int = 3) -> Dict:
+                     timeout: int = 60, retries: int = 3, headers: Dict = None) -> Dict:
     """
     Make an API request with retries
     
@@ -229,18 +234,30 @@ def make_api_request(url: str, method: str = "GET", data: Dict = None,
         data: Data to send with request
         timeout: Request timeout in seconds
         retries: Number of retry attempts
+        headers: Custom headers to include in the request
         
     Returns:
         dict: Response data or error information
     """
     @retry_with_backoff(retries=retries)
     def _make_request():
+        # Set default headers including content-type
+        request_headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
+        # Update with any custom headers
+        if headers:
+            request_headers.update(headers)
+            
         response = requests.request(
             method=method.upper(),
             url=url,
             json=data if method.upper() in ["POST", "PUT", "PATCH"] else None,
             params=data if method.upper() == "GET" else None,
-            timeout=timeout
+            timeout=timeout,
+            headers=request_headers
         )
         
         response.raise_for_status()

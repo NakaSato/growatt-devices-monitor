@@ -26,6 +26,11 @@ from app.database import DatabaseConnector, get_db_connection
 from app.core.growatt import Growatt
 
 # Configure logging
+# Create logs directory immediately to avoid logging errors
+logs_dir = os.path.join(project_root, 'logs')
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+    
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
