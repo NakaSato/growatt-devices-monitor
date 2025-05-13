@@ -30,7 +30,7 @@ jobs:
         run: |
           # Add the current directory to PYTHONPATH
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python script/collect_all_data.py
+          python scripts/collect_all_data.py
         env:
           # Database connection
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
