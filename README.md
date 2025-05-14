@@ -20,4 +20,30 @@ These collectors can be run individually or together using the `run_all_collecto
 
 # Run for a specific plant
 ./run_all_collectors.sh --plant-id=12345
-``` 
+```
+
+## Device Management
+
+The `scripts/collectors/devices_data_collector.py` script allows you to collect device data from the API and manage devices in the database. You can use it to:
+
+- **Collect devices**: Fetch all devices from the API and store them in the database
+- **Get device by ID**: Retrieve a device from the database by its serial number
+- **Update device by ID**: Update a device's information in the database
+
+You can run the script directly or use the provided `device_manager.sh` wrapper script:
+
+```bash
+# Collect all devices
+./scripts/collectors/device_manager.sh collect
+
+# Get a device by serial number
+./scripts/collectors/device_manager.sh get ABC123456789
+
+# Update a device
+./scripts/collectors/device_manager.sh update ABC123456789 --alias "New Device Name" --status "active"
+
+# Update from a JSON file
+./scripts/collectors/device_manager.sh update ABC123456789 --from-json update_data.json --show
+```
+
+See the [Device Management README](scripts/collectors/README_DEVICE_CLI.md) for more details.

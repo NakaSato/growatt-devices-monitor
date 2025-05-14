@@ -29,10 +29,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(os.path.join('logs', 'devices_data_collector.log'))
+        logging.FileHandler(os.path.join('logs', 'collect_devices_data.log'))
     ]
 )
-logger = logging.getLogger("devices_data_collector")
+logger = logging.getLogger("collect_devices_data")
 
 def ensure_logs_dir():
     """Ensure logs directory exists"""
@@ -330,6 +330,138 @@ class DevicesDataCollector:
             logger.error(f"Error saving devices to database: {str(e)}")
             return False
     
+    def update_device_by_id(self, device_id: str, update_data: Dict[str, Any]) -> bool:
+        """
+        Update a device in the database by its serial number
+        
+        Args:
+            device_id: Serial number of the device to update
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            bool: True if device was updated successfully, False otherwise
+        """
+        if not device_id:
+            logger.error("Device ID (serial number) is required for update")
+            return False
+            
+        if not update_data:
+            logger.warning("No update data provided")
+            return False
+            
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                # First check if device exists
+                cursor.execute(
+                    "SELECT serial_number FROM devices WHERE serial_number = %s",
+                    (device_id,)
+                )
+                exists = cursor.fetchone()
+                
+                if not exists:
+                    logger.error(f"Device with ID {device_id} not found")
+                    return False
+                
+                # Prepare update fields and values
+                update_fields = []
+                update_values = []
+                
+                # Map of field names to database column names
+                field_mapping = {
+                    'plant_id': 'plant_id',
+                    'alias': 'alias',
+                    'type': 'type',
+                    'status': 'status',
+                    'last_update_time': 'last_update_time'
+                }
+                
+                # Add raw_data if it exists
+                has_raw_data = False
+                if 'raw_data' in update_data:
+                    update_fields.append('raw_data = %s')
+                    update_values.append(json.dumps(update_data['raw_data']))
+                    has_raw_data = True
+                
+                # Add other fields
+                for field, value in update_data.items():
+                    if field in field_mapping and field != 'raw_data':
+                        update_fields.append(f"{field_mapping[field]} = %s")
+                        update_values.append(value)
+                
+                # Always update last_updated timestamp
+                update_fields.append("last_updated = NOW()")
+                
+                # If no fields to update (other than timestamp), return False
+                if not update_fields:
+                    logger.warning(f"No valid fields to update for device {device_id}")
+                    return False
+                
+                # Build the SQL query
+                sql = f"""
+                UPDATE devices 
+                SET {', '.join(update_fields)}
+                WHERE serial_number = %s
+                """
+                
+                # Add the device_id as the last parameter for the WHERE clause
+                update_values.append(device_id)
+                
+                # Execute the update
+                cursor.execute(sql, tuple(update_values))
+                
+                # Check if a row was updated
+                if cursor.rowcount > 0:
+                    logger.info(f"Successfully updated device {device_id}")
+                    return True
+                else:
+                    logger.warning(f"Device {device_id} exists but no rows were updated")
+                    return False
+                
+        except Exception as e:
+            logger.error(f"Error updating device by ID: {str(e)}")
+            return False
+    
+    def get_device_by_id(self, device_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a device from the database by its ID (serial number)
+        
+        Args:
+            device_id: The serial number of the device to retrieve
+            
+        Returns:
+            Dict[str, Any]: Device data if found, None otherwise
+        """
+        if not device_id:
+            logger.error("Device ID is required")
+            return None
+            
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    """
+                    SELECT * FROM devices
+                    WHERE serial_number = %s
+                    """,
+                    (device_id,)
+                )
+                
+                device = cursor.fetchone()
+                
+                if device:
+                    logger.info(f"Found device with ID {device_id}")
+                    return dict(device)
+                else:
+                    logger.warning(f"No device found with ID {device_id}")
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Error getting device by ID: {str(e)}")
+            return None
+    
     def run(self) -> bool:
         """
         Run the device data collection process
@@ -390,5 +522,256 @@ def run_collection() -> bool:
         logger.error(f"Error in run_collection: {str(e)}")
         return False
 
+def update_device_by_id_cli(device_id: str, update_fields: Dict[str, Any]) -> bool:
+    """
+    Update a device in the database by its ID via CLI
+    
+    Args:
+        device_id: Serial number of the device to update
+        update_fields: Dictionary containing fields to update
+        
+    Returns:
+        bool: True if device was updated successfully, False otherwise
+    """
+    try:
+        # Ensure logs directory exists
+        ensure_logs_dir()
+        
+        # Initialize collector with production URL
+        default_url = "https://monitoring.boring9.dev"
+        collector = DevicesDataCollector(base_url=default_url)
+        
+        # Update device by ID
+        logger.info(f"Updating device with ID {device_id}")
+        result = collector.update_device_by_id(device_id, update_fields)
+        
+        if result:
+            logger.info(f"Device {device_id} updated successfully")
+        else:
+            logger.error(f"Failed to update device {device_id}")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error in update_device_by_id_cli: {str(e)}")
+        return False
+
+def get_device_by_id_cli(device_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Get a device from the database by its ID via CLI
+    
+    Args:
+        device_id: Serial number of the device to retrieve
+        
+    Returns:
+        Dict[str, Any]: Device data if found, None otherwise
+    """
+    try:
+        # Ensure logs directory exists
+        ensure_logs_dir()
+        
+        # Initialize collector with production URL
+        default_url = "https://monitoring.boring9.dev"
+        collector = DevicesDataCollector(base_url=default_url)
+        
+        # Get device by ID
+        logger.info(f"Getting device with ID {device_id}")
+        device = collector.get_device_by_id(device_id)
+        
+        if device:
+            logger.info(f"Device {device_id} retrieved successfully")
+        else:
+            logger.error(f"Device {device_id} not found")
+        
+        return device
+    except Exception as e:
+        logger.error(f"Error in get_device_by_id_cli: {str(e)}")
+        return None
+
+def export_devices_to_json(output_file: str) -> bool:
+    """
+    Export all devices from the database to a JSON file
+    
+    Args:
+        output_file: Path to the output JSON file
+        
+    Returns:
+        bool: True if export was successful, False otherwise
+    """
+    try:
+        # Initialize collector
+        collector = DevicesDataCollector()
+        
+        # Get all devices from the database
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT * FROM devices")
+            devices = cursor.fetchall()
+            
+            if not devices:
+                logger.warning("No devices found in the database to export")
+                return False
+                
+            # Convert to list of dictionaries
+            devices_list = [dict(device) for device in devices]
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            
+            # Write to file
+            with open(output_file, 'w') as f:
+                # Handle datetime serialization
+                json.dump(devices_list, f, indent=2, default=str)
+                
+            logger.info(f"Successfully exported {len(devices_list)} devices to {output_file}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error exporting devices to JSON: {str(e)}")
+        return False
+
 if __name__ == "__main__":
-    run_collection() 
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser(description="Growatt Devices Data Collector")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
+    
+    # 'collect' command
+    collect_parser = subparsers.add_parser("collect", help="Collect device data from API")
+    
+    # 'update' command
+    update_parser = subparsers.add_parser("update", help="Update device by ID")
+    update_parser.add_argument("device_id", help="Device ID (serial number)")
+    update_parser.add_argument("--plant-id", help="Plant ID")
+    update_parser.add_argument("--alias", help="Device alias")
+    update_parser.add_argument("--type", help="Device type")
+    update_parser.add_argument("--status", help="Device status")
+    update_parser.add_argument("--from-json", help="Update from JSON file")
+    update_parser.add_argument("--show", action="store_true", help="Show device after update")
+    
+    # 'get' command
+    get_parser = subparsers.add_parser("get", help="Get device by ID")
+    get_parser.add_argument("device_id", help="Device ID (serial number)")
+    get_parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    
+    # 'export' command
+    export_parser = subparsers.add_parser("export", help="Export devices from database to JSON")
+    export_parser.add_argument("--output", help="Output JSON file path", required=True)
+    
+    args = parser.parse_args()
+    
+    if args.command == "collect" or not args.command:
+        # Default action is to collect data
+        run_collection()
+    elif args.command == "update":
+        # Build update data from arguments
+        update_data = {}
+        
+        # Load from JSON file if specified
+        if args.from_json:
+            try:
+                with open(args.from_json, 'r') as f:
+                    update_data = json.load(f)
+                print(f"Loaded update data from {args.from_json}")
+            except Exception as e:
+                print(f"Error loading JSON file: {e}")
+                sys.exit(1)
+        else:
+            # Build from command line arguments
+            if args.plant_id:
+                update_data["plant_id"] = args.plant_id
+            if args.alias:
+                update_data["alias"] = args.alias
+            if args.type:
+                update_data["type"] = args.type
+            if args.status:
+                update_data["status"] = args.status
+        
+        if not update_data:
+            print("Error: At least one field to update must be specified")
+            parser.print_help()
+            sys.exit(1)
+        
+        # Show update summary
+        print(f"\nUpdating device {args.device_id} with the following changes:")
+        for key, value in update_data.items():
+            if key != 'raw_data':
+                print(f"  {key}: {value}")
+        if 'raw_data' in update_data:
+            print("  [raw_data will be updated]")
+        
+        # Confirm update
+        confirm = input("\nDo you want to proceed with this update? (y/n): ")
+        if confirm.lower() != 'y':
+            print("Update canceled")
+            sys.exit(0)
+        
+        # Perform update
+        result = update_device_by_id_cli(args.device_id, update_data)
+        
+        # Show updated device if requested
+        if result and args.show:
+            print("\nDevice updated successfully. New values:")
+            device = get_device_by_id_cli(args.device_id)
+            if device:
+                print(f"Serial Number: {device.get('serial_number')}")
+                print(f"Plant ID:      {device.get('plant_id')}")
+                print(f"Alias:         {device.get('alias')}")
+                print(f"Type:          {device.get('type')}")
+                print(f"Status:        {device.get('status')}")
+                print(f"Last Update:   {device.get('last_update_time')}")
+                print(f"Last Updated:  {device.get('last_updated')}")
+        
+        sys.exit(0 if result else 1)
+    elif args.command == "get":
+        # Get device by ID
+        device = get_device_by_id_cli(args.device_id)
+        if device:
+            if args.json:
+                # Print as JSON
+                print(json.dumps(device, default=str, indent=2))
+            else:
+                # Print in human-readable format
+                print("\nDevice Details:")
+                print("==============")
+                print(f"Serial Number: {device.get('serial_number')}")
+                print(f"Plant ID:      {device.get('plant_id')}")
+                print(f"Alias:         {device.get('alias')}")
+                print(f"Type:          {device.get('type')}")
+                print(f"Status:        {device.get('status')}")
+                print(f"Last Update:   {device.get('last_update_time')}")
+                print(f"Last Updated:  {device.get('last_updated')}")
+                if 'raw_data' in device and device['raw_data']:
+                    print("\nRaw Data:")
+                    try:
+                        if isinstance(device['raw_data'], str):
+                            raw_data = json.loads(device['raw_data'])
+                        else:
+                            raw_data = device['raw_data']
+                        # Print first 5 key-value pairs
+                        count = 0
+                        for key, value in raw_data.items():
+                            if count < 5:
+                                print(f"  {key}: {value}")
+                                count += 1
+                        if count < len(raw_data):
+                            print(f"  ... and {len(raw_data) - count} more items")
+                    except:
+                        print("  [Unable to parse raw data]")
+            sys.exit(0)
+        else:
+            print(f"Device with ID {args.device_id} not found")
+            sys.exit(1)
+    elif args.command == "export":
+        # Export devices to JSON file
+        result = export_devices_to_json(args.output)
+        if result:
+            print(f"Devices successfully exported to {args.output}")
+            sys.exit(0)
+        else:
+            print(f"Failed to export devices to {args.output}")
+            sys.exit(1)
+    else:
+        parser.print_help()
+        sys.exit(1)

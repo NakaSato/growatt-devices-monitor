@@ -17,7 +17,7 @@ from tempfile import NamedTemporaryFile
 
 # Add the parent directory to the path so we can import from the app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from scripts.collectors.devices_data_collector import DevicesDataCollector, run_collection
+from scripts.collectors.collect_devices_data import DevicesDataCollector, run_collection
 from app.config import Config
 
 # Configure logging to stdout only for tests
