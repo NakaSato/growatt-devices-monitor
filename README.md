@@ -47,3 +47,10 @@ You can run the script directly or use the provided `device_manager.sh` wrapper 
 ```
 
 See the [Device Management README](scripts/collectors/README_DEVICE_CLI.md) for more details.
+
+For advanced device data collection features, including:
+- Automated exports to JSON
+- GitHub Actions integration
+- Detailed troubleshooting
+
+See the [Device Collection Documentation](doc/DEVICE_COLLECTION.md).
