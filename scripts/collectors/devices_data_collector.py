@@ -44,7 +44,7 @@ def ensure_logs_dir():
 class DevicesDataCollector:
     """Collects device data from the Growatt API and stores it in the PostgreSQL database"""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "https://monitoring.boring9.dev"):
         """
         Initialize the devices data collector
         

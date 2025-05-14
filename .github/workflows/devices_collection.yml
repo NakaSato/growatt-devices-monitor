@@ -39,9 +39,11 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           # Create output filename with timestamp
           OUTPUT_FILE="data/devices/devices_$(date +%Y%m%d_%H%M%S).json"
-          # Run the devices collection script
-          python scripts/collectors/collect_devices.py --output "$OUTPUT_FILE"
-          # Store actual output path for debugging
+          
+          # Run the newer devices_data_collector.py script (default)
+          echo "Running devices_data_collector.py script..."
+          python scripts/collectors/devices_data_collector.py
+
           echo "Generated file: $OUTPUT_FILE"
         env:
           # Database connection

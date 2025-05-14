@@ -1,0 +1,30 @@
+TABLE RELATIONSHIPS
+==================
+
+device_data.device_serial_number -> devices.serial_number
+devices.plant_id -> plants.id
+energy_stats.plant_id -> plants.id
+energy_stats.mix_sn -> devices.serial_number
+files.device_id -> devices.serial_number
+files.plant_id -> plants.id
+identities.user_id -> users.id
+inverter_details.plant_id -> plants.id
+inverter_details.serial_number -> devices.serial_number
+inverter_history.plant_id -> plants.id
+inverter_history.serial_number -> devices.serial_number
+mfa_amr_claims.session_id -> sessions.id
+mfa_challenges.factor_id -> mfa_factors.id
+mfa_factors.user_id -> users.id
+notification_history.device_serial_number -> devices.serial_number
+objects.bucket_id -> buckets.id
+one_time_tokens.user_id -> users.id
+refresh_tokens.session_id -> sessions.id
+s3_multipart_uploads.bucket_id -> buckets.id
+s3_multipart_uploads_parts.upload_id -> s3_multipart_uploads.id
+s3_multipart_uploads_parts.bucket_id -> buckets.id
+saml_providers.sso_provider_id -> sso_providers.id
+saml_relay_states.flow_state_id -> flow_state.id
+saml_relay_states.sso_provider_id -> sso_providers.id
+sessions.user_id -> users.id
+sso_domains.sso_provider_id -> sso_providers.id
+weather_data.plant_id -> plants.id

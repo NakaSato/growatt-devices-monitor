@@ -1,0 +1,151 @@
+DATABASE STRUCTURE
+=================
+
+Table: device_data
+------------------
+  id - integer NOT NULL
+  device_serial_number - text NOT NULL
+  energy_today - real NULL
+  energy_total - real NULL
+  ac_power - real NULL
+  collected_at - timestamp without time zone NULL
+  raw_data - jsonb NULL
+
+Table: devices
+--------------
+  serial_number - text NOT NULL
+  plant_id - text NOT NULL
+  alias - text NULL
+  type - text NULL
+  status - text NULL
+  last_updated - timestamp without time zone NULL
+  collected_at - timestamp without time zone NULL
+  last_update_time - timestamp without time zone NULL
+  raw_data - jsonb NULL
+
+Table: energy_stats
+-------------------
+  id - integer NOT NULL
+  plant_id - text NOT NULL
+  mix_sn - text NOT NULL
+  date - text NOT NULL
+  daily_energy - real NULL
+  peak_power - real NULL
+  last_updated - timestamp without time zone NULL
+
+Table: fault_logs
+-----------------
+  id - integer NOT NULL
+  plant_id - character varying NOT NULL
+  device_sn - character varying NOT NULL
+  device_name - character varying NULL
+  error_code - character varying NULL
+  error_msg - text NULL
+  happen_time - timestamp without time zone NOT NULL
+  fault_type - integer NULL
+  raw_data - jsonb NULL
+  created_at - timestamp without time zone NULL
+
+Table: files
+------------
+  id - integer NOT NULL
+  filename - text NOT NULL
+  file_path - text NOT NULL
+  file_type - text NULL
+  content - bytea NOT NULL
+  plant_id - text NULL
+  device_id - text NULL
+  size_bytes - integer NULL
+  md5_hash - text NULL
+  created_at - timestamp without time zone NULL
+  last_updated - timestamp without time zone NULL
+  metadata - jsonb NULL
+
+Table: inverter_details
+-----------------------
+  id - integer NOT NULL
+  serial_number - text NOT NULL
+  plant_id - text NOT NULL
+  model - text NULL
+  firmware_version - text NULL
+  hardware_version - text NULL
+  nominal_power - real NULL
+  max_ac_power - real NULL
+  max_dc_power - real NULL
+  efficiency - real NULL
+  temperature - real NULL
+  dc_voltage_1 - real NULL
+  dc_current_1 - real NULL
+  dc_power_1 - real NULL
+  dc_voltage_2 - real NULL
+  dc_current_2 - real NULL
+  dc_power_2 - real NULL
+  ac_voltage - real NULL
+  ac_current - real NULL
+  ac_frequency - real NULL
+  ac_power - real NULL
+  daily_energy - real NULL
+  total_energy - real NULL
+  operating_time - integer NULL
+  operating_state - text NULL
+  last_update_time - timestamp without time zone NULL
+  collected_at - timestamp without time zone NULL
+  raw_data - jsonb NULL
+
+Table: inverter_history
+-----------------------
+  id - integer NOT NULL
+  serial_number - text NOT NULL
+  plant_id - text NOT NULL
+  timestamp - timestamp without time zone NOT NULL
+  dc_voltage_1 - real NULL
+  dc_current_1 - real NULL
+  dc_power_1 - real NULL
+  dc_voltage_2 - real NULL
+  dc_current_2 - real NULL
+  dc_power_2 - real NULL
+  ac_voltage - real NULL
+  ac_current - real NULL
+  ac_frequency - real NULL
+  ac_power - real NULL
+  temperature - real NULL
+  energy - real NULL
+  collected_at - timestamp without time zone NULL
+
+Table: notification_history
+---------------------------
+  id - integer NOT NULL
+  device_serial_number - text NOT NULL
+  notification_type - text NOT NULL
+  sent_at - timestamp without time zone NOT NULL
+  message - text NULL
+  success - boolean NOT NULL
+
+Table: plants
+-------------
+  id - text NOT NULL
+  name - text NOT NULL
+  status - text NULL
+  last_updated - timestamp without time zone NULL
+  latitude - double precision NULL
+  longitude - double precision NULL
+
+Table: weather_data
+-------------------
+  id - integer NOT NULL
+  plant_id - text NOT NULL
+  date - text NOT NULL
+  temperature - real NULL
+  last_updated - timestamp without time zone NULL
+  env_humidity - real NULL
+  panel_temp - real NULL
+  wind_speed - real NULL
+  wind_angle - integer NULL
+  datalog_sn - text NULL
+  device_status - text NULL
+  lost - boolean NULL
+  irradiation - real NULL
+  air_pressure - real NULL
+  rainfall_intensity - real NULL
+  raw_data - jsonb NULL
+
